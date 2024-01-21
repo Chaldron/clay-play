@@ -1,0 +1,9 @@
+@use "pico" with (
+    $theme-color: "slate",
+);
+@use "settings" as *;
+
+:root {
+    #{$css-var-prefix}form-element-spacing-vertical: .375rem;
+    #{$css-var-prefix}form-element-spacing-horizontal: .75rem;
+}

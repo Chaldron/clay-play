@@ -1,0 +1,15 @@
+{
+  "name": "ui",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "sass --load-path=node_modules/@picocss/pico/scss/ scss:public"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@picocss/pico": "^2.0.0-rc2",
+    "sass": "^1.70.0"
+  }
+}
