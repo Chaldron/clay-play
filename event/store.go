@@ -8,7 +8,7 @@ import (
 
 type Event struct {
 	Name      string
-	Limit     int
+	Capacity  int
 	Start     time.Time
 	Location  string
 	CreatedAt time.Time
@@ -25,5 +25,17 @@ func NewStore(db *sqlx.DB) *Store {
 }
 
 func (s *Store) Insert(e Event) error {
-	return nil
+	stmt := `
+        INSERT INTO event (capacity, start, location, created_at)
+        VALUES (?, ?, ?, ?)
+    `
+	args := []any{
+		e.Capacity,
+		e.Start,
+		e.Location,
+		e.CreatedAt,
+	}
+
+	_, err := s.db.Exec(stmt, args...)
+	return err
 }

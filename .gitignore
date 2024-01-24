@@ -1,3 +1,4 @@
 node_modules
 tmp
 ui/public/**/*.css*
+config.yaml

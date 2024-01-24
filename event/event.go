@@ -60,7 +60,7 @@ func (s *Service) getEventPage(w http.ResponseWriter, r *http.Request) {
 
 type eventRequest struct {
 	Name           string `schema:"name"`
-	Limit          int    `schema:"limit"`
+	Capacity       int    `schema:"capacity"`
 	Start          string `schema:"start"`
 	TimezoneOffset int    `schema:"timezoneOffset"`
 	Location       string `schema:"location"`
@@ -89,7 +89,7 @@ func (s *Service) postEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	newEvent := Event{
 		Name:      req.Name,
-		Limit:     req.Limit,
+		Capacity:     req.Capacity,
 		Start:     start,
 		Location:  req.Location,
 		CreatedAt: time.Now(),

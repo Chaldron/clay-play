@@ -1,6 +1,9 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
 	"net/http"
 
@@ -10,12 +13,18 @@ import (
 )
 
 func main() {
-	db, err := sqlx.Connect("sqlite3", "./jvbe.db")
+	configPath := flag.String("c", "./config.yaml", "path to config file")
+	conf, err := config.ReadFile(*configPath)
 	if err != nil {
 		panic(err)
 	}
 
-    eventStore := event.NewStore(db)
+	db, err := sqlx.Connect("sqlite3", conf.DbConn)
+	if err != nil {
+		panic(err)
+	}
+
+	eventStore := event.NewStore(db)
 	eventService := event.NewService(eventStore)
 
 	r := chi.NewRouter()
@@ -25,5 +34,5 @@ func main() {
 
 	eventService.Routes(r)
 
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), r)
 }
