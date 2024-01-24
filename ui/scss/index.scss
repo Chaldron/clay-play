@@ -1,9 +1,15 @@
-@use "pico" with (
-    $theme-color: "slate",
+@use "sass:map";
+@use "@picocss/pico/scss" as * with (
+    $enable-semantic-container: false
 );
-@use "settings" as *;
+@use "@picocss/pico/scss/settings" as *;
 
 :root {
     #{$css-var-prefix}form-element-spacing-vertical: .375rem;
     #{$css-var-prefix}form-element-spacing-horizontal: .75rem;
+}
+
+header,
+main {
+    max-width: map.get(map.get($breakpoints, "sm"), "viewport");
 }

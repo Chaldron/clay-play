@@ -1,32 +1,29 @@
 package main
 
 import (
-	"fmt"
-	"html/template"
+	"github/mattfan00/jvbe/event"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {
-	fmt.Println("hello world")
+	db, err := sqlx.Connect("sqlite3", "./jvbe.db")
+	if err != nil {
+		panic(err)
+	}
+
+    eventStore := event.NewStore(db)
+	eventService := event.NewService(eventStore)
 
 	r := chi.NewRouter()
 
 	publicFileServer := http.FileServer(http.Dir("./ui/public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
 
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		t, err := template.ParseFiles(
-			"./ui/views/pages/home.html",
-		)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		t.Execute(w, nil)
-	})
+	eventService.Routes(r)
 
 	http.ListenAndServe(":8080", r)
 }
