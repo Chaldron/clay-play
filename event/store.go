@@ -7,11 +7,12 @@ import (
 )
 
 type Event struct {
-	Name      string
-	Capacity  int
-	Start     time.Time
-	Location  string
-	CreatedAt time.Time
+	Id        int       `db:"id"`
+	Name      string    `db:"name"`
+	Capacity  int       `db:"capacity"`
+	Start     time.Time `db:"start"`
+	Location  string    `db:"location"`
+	CreatedAt time.Time `db:"created_at"`
 }
 
 type Store struct {
@@ -24,12 +25,13 @@ func NewStore(db *sqlx.DB) *Store {
 	}
 }
 
-func (s *Store) Insert(e Event) error {
+func (s *Store) InsertOne(e Event) error {
 	stmt := `
-        INSERT INTO event (capacity, start, location, created_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO event (name, capacity, start, location, created_at)
+        VALUES (?, ?, ?, ?, ?)
     `
 	args := []any{
+        e.Name,
 		e.Capacity,
 		e.Start,
 		e.Location,
@@ -38,4 +40,20 @@ func (s *Store) Insert(e Event) error {
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
+}
+
+func (s *Store) GetCurrent() ([]Event, error) {
+	stmt := `
+        SELECT id, name, capacity, start, location, created_at FROM event
+        WHERE datetime() <= datetime(start)
+        ORDER BY start DESC
+    `
+	var events []Event
+
+	err := s.db.Select(&events, stmt)
+	if err != nil {
+		return []Event{}, err
+	}
+
+	return events, nil
 }

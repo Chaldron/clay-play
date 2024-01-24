@@ -38,7 +38,15 @@ func (s *Service) getIndexPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "base", nil)
+	currEvents, err := s.store.GetCurrent()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	t.ExecuteTemplate(w, "base", map[string]any{
+		"CurrEvents": currEvents,
+	})
 }
 
 func (s *Service) getNewEventPage(w http.ResponseWriter, r *http.Request) {
@@ -89,13 +97,13 @@ func (s *Service) postEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	newEvent := Event{
 		Name:      req.Name,
-		Capacity:     req.Capacity,
+		Capacity:  req.Capacity,
 		Start:     start,
 		Location:  req.Location,
 		CreatedAt: time.Now(),
 	}
 
-	err = s.store.Insert(newEvent)
+	err = s.store.InsertOne(newEvent)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

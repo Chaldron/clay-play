@@ -7,9 +7,36 @@
 :root {
     #{$css-var-prefix}form-element-spacing-vertical: .375rem;
     #{$css-var-prefix}form-element-spacing-horizontal: .75rem;
+
+    #{$css-var-prefix}line-height: normal;
 }
 
 header,
 main {
     max-width: map.get(map.get($breakpoints, "sm"), "viewport");
+}
+
+.event {
+    margin-bottom: var(#{$css-var-prefix}block-spacing-vertical);
+}
+
+a.nostyle {
+    &:link,
+    &:visited {
+        text-decoration: inherit;
+        color: inherit;
+        cursor: pointer;
+    }
+}
+
+.event {
+    display: flex;
+
+    .left {
+        flex: 1 1 0%;
+
+        .name {
+            font-weight: bolder;
+        }
+    }
 }

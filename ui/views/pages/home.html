@@ -1,7 +1,30 @@
 {{define "body"}}
-<div>hi</div>
-
-<button>
-    Submit
-</button>
+<h3>Current Events</h3>
+{{range .CurrEvents}}
+<a 
+    href="/"
+    class="nostyle"
+>
+    <article 
+        class="event" 
+        x-data="{ start: dayjs('{{.Start}}').format('ddd, MMM DD h:mm A') }"
+    >
+        <div class="left">
+            <div><strong>{{.Name}}</strong></div>
+            <div><small x-text="start"></small></div>
+            <div><small>{{.Capacity}} spots · 0 left</small></div>
+        </div>
+        <div class="right">
+            <button 
+                class="outline"
+                hx-get="/event/new"
+                hx-target="body"
+                hx-push-url="true"
+            >
+                Register
+            </button>
+        </div>
+    </article>
+</a>
+{{end}}
 {{end}}
