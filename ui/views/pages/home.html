@@ -2,8 +2,9 @@
 <h3>Current Events</h3>
 {{range .CurrEvents}}
 <a 
-    href="/"
+    href="/event/new"
     class="nostyle"
+    hx-trigger="click target::not(button)"
 >
     <article 
         class="event" 
@@ -16,8 +17,7 @@
         </div>
         <div class="right">
             <button 
-                class="outline"
-                hx-get="/event/new"
+                hx-get="/"
                 hx-target="body"
                 hx-push-url="true"
             >
