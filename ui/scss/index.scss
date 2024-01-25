@@ -31,12 +31,9 @@ a.nostyle {
 
 .event {
     display: flex;
+    align-items: center;
 
     .left {
         flex: 1 1 0%;
-
-        .name {
-            font-weight: bolder;
-        }
     }
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
+	"github/mattfan00/jvbe/template"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -24,8 +25,13 @@ func main() {
 		panic(err)
 	}
 
+    templates, err := template.Generate()
+    if err != nil {
+        panic(err)
+    }
+
 	eventStore := event.NewStore(db)
-	eventService := event.NewService(eventStore)
+	eventService := event.NewService(eventStore, templates)
 
 	r := chi.NewRouter()
 

@@ -1,7 +1,7 @@
 package event
 
 import (
-	"html/template"
+	"github/mattfan00/jvbe/template"
 	"net/http"
 	"time"
 
@@ -10,12 +10,14 @@ import (
 )
 
 type Service struct {
-	store *Store
+	store     *Store
+	templates template.Map
 }
 
-func NewService(store *Store) *Service {
+func NewService(store *Store, templates template.Map) *Service {
 	return &Service{
-		store: store,
+		store:     store,
+		templates: templates,
 	}
 }
 
@@ -29,37 +31,19 @@ func (s *Service) Routes(r *chi.Mux) {
 }
 
 func (s *Service) getIndexPage(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles(
-		"./ui/views/base.html",
-		"./ui/views/pages/home.html",
-	)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	currEvents, err := s.store.GetCurrent()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	t.ExecuteTemplate(w, "base", map[string]any{
+	s.templates["home.html"].ExecuteTemplate(w, "base", map[string]any{
 		"CurrEvents": currEvents,
 	})
 }
 
 func (s *Service) getNewEventPage(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles(
-		"./ui/views/base.html",
-		"./ui/views/pages/event/new.html",
-	)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	t.ExecuteTemplate(w, "base", nil)
+	s.templates["event/new.html"].ExecuteTemplate(w, "base", nil)
 }
 
 func (s *Service) getEventPage(w http.ResponseWriter, r *http.Request) {
