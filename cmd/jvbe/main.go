@@ -6,6 +6,7 @@ import (
 	"github/mattfan00/jvbe/auth"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
+	"github/mattfan00/jvbe/facebook"
 	"github/mattfan00/jvbe/template"
 	"net/http"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/facebook"
+	oauthFacebook "golang.org/x/oauth2/facebook"
 )
 
 func main() {
@@ -41,9 +42,11 @@ func main() {
 		ClientSecret: conf.FbSecret,
 		RedirectURL:  "http://localhost:8080/auth/callback",
 		Scopes:       []string{"public_profile"},
-		Endpoint:     facebook.Endpoint,
+		Endpoint:     oauthFacebook.Endpoint,
 	}
-	authService := auth.NewService(oauthConf)
+	facebookService := facebook.New(oauthConf)
+
+	authService := auth.New(facebookService)
 
 	r := chi.NewRouter()
 
