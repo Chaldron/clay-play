@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github/mattfan00/jvbe/auth"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
 	"github/mattfan00/jvbe/template"
@@ -11,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/facebook"
 )
 
 func main() {
@@ -25,13 +28,22 @@ func main() {
 		panic(err)
 	}
 
-    templates, err := template.Generate()
-    if err != nil {
-        panic(err)
-    }
+	templates, err := template.Generate()
+	if err != nil {
+		panic(err)
+	}
 
 	eventStore := event.NewStore(db)
 	eventService := event.NewService(eventStore, templates)
+
+	oauthConf := &oauth2.Config{
+		ClientID:     conf.FbAppId,
+		ClientSecret: conf.FbSecret,
+		RedirectURL:  "http://localhost:8080/auth/callback",
+		Scopes:       []string{"public_profile"},
+		Endpoint:     facebook.Endpoint,
+	}
+	authService := auth.NewService(oauthConf)
 
 	r := chi.NewRouter()
 
@@ -39,6 +51,7 @@ func main() {
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
 
 	eventService.Routes(r)
+	authService.Routes(r)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), r)
 }

@@ -9,6 +9,8 @@ import (
 type Config struct {
 	DbConn   string `yaml:"db_conn"`
 	Port     int    `yaml:"port"`
+    FbAppId string `yaml:"fb_app_id"`
+    FbSecret string `yaml:"fb_secret"`
 }
 
 func ReadFile(src string) (*Config, error) {
