@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github/mattfan00/jvbe/user"
 	"net/http"
 	"net/url"
 
@@ -14,7 +15,7 @@ type Service struct {
 	oauthConf *oauth2.Config
 }
 
-func New(oauthConf *oauth2.Config) *Service {
+func NewService(oauthConf *oauth2.Config) *Service {
 	return &Service{
 		oauthConf: oauthConf,
 	}
@@ -38,22 +39,25 @@ type User struct {
 	FullName string `json:"name"`
 }
 
-func (s *Service) GetUser(accessToken string) (User, error) {
+func (s *Service) GetUser(accessToken string) (user.ExternalUser, error) {
 	res, err := http.Get("https://graph.facebook.com/v19.0/me?fields=id,name&access_token=" + url.QueryEscape(accessToken))
 	if err != nil {
-		return User{}, err
+		return user.ExternalUser{}, err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return User{}, fmt.Errorf("cannot get user info")
+		return user.ExternalUser{}, fmt.Errorf("cannot get user info")
 	}
 
-	var user User
-	err = json.NewDecoder(res.Body).Decode(&user)
+	var u User
+	err = json.NewDecoder(res.Body).Decode(&u)
 	if err != nil {
-		return User{}, err
+		return user.ExternalUser{}, err
 	}
 
-	return user, nil
+	return user.ExternalUser{
+        Id: u.Id,
+        FullName: u.FullName,
+    }, nil
 }

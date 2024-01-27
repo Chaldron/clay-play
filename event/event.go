@@ -14,7 +14,7 @@ type Service struct {
 	templates template.Map
 }
 
-func New(store *Store, templates template.Map) *Service {
+func NewService(store *Store, templates template.Map) *Service {
 	return &Service{
 		store:     store,
 		templates: templates,

@@ -8,6 +8,7 @@ import (
 	"github/mattfan00/jvbe/event"
 	"github/mattfan00/jvbe/facebook"
 	"github/mattfan00/jvbe/template"
+	"github/mattfan00/jvbe/user"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -37,6 +38,9 @@ func main() {
 	eventStore := event.NewStore(db)
 	eventService := event.NewService(eventStore, templates)
 
+    userStore := user.NewStore(db)
+    userService := user.NewService(userStore)
+
 	oauthConf := &oauth2.Config{
 		ClientID:     conf.FbAppId,
 		ClientSecret: conf.FbSecret,
@@ -44,9 +48,9 @@ func main() {
 		Scopes:       []string{"public_profile"},
 		Endpoint:     oauthFacebook.Endpoint,
 	}
-	facebookService := facebook.New(oauthConf)
+	facebookService := facebook.NewService(oauthConf)
 
-	authService := auth.New(facebookService)
+	authService := auth.NewService(userService, facebookService)
 
 	r := chi.NewRouter()
 

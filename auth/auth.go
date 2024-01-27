@@ -3,17 +3,20 @@ package auth
 import (
 	"fmt"
 	"github/mattfan00/jvbe/facebook"
+	"github/mattfan00/jvbe/user"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Service struct {
+	user     *user.Service
 	facebook *facebook.Service
 }
 
-func New(facebook *facebook.Service) *Service {
+func NewService(user *user.Service, facebook *facebook.Service) *Service {
 	return &Service{
+		user:     user,
 		facebook: facebook,
 	}
 }
@@ -49,11 +52,21 @@ func (s *Service) getCallbackPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := s.facebook.GetUser(token)
+	externalUser, err := s.facebook.GetUser(token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Write([]byte(fmt.Sprintf("%+v", user)))
+	id, err := s.user.HandleFromExternal(externalUser)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sessionUser := user.SessionUser{
+		Id: id,
+	}
+
+	w.Write([]byte(fmt.Sprintf("%+v", sessionUser)))
 }
