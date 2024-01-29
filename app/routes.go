@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	eventPkg "github/mattfan00/jvbe/event"
+	userPkg "github/mattfan00/jvbe/user"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -15,23 +16,30 @@ func (a *App) Routes() http.Handler {
 	publicFileServer := http.FileServer(http.Dir("./ui/public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
 
-	r.Get("/", a.RenderIndex)
+	r.Group(func(r chi.Router) {
+		r.Use(a.session.LoadAndSave)
 
-	r.Route("/event", func(r chi.Router) {
-		r.Get("/new", a.RenderNewEvent)
-		r.Get("/{id}", a.RenderSingleEvent)
-		r.Post("/", a.CreateEvent)
-	})
+		r.Get("/", a.RenderIndex)
 
-	r.Route("/auth", func(r chi.Router) {
-		r.Get("/login", a.RenderLogin)
-		r.Get("/callback", a.HandleLoginCallback)
+		r.Route("/event", func(r chi.Router) {
+			r.Get("/new", a.RenderNewEvent)
+			r.Get("/{id}", a.RenderSingleEvent)
+			r.Post("/", a.CreateEvent)
+		})
+
+		r.Route("/auth", func(r chi.Router) {
+			r.Get("/login", a.RenderLogin)
+			r.Get("/callback", a.HandleLoginCallback)
+		})
 	})
 
 	return r
 }
 
 func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
+	fmt.Printf("%+v\n", u)
+
 	currEvents, err := a.event.GetCurrent()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -96,6 +104,7 @@ func (a *App) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionUser := u.ToSessionUser()
+	a.session.Put(r.Context(), "user", &sessionUser)
 
-	w.Write([]byte(fmt.Sprintf("%+v", sessionUser)))
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
