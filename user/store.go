@@ -13,7 +13,15 @@ type User struct {
 	Id         string    `db:"id"`
 	FullName   string    `db:"full_name"`
 	ExternalId string    `db:"external_id"`
+	IsAdmin    bool      `db:"is_admin"`
 	CreatedAt  time.Time `db:"created_at"`
+}
+
+func (u *User) ToSessionUser() SessionUser {
+    return SessionUser{
+        Id: u.Id,
+        IsAdmin: u.IsAdmin,
+    }
 }
 
 type ExternalUser struct {
@@ -22,7 +30,8 @@ type ExternalUser struct {
 }
 
 type SessionUser struct {
-	Id string
+	Id      string
+	IsAdmin bool
 }
 
 type Store struct {
@@ -35,46 +44,74 @@ func NewStore(db *sqlx.DB) *Store {
 	}
 }
 
-func (s *Store) GetIdByExternalId(externalId string) (string, error) {
+var (
+	ErrNoUser = errors.New("no user found")
+)
+
+func (s *Store) GetByExternalId(externalId string) (User, error) {
 	stmt := `
-        SELECT id FROM user
+        SELECT id, is_admin FROM user
         WHERE external_id = ?
     `
 	args := []any{externalId}
 
-	var id string
-	err := s.db.QueryRow(stmt, args...).Scan(&id)
+	var user User
+	err := s.db.Get(&user, stmt, args...)
 	if errors.Is(err, sql.ErrNoRows) {
-		return "", nil
-	}
-	if err != nil {
-		return "", err
+		return User{}, ErrNoUser
+	} else if err != nil {
+		return User{}, err
 	}
 
-	return id, err
+	return user, nil
 }
 
-func (s *Store) CreateFromExternal(externalUser ExternalUser) (string, error) {
-	newId, err := gonanoid.New()
-	if err != nil {
-		return "", err
+func (s *Store) GetById(id string) (User, error) {
+	stmt := `
+        SELECT id, full_name, external_id, is_admin, created_at FROM user
+        WHERE id = ?
+    `
+	args := []any{id}
+
+	var user User
+	err := s.db.Get(&user, stmt, args...)
+	if errors.Is(err, sql.ErrNoRows) {
+		return User{}, ErrNoUser
+	} else if err != nil {
+		return User{}, err
 	}
 
+	return user, nil
+}
+
+func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
+	newId, err := gonanoid.New()
+	if err != nil {
+		return User{}, err
+	}
+	isAdmin := false
+
 	stmt := `
-        INSERT INTO user (id, full_name, external_id, created_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO user (id, full_name, external_id, is_admin, created_at)
+        VALUES (?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
 		externalUser.FullName,
 		externalUser.Id,
+		isAdmin,
 		time.Now().UTC(),
 	}
 
 	_, err = s.db.Exec(stmt, args...)
 	if err != nil {
-		return "", err
+		return User{}, err
 	}
 
-	return newId, nil
+	newUser, err := s.GetById(newId)
+	if err != nil {
+		return User{}, err
+	}
+
+	return newUser, nil
 }

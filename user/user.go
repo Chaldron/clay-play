@@ -1,5 +1,9 @@
 package user
 
+import (
+	"errors"
+)
+
 type Service struct {
 	store *Store
 }
@@ -10,21 +14,17 @@ func NewService(store *Store) *Service {
 	}
 }
 
-func (s *Service) HandleFromExternal(externalUser ExternalUser) (string, error) {
-	id, err := s.store.GetIdByExternalId(externalUser.Id)
-	if err != nil {
-		return "", err
-	}
-
-	// if id is blank then need to create
-	if id == "" {
-		newId, err := s.store.CreateFromExternal(externalUser)
+func (s *Service) HandleFromExternal(externalUser ExternalUser) (User, error) {
+	user, err := s.store.GetByExternalId(externalUser.Id)
+	// if cant retrieve user, then need to create
+	if errors.Is(err, ErrNoUser) {
+		user, err = s.store.CreateFromExternal(externalUser)
 		if err != nil {
-			return "", err
+			return User{}, err
 		}
-
-		return newId, nil
-	} else {
-		return id, nil
+	} else if err != nil {
+		return User{}, err
 	}
+
+	return user, nil
 }

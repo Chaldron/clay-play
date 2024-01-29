@@ -58,15 +58,13 @@ func (s *Service) getCallbackPage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.user.HandleFromExternal(externalUser)
+	u, err := s.user.HandleFromExternal(externalUser)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	sessionUser := user.SessionUser{
-		Id: id,
-	}
+    sessionUser := u.ToSessionUser()
 
 	w.Write([]byte(fmt.Sprintf("%+v", sessionUser)))
 }
