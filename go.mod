@@ -5,6 +5,7 @@ go 1.21.5
 require github.com/go-chi/chi/v5 v5.0.11
 
 require (
+	github.com/alexedwards/scs/v2 v2.7.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gorilla/schema v1.2.1 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect

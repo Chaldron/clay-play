@@ -2,11 +2,7 @@ package event
 
 import (
 	"github/mattfan00/jvbe/template"
-	"net/http"
 	"time"
-
-	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/schema"
 )
 
 type Service struct {
@@ -21,61 +17,19 @@ func NewService(store *Store, templates template.Map) *Service {
 	}
 }
 
-func (s *Service) Routes(r *chi.Mux) {
-	r.Get("/", s.getIndexPage)
-	r.Route("/event", func(r chi.Router) {
-		r.Get("/new", s.getNewEventPage)
-		r.Get("/{id}", s.getEventPage)
-		r.Post("/", s.postEventHandler)
-	})
-}
-
-func (s *Service) getIndexPage(w http.ResponseWriter, r *http.Request) {
+func (s *Service) GetCurrent() ([]Event, error) {
 	currEvents, err := s.store.GetCurrent()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return []Event{}, err
 	}
 
-	s.templates["home.html"].ExecuteTemplate(w, "base", map[string]any{
-		"CurrEvents": currEvents,
-	})
+	return currEvents, nil
 }
 
-func (s *Service) getNewEventPage(w http.ResponseWriter, r *http.Request) {
-	s.templates["event/new.html"].ExecuteTemplate(w, "base", nil)
-}
-
-func (s *Service) getEventPage(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hi"))
-}
-
-type eventRequest struct {
-	Name           string `schema:"name"`
-	Capacity       int    `schema:"capacity"`
-	Start          string `schema:"start"`
-	TimezoneOffset int    `schema:"timezoneOffset"`
-	Location       string `schema:"location"`
-}
-
-func (s *Service) postEventHandler(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	var req eventRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
+func (s *Service) CreateFromRequest(req EventRequest) error {
 	start, err := time.Parse("2006-01-02T15:04", req.Start)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return err
 	}
 	start = start.Add(time.Minute * time.Duration(req.TimezoneOffset))
 
@@ -89,9 +43,8 @@ func (s *Service) postEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = s.store.InsertOne(newEvent)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return err
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return nil
 }

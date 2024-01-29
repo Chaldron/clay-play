@@ -15,6 +15,15 @@ type Event struct {
 	CreatedAt time.Time `db:"created_at"`
 }
 
+type EventRequest struct {
+	Name           string `schema:"name"`
+	Capacity       int    `schema:"capacity"`
+	Start          string `schema:"start"`
+	TimezoneOffset int    `schema:"timezoneOffset"`
+	Location       string `schema:"location"`
+}
+
+
 type Store struct {
 	db *sqlx.DB
 }

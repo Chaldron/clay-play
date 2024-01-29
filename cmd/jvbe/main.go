@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/gob"
 	"flag"
 	"fmt"
+	appPkg "github/mattfan00/jvbe/app"
 	"github/mattfan00/jvbe/auth"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
@@ -11,7 +13,7 @@ import (
 	"github/mattfan00/jvbe/user"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/alexedwards/scs/v2"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/oauth2"
@@ -35,11 +37,14 @@ func main() {
 		panic(err)
 	}
 
+	gob.Register(user.SessionUser{}) // needed for scs library
+	session := scs.New()
+
 	eventStore := event.NewStore(db)
 	eventService := event.NewService(eventStore, templates)
 
-    userStore := user.NewStore(db)
-    userService := user.NewService(userStore)
+	userStore := user.NewStore(db)
+	userService := user.NewService(userStore)
 
 	oauthConf := &oauth2.Config{
 		ClientID:     conf.FbAppId,
@@ -52,13 +57,14 @@ func main() {
 
 	authService := auth.NewService(userService, facebookService)
 
-	r := chi.NewRouter()
+	app := appPkg.New(
+		eventService,
+		userService,
+		authService,
 
-	publicFileServer := http.FileServer(http.Dir("./ui/public"))
-	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
+		session,
+		templates,
+	)
 
-	eventService.Routes(r)
-	authService.Routes(r)
-
-	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), r)
+	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), app.Routes())
 }
