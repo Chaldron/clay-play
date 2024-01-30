@@ -111,12 +111,26 @@ func (a *App) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionUser := u.ToSessionUser()
+
+	err = a.session.RenewToken(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	a.session.Put(r.Context(), "user", &sessionUser)
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	err := a.session.RenewToken(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	a.session.Remove(r.Context(), "user")
+
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
