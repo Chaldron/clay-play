@@ -1,3 +1,5 @@
+github.com/alexedwards/scs/sqlite3store v0.0.0-20231113091146-cef4b05350c8 h1:mnXnnXEjn8QIyv4KCN0+IjDlXA64qdq2hIVOmfNFeuY=
+github.com/alexedwards/scs/sqlite3store v0.0.0-20231113091146-cef4b05350c8/go.mod h1:Iyk7S76cxGaiEX/mSYmTZzYehp4KfyylcLaV3OnToss=
 github.com/alexedwards/scs/v2 v2.7.0 h1:DY4rqLCM7UIR9iwxFS0++z1NhTzQlKV30aMHkJCDWKw=
 github.com/alexedwards/scs/v2 v2.7.0/go.mod h1:ToaROZxyKukJKT/xLcVQAChi5k6+Pn1Gvmdl7h3RRj8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

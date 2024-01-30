@@ -21,7 +21,7 @@
                 {{if not .User.IsAuthenticated}}
                 <li><a href="/auth/login" hx-boost="false">Login</a></li>
                 {{else}}
-                <li><a href="/auth/logout" hx-boost="false">Logout</a></li>
+                <li><a href="/auth/logout">Logout</a></li>
                 {{end}}
                 {{if .User.IsAdmin}}
                 <li><a href="/event/new">New Event</a></li>
