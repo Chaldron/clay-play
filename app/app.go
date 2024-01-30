@@ -35,3 +35,7 @@ func New(
 		templates: templates,
 	}
 }
+
+type BaseData struct {
+	User user.SessionUser
+}

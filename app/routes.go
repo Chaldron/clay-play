@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	eventPkg "github/mattfan00/jvbe/event"
 	userPkg "github/mattfan00/jvbe/user"
 	"net/http"
@@ -30,15 +29,20 @@ func (a *App) Routes() http.Handler {
 		r.Route("/auth", func(r chi.Router) {
 			r.Get("/login", a.RenderLogin)
 			r.Get("/callback", a.HandleLoginCallback)
+			r.Get("/logout", a.HandleLogout)
 		})
 	})
 
 	return r
 }
 
+type indexData struct {
+	BaseData
+	CurrEvents []eventPkg.Event
+}
+
 func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
-	fmt.Printf("%+v\n", u)
 
 	currEvents, err := a.event.GetCurrent()
 	if err != nil {
@@ -46,8 +50,11 @@ func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.templates["home.html"].ExecuteTemplate(w, "base", map[string]any{
-		"CurrEvents": currEvents,
+	a.templates["home.html"].ExecuteTemplate(w, "base", indexData{
+		BaseData: BaseData{
+			User: u,
+		},
+		CurrEvents: currEvents,
 	})
 }
 
@@ -106,5 +113,10 @@ func (a *App) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	sessionUser := u.ToSessionUser()
 	a.session.Put(r.Context(), "user", &sessionUser)
 
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
+	a.session.Remove(r.Context(), "user")
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }

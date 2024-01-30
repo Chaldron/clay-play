@@ -18,10 +18,10 @@ type User struct {
 }
 
 func (u *User) ToSessionUser() SessionUser {
-    return SessionUser{
-        Id: u.Id,
-        IsAdmin: u.IsAdmin,
-    }
+	return SessionUser{
+		Id:      u.Id,
+		IsAdmin: u.IsAdmin,
+	}
 }
 
 type ExternalUser struct {
@@ -32,6 +32,10 @@ type ExternalUser struct {
 type SessionUser struct {
 	Id      string
 	IsAdmin bool
+}
+
+func (u SessionUser) IsAuthenticated() bool {
+	return u.Id != ""
 }
 
 type Store struct {
