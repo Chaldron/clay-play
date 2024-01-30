@@ -4,10 +4,11 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type Event struct {
-	Id        int       `db:"id"`
+	Id        string `db:"id"`
 	Name      string    `db:"name"`
 	Capacity  int       `db:"capacity"`
 	Start     time.Time `db:"start"`
@@ -23,7 +24,6 @@ type EventRequest struct {
 	Location       string `schema:"location"`
 }
 
-
 type Store struct {
 	db *sqlx.DB
 }
@@ -35,19 +35,25 @@ func NewStore(db *sqlx.DB) *Store {
 }
 
 func (s *Store) InsertOne(e Event) error {
+	newId, err := gonanoid.New()
+	if err != nil {
+		return err
+	}
+
 	stmt := `
-        INSERT INTO event (name, capacity, start, location, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO event (id, name, capacity, start, location, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
     `
 	args := []any{
-        e.Name,
+		newId,
+		e.Name,
 		e.Capacity,
 		e.Start,
 		e.Location,
 		e.CreatedAt,
 	}
 
-	_, err := s.db.Exec(stmt, args...)
+	_, err = s.db.Exec(stmt, args...)
 	return err
 }
 
