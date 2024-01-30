@@ -12,6 +12,7 @@ import (
 	"github/mattfan00/jvbe/template"
 	"github/mattfan00/jvbe/user"
 	"net/http"
+	"time"
 
 	"github.com/alexedwards/scs/sqlite3store"
 	"github.com/alexedwards/scs/v2"
@@ -40,6 +41,7 @@ func main() {
 
 	gob.Register(user.SessionUser{}) // needed for scs library
 	session := scs.New()
+	session.Lifetime = 7 * 24 * time.Hour // 1 week
 	session.Store = sqlite3store.New(db.DB)
 
 	eventStore := event.NewStore(db)

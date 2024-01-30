@@ -124,7 +124,7 @@ func (a *App) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
-	err := a.session.RenewToken(r.Context())
+	err := a.session.Destroy(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
