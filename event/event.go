@@ -1,6 +1,8 @@
 package event
 
 import (
+	"database/sql"
+	"fmt"
 	"github/mattfan00/jvbe/template"
 	"time"
 )
@@ -17,8 +19,8 @@ func NewService(store *Store, templates template.Map) *Service {
 	}
 }
 
-func (s *Service) GetCurrent() ([]Event, error) {
-	currEvents, err := s.store.GetCurrent()
+func (s *Service) GetCurrent(userId string) ([]Event, error) {
+	currEvents, err := s.store.GetCurrent(userId)
 	if err != nil {
 		return []Event{}, err
 	}
@@ -26,7 +28,7 @@ func (s *Service) GetCurrent() ([]Event, error) {
 	return currEvents, nil
 }
 
-func (s *Service) CreateFromRequest(req EventRequest) error {
+func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 	start, err := time.Parse("2006-01-02T15:04", req.Start)
 	if err != nil {
 		return err
@@ -47,4 +49,29 @@ func (s *Service) CreateFromRequest(req EventRequest) error {
 	}
 
 	return nil
+}
+
+func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) (Event, error) {
+	e := EventResponse{
+		EventId: req.Id,
+		UserId:  userId,
+		Going:   sql.NullBool{
+            Bool: req.Going,
+            Valid: true,
+        },
+	}
+
+	err := s.store.UpdateResponse(e)
+	if err != nil {
+		return Event{}, err
+	}
+
+	event, err := s.store.GetById(userId, req.Id)
+	if err != nil {
+		return Event{}, err
+	}
+
+	fmt.Printf("%+v\n", event)
+
+	return event, nil
 }

@@ -23,6 +23,7 @@ func (a *App) Routes() http.Handler {
 		r.Route("/event", func(r chi.Router) {
 			r.Get("/new", a.RenderNewEvent)
 			r.Get("/{id}", a.RenderSingleEvent)
+			r.Post("/respond", a.RespondEvent)
 			r.Post("/", a.CreateEvent)
 		})
 
@@ -44,7 +45,7 @@ type indexData struct {
 func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
 
-	currEvents, err := a.event.GetCurrent()
+	currEvents, err := a.event.GetCurrent(u.Id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -66,6 +67,31 @@ func (a *App) RenderSingleEvent(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hi"))
 }
 
+func (a *App) RespondEvent(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
+
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var req eventPkg.RespondEventRequest
+	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	updatedEvent, err := a.event.HandleEventResponse(u.Id, req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	a.templates["home.html"].ExecuteTemplate(w, "event", updatedEvent)
+}
+
 func (a *App) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -73,7 +99,7 @@ func (a *App) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req eventPkg.EventRequest
+	var req eventPkg.CreateEventRequest
 	err = schema.NewDecoder().Decode(&req, r.PostForm)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
