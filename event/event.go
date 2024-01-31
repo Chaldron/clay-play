@@ -1,8 +1,6 @@
 package event
 
 import (
-	"database/sql"
-	"fmt"
 	"github/mattfan00/jvbe/template"
 	"time"
 )
@@ -55,10 +53,7 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) (E
 	e := EventResponse{
 		EventId: req.Id,
 		UserId:  userId,
-		Going:   sql.NullBool{
-            Bool: req.Going,
-            Valid: true,
-        },
+		Going:   req.Going,
 	}
 
 	err := s.store.UpdateResponse(e)
@@ -70,8 +65,6 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) (E
 	if err != nil {
 		return Event{}, err
 	}
-
-	fmt.Printf("%+v\n", event)
 
 	return event, nil
 }

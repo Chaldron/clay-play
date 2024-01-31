@@ -14,12 +14,12 @@
         <div class="left">
             <div><strong>{{.Name}}</strong></div>
             <div><small x-text="start"></small></div>
-            <div><small>{{.Capacity}} spots · 0 left</small></div>
+            <div><small>{{.Capacity}} spots · {{.SpotsLeft}} left</small></div>
         </div>
         <div class="right">
             <form>
                 <input type="hidden" name="id" value="{{.Id}}" />
-                {{if .EventResponse.Going.Bool}} 
+                {{if .EventResponse.Going}} 
                 <input type="hidden" name="going" value="false" />
                 {{else}}
                 <input type="hidden" name="going" value="true" />
@@ -30,7 +30,7 @@
                     hx-target="closest article"
                     hx-swap="outerHTML"
                 >
-                    {{if .EventResponse.Going.Bool}} 
+                    {{if .EventResponse.Going}} 
                     Unregister 
                     {{else}}
                     Register

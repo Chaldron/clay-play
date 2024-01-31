@@ -1,7 +1,6 @@
 package event
 
 import (
-	"database/sql"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -9,13 +8,18 @@ import (
 )
 
 type Event struct {
-	Id        string    `db:"id"`
-	Name      string    `db:"name"`
-	Capacity  int       `db:"capacity"`
-	Start     time.Time `db:"start"`
-	Location  string    `db:"location"`
-	CreatedAt time.Time `db:"created_at"`
+	Id            string    `db:"id"`
+	Name          string    `db:"name"`
+	Capacity      int       `db:"capacity"`
+	Start         time.Time `db:"start"`
+	Location      string    `db:"location"`
+	CreatedAt     time.Time `db:"created_at"`
+	AttendeeCount int       `db:"attendee_count"`
 	EventResponse
+}
+
+func (e Event) SpotsLeft() int {
+	return e.Capacity - e.AttendeeCount
 }
 
 type CreateEventRequest struct {
@@ -29,7 +33,7 @@ type CreateEventRequest struct {
 type EventResponse struct {
 	EventId   string    `db:"event_id"`
 	UserId    string    `db:"user_id"`
-	Going     sql.NullBool `db:"going"`
+	Going     bool      `db:"going"`
 	UpdatedAt time.Time `db:"updated_at"`
 }
 
@@ -73,9 +77,18 @@ func (s *Store) InsertOne(e Event) error {
 
 func (s *Store) GetCurrent(userId string) ([]Event, error) {
 	stmt := `
-        SELECT e.id, e.name, e.capacity, e.start, e.location, e.created_at, er.going FROM event AS e
+        SELECT 
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at
+            , COALESCE(er.going, false) AS going
+            , COALESCE (ec.attendee_count, 0) AS attendee_count
+        FROM event AS e
         LEFT JOIN event_response AS er ON e.id = er.event_id 
             AND er.user_id = ?
+        LEFT JOIN (
+            SELECT event_id, COUNT(*) AS attendee_count FROM event_response
+            WHERE going = TRUE 
+            GROUP BY event_id
+        ) AS ec ON e.id = ec.event_id
         WHERE datetime() <= datetime(start)
         ORDER BY start DESC
     `
@@ -115,12 +128,19 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 
 func (s *Store) GetById(userId string, eventId string) (Event, error) {
 	stmt := `
-        SELECT e.id, e.name, e.capacity, e.start, e.location, e.created_at, er.going FROM event AS e
+        SELECT 
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at
+            , COALESCE(er.going, false) AS going
+            , (
+                SELECT COUNT(*) FROM event_response
+                WHERE event_id = ? AND going = TRUE 
+            ) AS attendee_count
+        FROM event AS e
         LEFT JOIN event_response AS er ON e.id = er.event_id
             AND er.user_id = ?
         WHERE id = ?
     `
-	args := []any{userId, eventId}
+	args := []any{eventId, userId, eventId}
 
 	var e Event
 	err := s.db.Get(&e, stmt, args...)
