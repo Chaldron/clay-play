@@ -24,6 +24,8 @@
                 {{else}}
                 <input type="hidden" name="going" value="true" />
                 {{end}}
+
+                {{if or (gt .SpotsLeft 0) (.EventResponse.Going)}}
                 <button 
                     class="outline"
                     hx-post="/event/respond"
@@ -36,6 +38,7 @@
                     Register
                     {{end}}
                 </button>
+                {{end}}
             </form>
         </div>
     </article>

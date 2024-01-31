@@ -2,12 +2,14 @@ package event
 
 import (
 	"github/mattfan00/jvbe/template"
+	"sync"
 	"time"
 )
 
 type Service struct {
-	store     *Store
-	templates template.Map
+	store             *Store
+	templates         template.Map
+	eventResponseLock sync.Mutex
 }
 
 func NewService(store *Store, templates template.Map) *Service {
@@ -50,18 +52,16 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 }
 
 func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) (Event, error) {
+	s.eventResponseLock.Lock()
+	defer s.eventResponseLock.Unlock()
+
 	e := EventResponse{
 		EventId: req.Id,
 		UserId:  userId,
 		Going:   req.Going,
 	}
 
-	err := s.store.UpdateResponse(e)
-	if err != nil {
-		return Event{}, err
-	}
-
-	event, err := s.store.GetById(userId, req.Id)
+	event, err := s.store.UpdateResponse(e)
 	if err != nil {
 		return Event{}, err
 	}

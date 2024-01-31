@@ -1,6 +1,7 @@
 package event
 
 import (
+	"errors"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -103,7 +104,14 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
 	return events, nil
 }
 
-func (s *Store) UpdateResponse(e EventResponse) error {
+func (s *Store) UpdateResponse(e EventResponse) (Event, error) {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return Event{}, err
+	}
+
+	defer tx.Rollback()
+
 	stmt := `
         INSERT INTO event_response (event_id, user_id, going, updated_at)
         VALUES (?, ?, ?, ?)
@@ -118,16 +126,12 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 		time.Now().UTC(),
 	}
 
-	_, err := s.db.Exec(stmt, args...)
+	_, err = tx.Exec(stmt, args...)
 	if err != nil {
-		return err
+		return Event{}, err
 	}
 
-	return nil
-}
-
-func (s *Store) GetById(userId string, eventId string) (Event, error) {
-	stmt := `
+	stmt = `
         SELECT 
             e.id, e.name, e.capacity, e.start, e.location, e.created_at
             , COALESCE(er.going, false) AS going
@@ -140,13 +144,21 @@ func (s *Store) GetById(userId string, eventId string) (Event, error) {
             AND er.user_id = ?
         WHERE id = ?
     `
-	args := []any{eventId, userId, eventId}
+	args = []any{e.EventId, e.UserId, e.EventId}
 
-	var e Event
-	err := s.db.Get(&e, stmt, args...)
+	var event Event
+	err = tx.Get(&event, stmt, args...)
+	if err != nil {
+		return Event{}, err
+	}
+	if event.SpotsLeft() < 0 {
+		return Event{}, errors.New("no spots left")
+	}
+
+	err = tx.Commit()
 	if err != nil {
 		return Event{}, err
 	}
 
-	return e, nil
+	return event, nil
 }
