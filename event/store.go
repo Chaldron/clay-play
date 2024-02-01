@@ -2,6 +2,7 @@ package event
 
 import (
 	"errors"
+	"github/mattfan00/jvbe/user"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -36,11 +37,17 @@ type EventResponse struct {
 	UserId    string    `db:"user_id"`
 	Going     bool      `db:"going"`
 	UpdatedAt time.Time `db:"updated_at"`
+	user.User
 }
 
 type RespondEventRequest struct {
 	Id    string `schema:"id"`
 	Going bool   `schema:"going"`
+}
+
+type EventDetailed struct {
+	Event
+	EventResponses []EventResponse
 }
 
 type Store struct {
@@ -104,6 +111,37 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
 	return events, nil
 }
 
+func prepareGetById(eventId string, userId string) (string, []any) {
+	stmt := `
+        SELECT 
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at
+            , COALESCE(er.going, false) AS going
+            , (
+                SELECT COUNT(*) FROM event_response
+                WHERE event_id = ? AND going = TRUE 
+            ) AS attendee_count
+        FROM event AS e
+        LEFT JOIN event_response AS er ON e.id = er.event_id
+            AND er.user_id = ?
+        WHERE id = ?
+    `
+	args := []any{eventId, userId, eventId}
+
+	return stmt, args
+}
+
+func (s *Store) GetById(eventId string, userId string) (Event, error) {
+	stmt, args := prepareGetById(eventId, userId)
+
+	var event Event
+	err := s.db.Get(&event, stmt, args...)
+	if err != nil {
+		return Event{}, err
+	}
+
+	return event, nil
+}
+
 func (s *Store) UpdateResponse(e EventResponse) (Event, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
@@ -131,26 +169,14 @@ func (s *Store) UpdateResponse(e EventResponse) (Event, error) {
 		return Event{}, err
 	}
 
-	stmt = `
-        SELECT 
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at
-            , COALESCE(er.going, false) AS going
-            , (
-                SELECT COUNT(*) FROM event_response
-                WHERE event_id = ? AND going = TRUE 
-            ) AS attendee_count
-        FROM event AS e
-        LEFT JOIN event_response AS er ON e.id = er.event_id
-            AND er.user_id = ?
-        WHERE id = ?
-    `
-	args = []any{e.EventId, e.UserId, e.EventId}
+	stmt, args = prepareGetById(e.EventId, e.UserId)
 
 	var event Event
 	err = tx.Get(&event, stmt, args...)
 	if err != nil {
 		return Event{}, err
 	}
+	// this statement along with the lock and transaction is the backbone of the concurrency issue
 	if event.SpotsLeft() < 0 {
 		return Event{}, errors.New("no spots left")
 	}
@@ -161,4 +187,21 @@ func (s *Store) UpdateResponse(e EventResponse) (Event, error) {
 	}
 
 	return event, nil
+}
+
+func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
+	stmt := `
+        SELECT er.event_id, er.user_id, er.going, u.full_name FROM event_response AS er
+        INNER JOIN user AS u ON er.user_id = u.id
+        WHERE er.event_id = ? AND er.going = TRUE
+    `
+	args := []any{eventId}
+
+	var responses []EventResponse
+	err := s.db.Select(&responses, stmt, args...)
+	if err != nil {
+		return []EventResponse{}, err
+	}
+
+	return responses, nil
 }

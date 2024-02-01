@@ -28,6 +28,25 @@ func (s *Service) GetCurrent(userId string) ([]Event, error) {
 	return currEvents, nil
 }
 
+func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
+	event, err := s.store.GetById(eventId, userId)
+	if err != nil {
+		return EventDetailed{}, err
+	}
+
+	responses, err := s.store.GetResponsesByEventId(eventId)
+	if err != nil {
+		return EventDetailed{}, err
+	}
+
+	e := EventDetailed{
+		Event:          event,
+		EventResponses: responses,
+	}
+
+	return e, nil
+}
+
 func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 	start, err := time.Parse("2006-01-02T15:04", req.Start)
 	if err != nil {

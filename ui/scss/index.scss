@@ -15,8 +15,32 @@ main {
     max-width: map.get(map.get($breakpoints, "sm"), "viewport");
 }
 
+header{
+    max-width: map.get(map.get($breakpoints, "lg"), "viewport");
+}
+
 .event {
     margin-bottom: var(#{$css-var-prefix}block-spacing-vertical);
+}
+
+.event_details {
+    .register {
+        margin-top: var(#{$css-var-prefix}block-spacing-vertical);
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+.event_attendees {
+    table {
+        margin-bottom: 0;
+    }
+
+    tbody > tr:last-child > td {
+      border-bottom: 0;
+    }
 }
 
 a.nostyle {

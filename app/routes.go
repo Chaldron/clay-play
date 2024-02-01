@@ -22,7 +22,7 @@ func (a *App) Routes() http.Handler {
 
 		r.Route("/event", func(r chi.Router) {
 			r.Get("/new", a.RenderNewEvent)
-			r.Get("/{id}", a.RenderSingleEvent)
+			r.Get("/{id}", a.RenderEventDetails)
 			r.Post("/respond", a.RespondEvent)
 			r.Post("/", a.CreateEvent)
 		})
@@ -60,11 +60,34 @@ func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) RenderNewEvent(w http.ResponseWriter, r *http.Request) {
-	a.templates["event/new.html"].ExecuteTemplate(w, "base", nil)
+	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
+
+	a.templates["event/new.html"].ExecuteTemplate(w, "base", BaseData{
+		User: u,
+	})
 }
 
-func (a *App) RenderSingleEvent(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hi"))
+type eventDetailsData struct {
+	BaseData
+	Event eventPkg.EventDetailed
+}
+
+func (a *App) RenderEventDetails(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
+	eventId := chi.URLParam(r, "id")
+
+	e, err := a.event.GetDetailed(eventId, u.Id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	a.templates["event/details.html"].ExecuteTemplate(w, "base", eventDetailsData{
+		BaseData: BaseData{
+			User: u,
+		},
+		Event: e,
+	})
 }
 
 func (a *App) RespondEvent(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +112,14 @@ func (a *App) RespondEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.templates["home.html"].ExecuteTemplate(w, "event", updatedEvent)
+	if r.Header.Get("HX-Trigger") == "event_details_register" {
+		// load the whole page since this is coming from details page
+		http.Redirect(w, r, "/event/"+req.Id, http.StatusSeeOther)
+		a.templates["event/details.html"].ExecuteTemplate(w, "base", updatedEvent)
+	} else {
+		// this is coming from the home page
+		a.templates["home.html"].ExecuteTemplate(w, "event", updatedEvent)
+	}
 }
 
 func (a *App) CreateEvent(w http.ResponseWriter, r *http.Request) {
