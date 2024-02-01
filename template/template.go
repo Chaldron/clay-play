@@ -35,6 +35,7 @@ func Generate() (map[string]*template.Template, error) {
 
 		t.ParseFiles(
 			filepath.Join(rootPath, "base.html"),
+			filepath.Join(rootPath, "header.html"),
 			pagePath,
 		)
 

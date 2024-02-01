@@ -11,25 +11,7 @@
     <link rel="stylesheet" href="/public/index.css">
 </head>
 <body hx-boost="true">
-    <header class="container-fluid">
-        <nav>
-            <ul>
-                <li><strong>jvbe</strong></li>
-            </ul>
-            <ul>
-                <li><a href="/home">Home</a></li>
-                {{if .User.IsAuthenticated}}
-                <li><a href="/auth/logout">Logout</a></li>
-                {{end}}
-                {{if .User.IsAdmin}}
-                <li><a href="/event/new">New Event</a></li>
-                {{end}}
-            </ul>
-        </nav>
-    </header>
-    <main class="container-fluid">
-        {{ template "body" . }}
-    </main>
+    {{ template "body" . }}
 
     <script src="/public/index.js"></script>
 </body>

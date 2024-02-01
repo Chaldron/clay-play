@@ -12,7 +12,11 @@
 }
 
 main {
-    max-width: map.get(map.get($breakpoints, "sm"), "viewport");
+    max-width: map.get(map.get($breakpoints, "md"), "viewport");
+
+    &.sm{
+        max-width: map.get(map.get($breakpoints, "sm"), "viewport");
+    }
 }
 
 header{

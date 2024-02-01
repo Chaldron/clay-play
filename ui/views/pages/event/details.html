@@ -1,56 +1,61 @@
 {{define "body"}}
-{{with .Event}}
-<section
-    class="event_details"
-    x-data="{ start: dayjs('{{.Event.Start}}').format('ddd, MMM DD h:mm A') }"
->
-    <h3>{{.Name}}</h3>
 
-    <article>
-        <div x-text="start"></div>
-        <div>{{.Location}}</div>
-        <div class="register">
-            <div>{{.SpotsLeft}} spots left</div>
+{{template "header" .}}
 
-            <form>
-                <input type="hidden" name="id" value="{{.Id}}" />
-                {{if .EventResponse.Going}} 
-                <input type="hidden" name="going" value="false" />
-                {{else}}
-                <input type="hidden" name="going" value="true" />
-                {{end}}
+<main class="container-fluid">
+    {{with .Event}}
+    <section
+        class="event_details"
+        x-data="{ start: dayjs('{{.Event.Start}}').format('ddd, MMM DD h:mm A') }"
+    >
+        <h3>{{.Name}}</h3>
 
-                {{if or (gt .SpotsLeft 0) (.EventResponse.Going)}}
-                <button 
-                    id="event_details_register"
-                    class="outline"
-                    hx-post="/event/respond"
-                    hx-target="body"
-                    hx-push-url="true"
-                >
+        <article>
+            <div x-text="start"></div>
+            <div>{{.Location}}</div>
+            <div class="register">
+                <div>{{.SpotsLeft}} spots left</div>
+
+                <form>
+                    <input type="hidden" name="id" value="{{.Id}}" />
                     {{if .EventResponse.Going}} 
-                    Unregister 
+                    <input type="hidden" name="going" value="false" />
                     {{else}}
-                    Register
+                    <input type="hidden" name="going" value="true" />
                     {{end}}
-                </button>
-                {{end}}
-            </form>
-        </div>
-    </article>
-</section>
-<section class="event_attendees">
-    <h5>Attendees ({{len .EventResponses}})</h5>
 
-    {{if gt (len .EventResponses) (0)}}
-    <article>
-        <table>
-        {{range .EventResponses}}
-            <tr><td>{{.User.FullName}}</td></tr>
+                    {{if or (gt .SpotsLeft 0) (.EventResponse.Going)}}
+                    <button 
+                        id="event_details_register"
+                        class="outline"
+                        hx-post="/event/respond"
+                        hx-target="body"
+                        hx-push-url="true"
+                    >
+                        {{if .EventResponse.Going}} 
+                        Unregister 
+                        {{else}}
+                        Register
+                        {{end}}
+                    </button>
+                    {{end}}
+                </form>
+            </div>
+        </article>
+    </section>
+    <section class="event_attendees">
+        <h5>Attendees ({{len .EventResponses}})</h5>
+
+        {{if gt (len .EventResponses) (0)}}
+        <article>
+            <table>
+            {{range .EventResponses}}
+                <tr><td>{{.User.FullName}}</td></tr>
+            {{end}}
+            </table>
+        </article>
         {{end}}
-        </table>
-    </article>
+    </section>
     {{end}}
-</section>
-{{end}}
+</main>
 {{end}}
