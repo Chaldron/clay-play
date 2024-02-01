@@ -17,10 +17,8 @@
                 <li><strong>jvbe</strong></li>
             </ul>
             <ul>
-                <li><a href="/">Home</a></li>
-                {{if not .User.IsAuthenticated}}
-                <li><a href="/auth/login" hx-boost="false">Login</a></li>
-                {{else}}
+                <li><a href="/home">Home</a></li>
+                {{if .User.IsAuthenticated}}
                 <li><a href="/auth/logout">Logout</a></li>
                 {{end}}
                 {{if .User.IsAdmin}}

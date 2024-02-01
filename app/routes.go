@@ -18,31 +18,52 @@ func (a *App) Routes() http.Handler {
 	r.Group(func(r chi.Router) {
 		r.Use(a.session.LoadAndSave)
 
-		r.Get("/", a.RenderIndex)
-
-		r.Route("/event", func(r chi.Router) {
-			r.Get("/new", a.RenderNewEvent)
-			r.Get("/{id}", a.RenderEventDetails)
-			r.Post("/respond", a.RespondEvent)
-			r.Post("/", a.CreateEvent)
-		})
+		r.Get("/", a.renderIndex)
 
 		r.Route("/auth", func(r chi.Router) {
-			r.Get("/login", a.RenderLogin)
-			r.Get("/callback", a.HandleLoginCallback)
-			r.Get("/logout", a.HandleLogout)
+			r.Get("/login", a.renderLogin)
+			r.Get("/callback", a.handleLoginCallback)
+
+			r.With(a.requireAuth).Get("/logout", a.handleLogout)
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(a.requireAuth)
+
+			r.Get("/home", a.renderHome)
+
+			r.Route("/event", func(r chi.Router) {
+				r.Get("/{id}", a.renderEventDetails)
+				r.Post("/respond", a.respondEvent)
+
+				r.Group(func(r chi.Router) {
+					r.Use(a.requireAdmin)
+
+					r.Get("/new", a.renderNewEvent)
+					r.Post("/", a.createEvent)
+				})
+			})
 		})
 	})
 
 	return r
 }
 
-type indexData struct {
+func (a *App) renderIndex(w http.ResponseWriter, r *http.Request) {
+	if _, ok := a.getSessionUser(r); ok {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+
+	a.templates["index.html"].ExecuteTemplate(w, "base", nil)
+}
+
+type homeData struct {
 	BaseData
 	CurrEvents []eventPkg.Event
 }
 
-func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
+func (a *App) renderHome(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
 
 	currEvents, err := a.event.GetCurrent(u.Id)
@@ -51,7 +72,7 @@ func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.templates["home.html"].ExecuteTemplate(w, "base", indexData{
+	a.templates["home.html"].ExecuteTemplate(w, "base", homeData{
 		BaseData: BaseData{
 			User: u,
 		},
@@ -59,7 +80,7 @@ func (a *App) RenderIndex(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *App) RenderNewEvent(w http.ResponseWriter, r *http.Request) {
+func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
 
 	a.templates["event/new.html"].ExecuteTemplate(w, "base", BaseData{
@@ -72,7 +93,7 @@ type eventDetailsData struct {
 	Event eventPkg.EventDetailed
 }
 
-func (a *App) RenderEventDetails(w http.ResponseWriter, r *http.Request) {
+func (a *App) renderEventDetails(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
 	eventId := chi.URLParam(r, "id")
 
@@ -90,7 +111,7 @@ func (a *App) RenderEventDetails(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (a *App) RespondEvent(w http.ResponseWriter, r *http.Request) {
+func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
 
 	err := r.ParseForm()
@@ -122,7 +143,7 @@ func (a *App) RespondEvent(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (a *App) CreateEvent(w http.ResponseWriter, r *http.Request) {
+func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -142,15 +163,15 @@ func (a *App) CreateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
-func (a *App) RenderLogin(w http.ResponseWriter, r *http.Request) {
+func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
 	url := a.auth.GetOauthLoginUrl()
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func (a *App) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
+func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
 	err := a.auth.ValidateState(state)
 	if err != nil {
@@ -176,10 +197,10 @@ func (a *App) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	a.session.Put(r.Context(), "user", &sessionUser)
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
-func (a *App) HandleLogout(w http.ResponseWriter, r *http.Request) {
+func (a *App) handleLogout(w http.ResponseWriter, r *http.Request) {
 	err := a.session.Destroy(r.Context())
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
