@@ -1,0 +1,19 @@
+@use "sass:map";
+@use "@picocss/pico/scss/settings" as *;
+
+@use "light";
+
+/**
+  * Color schemes
+  */
+
+:root {
+  @include light.theme;
+}
+
+progress,
+[type="checkbox"],
+[type="radio"],
+[type="range"] {
+  accent-color: var(#{$css-var-prefix}primary);
+}

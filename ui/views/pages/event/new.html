@@ -4,29 +4,32 @@
 
 <main class="container-fluid">
     <h3>New Event</h3>
-    <form 
-        hx-post="/event"
-        hx-push-url="true"
-        hx-target="body"
-        hx-vals="js:{timezoneOffset: new Date().getTimezoneOffset()}"
-    >
-        <label>
-            Name
-            <input type="text" required name="name" />
-        </label>
-        <label>
-            Capacity 
-            <input type="number" required name="capacity" />
-        </label>
-        <label>
-            Start time
-            <input type="datetime-local" required name="start" />
-        </label>
-        <label>
-            Location
-            <input type="text" required name="location" />
-        </label>
-        <button type="submit">Submit</button>
-    </form>
+
+    <article>
+        <form 
+            hx-post="/event"
+            hx-push-url="true"
+            hx-target="body"
+            hx-vals="js:{timezoneOffset: new Date().getTimezoneOffset()}"
+        >
+            <label>
+                Name
+                <input type="text" required name="name" />
+            </label>
+            <label>
+                Capacity 
+                <input type="number" required name="capacity" />
+            </label>
+            <label>
+                Start time
+                <input type="datetime-local" required name="start" />
+            </label>
+            <label>
+                Location
+                <input type="text" required name="location" />
+            </label>
+            <button type="submit">Submit</button>
+        </form>
+    </article>
 </main>
 {{end}}

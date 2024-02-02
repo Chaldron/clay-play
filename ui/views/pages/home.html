@@ -6,7 +6,7 @@
     <h3>Current Events</h3>
     {{range .CurrEvents}}
         {{block "event" .}}
-        <article 
+        <div
             class="event" 
             x-data="{ start: dayjs('{{.Start}}').format('ddd, MMM DD h:mm A') }"
         >
@@ -21,7 +21,7 @@
             <div class="right">
                 <a href="/event/{{.Id}}">View</a>
             </div>
-        </article>
+        </div>
         {{end}}
     {{end}}
 </main>

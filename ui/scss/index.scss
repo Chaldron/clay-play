@@ -1,15 +1,62 @@
 @use "sass:map";
 @use "@picocss/pico/scss" as * with (
-    $enable-semantic-container: false
+    $enable-semantic-container: false,
+
+    $modules: (
+        // Theme
+        "themes/default": false,
+
+        // Layout
+        "layout/document": true,
+        "layout/landmarks": true,
+        "layout/container": true,
+        "layout/section": true,
+        "layout/grid": true,
+        "layout/overflow-auto": false,
+
+        // Content
+        "content/link": true,
+        "content/typography": true,
+        "content/embedded": true,
+        "content/button": true,
+        "content/table": true,
+        "content/code": false,
+        "content/figure": false,
+        "content/miscs": true,
+
+        // Forms
+        "forms/basics": true,
+        "forms/checkbox-radio-switch": true,
+        "forms/input-color": true,
+        "forms/input-date": true,
+        "forms/input-file": false,
+        "forms/input-range": false,
+        "forms/input-search": false,
+
+        // Components
+        "components/accordion": false,
+        "components/card": false,
+        "components/dropdown": false,
+        "components/group": false,
+        "components/loading": false,
+        "components/modal": false,
+        "components/nav": true,
+        "components/progress": false,
+        "components/tooltip": false,
+
+        // Utilities
+        "utilities/accessibility": true,
+        "utilities/reduce-motion": true
+    )
 );
+@use "theme/styles";
+@use "theme/schemes";
 @use "@picocss/pico/scss/settings" as *;
+@use "@picocss/pico/scss/colors" as *;
 
-:root {
-    #{$css-var-prefix}form-element-spacing-vertical: .375rem;
-    #{$css-var-prefix}form-element-spacing-horizontal: .75rem;
 
-    #{$css-var-prefix}line-height: normal;
-}
+
+$border-color: $grey-300;
 
 main {
     max-width: map.get(map.get($breakpoints, "md"), "viewport");
@@ -19,12 +66,38 @@ main {
     }
 }
 
-header{
-    max-width: map.get(map.get($breakpoints, "lg"), "viewport");
+header {
+    max-width: map.get(map.get($breakpoints, "md"), "viewport");
+}
+
+article {
+    padding: var(#{$css-var-prefix}block-spacing-vertical)
+      var(#{$css-var-prefix}block-spacing-horizontal);
+    border: 1px solid $border-color; 
+    border-radius: var(#{$css-var-prefix}border-radius);
 }
 
 .event {
-    margin-bottom: var(#{$css-var-prefix}block-spacing-vertical);
+    display: flex;
+    align-items: center;
+
+    padding: var(#{$css-var-prefix}block-spacing-vertical) var(#{$css-var-prefix}block-spacing-horizontal);
+    border: 1px solid $border-color; 
+    margin-bottom: -1px;
+
+    &:first-of-type {
+        border-top-left-radius: var(#{$css-var-prefix}border-radius);
+        border-top-right-radius: var(#{$css-var-prefix}border-radius);
+    }
+
+    &:last-of-type {
+        border-bottom-left-radius: var(#{$css-var-prefix}border-radius);
+        border-bottom-right-radius: var(#{$css-var-prefix}border-radius);
+    }
+
+    .left {
+        flex: 1 1 0%;
+    }
 }
 
 .event_details {
@@ -53,14 +126,5 @@ a.nostyle {
         text-decoration: inherit;
         color: inherit;
         cursor: pointer;
-    }
-}
-
-.event {
-    display: flex;
-    align-items: center;
-
-    .left {
-        flex: 1 1 0%;
     }
 }
