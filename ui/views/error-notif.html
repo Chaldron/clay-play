@@ -1,0 +1,21 @@
+{{define "error"}}
+<div
+    id="error"
+    hx-swap-oob="afterend"
+>
+    <div 
+        class="error"
+        x-data=""
+        x-ref="error"
+    >
+        <div class="flex-1">
+            <strong>Error:</strong> {{.Error}}
+        </div>
+        <img 
+            class="feather"
+            @click="$refs.error.remove()"
+            src="/public/icons/x.svg"
+        />
+    </div>
+</div>
+{{end}}

@@ -33,14 +33,25 @@ func Generate() (map[string]*template.Template, error) {
 		name := strings.TrimPrefix(pagePath, pagesPath+"/")
 		t := template.New(name)
 
-		t.ParseFiles(
+		t, err = t.ParseFiles(
 			filepath.Join(rootPath, "base.html"),
 			filepath.Join(rootPath, "header.html"),
 			pagePath,
 		)
+		if err != nil {
+			return map[string]*template.Template{}, err
+		}
 
 		templates[name] = t
 	}
+
+	errorNotifFile := filepath.Join(rootPath, "error-notif.html")
+	errorNotifTemplate, err := template.ParseFiles(errorNotifFile)
+	if err != nil {
+		return map[string]*template.Template{}, err
+	}
+
+	templates[filepath.Base(errorNotifFile)] = errorNotifTemplate
 
 	return templates, nil
 }

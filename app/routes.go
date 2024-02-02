@@ -16,6 +16,7 @@ func (a *App) Routes() http.Handler {
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
 
 	r.Group(func(r chi.Router) {
+		r.Use(a.recoverPanic)
 		r.Use(a.session.LoadAndSave)
 
 		r.Get("/", a.renderIndex)
@@ -55,7 +56,7 @@ func (a *App) renderIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.templates["index.html"].ExecuteTemplate(w, "base", nil)
+	a.renderPage(w, "index.html", nil)
 }
 
 type homeData struct {
@@ -68,11 +69,11 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request) {
 
 	currEvents, err := a.event.GetCurrent(u.Id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	a.templates["home.html"].ExecuteTemplate(w, "base", homeData{
+	a.renderPage(w, "home.html", homeData{
 		BaseData: BaseData{
 			User: u,
 		},
@@ -83,7 +84,7 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request) {
 func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
 
-	a.templates["event/new.html"].ExecuteTemplate(w, "base", BaseData{
+	a.renderPage(w, "event/new.html", BaseData{
 		User: u,
 	})
 }
@@ -99,11 +100,11 @@ func (a *App) renderEventDetails(w http.ResponseWriter, r *http.Request) {
 
 	e, err := a.event.GetDetailed(eventId, u.Id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	a.templates["event/details.html"].ExecuteTemplate(w, "base", eventDetailsData{
+	a.renderPage(w, "event/details.html", eventDetailsData{
 		BaseData: BaseData{
 			User: u,
 		},
@@ -116,20 +117,20 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	var req eventPkg.RespondEventRequest
 	err = schema.NewDecoder().Decode(&req, r.PostForm)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	err = a.event.HandleEventResponse(u.Id, req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -139,20 +140,20 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	var req eventPkg.CreateEventRequest
 	err = schema.NewDecoder().Decode(&req, r.PostForm)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	err = a.event.CreateFromRequest(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -168,7 +169,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
 	err := a.auth.ValidateState(state)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -176,7 +177,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	u, err := a.auth.GetUserFromOauthCode(code)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -184,7 +185,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	err = a.session.RenewToken(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -196,7 +197,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleLogout(w http.ResponseWriter, r *http.Request) {
 	err := a.session.Destroy(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 

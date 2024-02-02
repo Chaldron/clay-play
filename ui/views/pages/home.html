@@ -3,6 +3,8 @@
 {{template "header" .}}
 
 <main class="container-fluid">
+    <div id="error"></div>
+
     <h3>Current Events</h3>
     {{range .CurrEvents}}
         {{block "event" .}}
@@ -10,7 +12,7 @@
             class="event" 
             x-data="{ start: dayjs('{{.Start}}').format('ddd, MMM DD h:mm A') }"
         >
-            <div class="left">
+            <div class="flex-1">
                 <div><strong>{{.Name}}</strong></div>
                 <div>
                     <small>
@@ -18,9 +20,7 @@
                     </small>
                 </div>
             </div>
-            <div class="right">
-                <a href="/event/{{.Id}}">View</a>
-            </div>
+            <a href="/event/{{.Id}}">View</a>
         </div>
         {{end}}
     {{end}}
