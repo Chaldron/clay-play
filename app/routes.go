@@ -127,20 +127,13 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedEvent, err := a.event.HandleEventResponse(u.Id, req)
+	err = a.event.HandleEventResponse(u.Id, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if r.Header.Get("HX-Trigger") == "event_details_register" {
-		// load the whole page since this is coming from details page
-		http.Redirect(w, r, "/event/"+req.Id, http.StatusSeeOther)
-		a.templates["event/details.html"].ExecuteTemplate(w, "base", updatedEvent)
-	} else {
-		// this is coming from the home page
-		a.templates["home.html"].ExecuteTemplate(w, "event", updatedEvent)
-	}
+	http.Redirect(w, r, "/event/"+req.Id, http.StatusSeeOther)
 }
 
 func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {

@@ -70,7 +70,7 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 	return nil
 }
 
-func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) (Event, error) {
+func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) error {
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
 
@@ -80,10 +80,10 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) (E
 		Going:   req.Going,
 	}
 
-	event, err := s.store.UpdateResponse(e)
+	err := s.store.UpdateResponse(e)
 	if err != nil {
-		return Event{}, err
+		return err
 	}
 
-	return event, nil
+    return nil
 }

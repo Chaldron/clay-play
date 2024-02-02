@@ -142,10 +142,10 @@ func (s *Store) GetById(eventId string, userId string) (Event, error) {
 	return event, nil
 }
 
-func (s *Store) UpdateResponse(e EventResponse) (Event, error) {
+func (s *Store) UpdateResponse(e EventResponse) error {
 	tx, err := s.db.Beginx()
 	if err != nil {
-		return Event{}, err
+		return err
 	}
 
 	defer tx.Rollback()
@@ -166,7 +166,7 @@ func (s *Store) UpdateResponse(e EventResponse) (Event, error) {
 
 	_, err = tx.Exec(stmt, args...)
 	if err != nil {
-		return Event{}, err
+		return err
 	}
 
 	stmt, args = prepareGetById(e.EventId, e.UserId)
@@ -174,19 +174,19 @@ func (s *Store) UpdateResponse(e EventResponse) (Event, error) {
 	var event Event
 	err = tx.Get(&event, stmt, args...)
 	if err != nil {
-		return Event{}, err
+		return err
 	}
 	// this statement along with the lock and transaction is the backbone of the concurrency issue
 	if event.SpotsLeft() < 0 {
-		return Event{}, errors.New("no spots left")
+		return errors.New("no spots left")
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return Event{}, err
+		return err
 	}
 
-	return event, nil
+	return nil
 }
 
 func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {

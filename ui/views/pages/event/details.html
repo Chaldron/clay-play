@@ -24,13 +24,13 @@
                     <input type="hidden" name="going" value="true" />
                     {{end}}
 
-                    {{if or (gt .SpotsLeft 0) (.EventResponse.Going)}}
                     <button 
                         id="event_details_register"
                         class="outline"
                         hx-post="/event/respond"
                         hx-target="body"
                         hx-push-url="true"
+                        {{if and (le .SpotsLeft 0) (not .EventResponse.Going)}}disabled{{end}}
                     >
                         {{if .EventResponse.Going}} 
                         Unregister 
@@ -38,7 +38,6 @@
                         Register
                         {{end}}
                     </button>
-                    {{end}}
                 </form>
             </div>
         </article>

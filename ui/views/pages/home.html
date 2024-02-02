@@ -5,49 +5,24 @@
 <main class="container-fluid">
     <h3>Current Events</h3>
     {{range .CurrEvents}}
-    {{block "event" .}}
-    <a 
-        href="/event/{{.Id}}"
-        class="nostyle"
-        hx-trigger="click target::not(button)"
-    >
+        {{block "event" .}}
         <article 
             class="event" 
             x-data="{ start: dayjs('{{.Start}}').format('ddd, MMM DD h:mm A') }"
         >
             <div class="left">
                 <div><strong>{{.Name}}</strong></div>
-                <div><small x-text="start"></small></div>
-                <div><small>{{.Capacity}} spots · {{.SpotsLeft}} left</small></div>
+                <div>
+                    <small>
+                        <span x-text="start"></span> · {{.SpotsLeft}} spots left
+                    </small>
+                </div>
             </div>
             <div class="right">
-                <form>
-                    <input type="hidden" name="id" value="{{.Id}}" />
-                    {{if .EventResponse.Going}} 
-                    <input type="hidden" name="going" value="false" />
-                    {{else}}
-                    <input type="hidden" name="going" value="true" />
-                    {{end}}
-
-                    {{if or (gt .SpotsLeft 0) (.EventResponse.Going)}}
-                    <button 
-                        class="outline"
-                        hx-post="/event/respond"
-                        hx-target="closest article"
-                        hx-swap="outerHTML"
-                    >
-                        {{if .EventResponse.Going}} 
-                        Unregister 
-                        {{else}}
-                        Register
-                        {{end}}
-                    </button>
-                    {{end}}
-                </form>
+                <a href="/event/{{.Id}}">View</a>
             </div>
         </article>
-    </a>
-    {{end}}
+        {{end}}
     {{end}}
 </main>
 {{end}}
