@@ -13,7 +13,7 @@
     #{$css-var-prefix}font-family-monospace: ui-monospace, SFMono-Regular, "SF Mono", Menlo,
     Consolas, "Liberation Mono", monospace, var(#{$css-var-prefix}font-family-emoji);
     #{$css-var-prefix}font-family: var(#{$css-var-prefix}font-family-sans-serif);
-    #{$css-var-prefix}line-height: normal;
+    #{$css-var-prefix}line-height: 1.4;
     #{$css-var-prefix}font-weight: 400;
     #{$css-var-prefix}font-size: 100%;
     #{$css-var-prefix}text-underline-offset: 0.1rem;

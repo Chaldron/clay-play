@@ -6,41 +6,46 @@
     {{with .Event}}
     <section
         class="event_details"
-        x-data="{ start: dayjs('{{.Event.Start}}').format('ddd, MMM DD h:mm A') }"
     >
         <h3>{{.Name}}</h3>
 
-        <article>
-            <div x-text="start"></div>
-            <div>{{.Location}}</div>
-            <div class="register">
-                <div>{{.SpotsLeft}} spots left</div>
+        <div 
+            class="field"
+            x-data="{ start: dayjs('{{.Event.Start}}').format('ddd, MMM DD h:mm A') }"
+        >
+            <img class="feather" src="/public/icons/calendar.svg" />
+            <span x-text="start"></span>
+        </div>
+        <div class="field">
+            <img class="feather" src="/public/icons/map-pin.svg" />
+            <span>{{.Location}}</span>
+        </div>
+        <div class="register">
+            <form>
+                <input type="hidden" name="id" value="{{.Id}}" />
+                {{if .EventResponse.Going}} 
+                <input type="hidden" name="going" value="false" />
+                {{else}}
+                <input type="hidden" name="going" value="true" />
+                {{end}}
 
-                <form>
-                    <input type="hidden" name="id" value="{{.Id}}" />
+                <button 
+                    id="event_details_register"
+                    hx-post="/event/respond"
+                    hx-target="body"
+                    hx-push-url="true"
+                    {{if and (le .SpotsLeft 0) (not .EventResponse.Going)}}disabled{{end}}
+                >
                     {{if .EventResponse.Going}} 
-                    <input type="hidden" name="going" value="false" />
+                    Going
                     {{else}}
-                    <input type="hidden" name="going" value="true" />
+                    Not going
                     {{end}}
+                </button>
+            </form>
 
-                    <button 
-                        id="event_details_register"
-                        class="outline"
-                        hx-post="/event/respond"
-                        hx-target="body"
-                        hx-push-url="true"
-                        {{if and (le .SpotsLeft 0) (not .EventResponse.Going)}}disabled{{end}}
-                    >
-                        {{if .EventResponse.Going}} 
-                        Unregister 
-                        {{else}}
-                        Register
-                        {{end}}
-                    </button>
-                </form>
-            </div>
-        </article>
+            <div>{{.SpotsLeft}} spots left</div>
+        </div>
     </section>
     <section class="event_attendees">
         <h5>Attendees ({{len .EventResponses}})</h5>
