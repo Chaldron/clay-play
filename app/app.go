@@ -90,6 +90,10 @@ func (a *App) renderErrorPage(
 	err error,
 	status int,
 ) {
+	w.Header().Add("HX-Retarget", "body")
+	w.Header().Add("HX-Reswap", "innerHTML")
 	w.WriteHeader(status)
-	a.renderPage(w, "error.html", nil)
+	a.renderPage(w, "error.html", map[string]any{
+		"Error": err,
+	})
 }
