@@ -6,6 +6,7 @@
     <div id="error"></div>
 
     <h3>Current Events</h3>
+    <div>
     {{range .CurrEvents}}
         {{block "event" .}}
         <div
@@ -24,5 +25,6 @@
         </div>
         {{end}}
     {{end}}
+    </div>
 </main>
 {{end}}

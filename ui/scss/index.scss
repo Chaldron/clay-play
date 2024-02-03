@@ -86,6 +86,10 @@ article {
     border: 1px solid $border-color; 
     margin-bottom: -1px;
 
+    &:only-of-type {
+        border-radius: var(#{$css-var-prefix}border-radius);
+    }
+
     &:first-of-type {
         border-top-left-radius: var(#{$css-var-prefix}border-radius);
         border-top-right-radius: var(#{$css-var-prefix}border-radius);
@@ -95,7 +99,6 @@ article {
         border-bottom-left-radius: var(#{$css-var-prefix}border-radius);
         border-bottom-right-radius: var(#{$css-var-prefix}border-radius);
     }
-
 }
 
 .flex-1 {
