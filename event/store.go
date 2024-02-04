@@ -97,7 +97,7 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
             WHERE going = TRUE 
             GROUP BY event_id
         ) AS ec ON e.id = ec.event_id
-        WHERE datetime() <= datetime(start)
+        WHERE datetime() <= datetime(start) AND is_deleted = FALSE
         ORDER BY start DESC
     `
 	args := []any{userId}
@@ -123,8 +123,8 @@ func prepareGetById(eventId string, userId string) (string, []any) {
         FROM event AS e
         LEFT JOIN event_response AS er ON e.id = er.event_id
             AND er.user_id = ?
-        WHERE id = ?
-    `
+        WHERE id = ? AND is_deleted = FALSE
+    ` 
 	args := []any{eventId, userId, eventId}
 
 	return stmt, args
@@ -204,4 +204,20 @@ func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	}
 
 	return responses, nil
+}
+
+func (s *Store) DeleteById(id string) error {
+	stmt := `
+        UPDATE event
+        SET is_deleted = TRUE
+        WHERE id = ?
+    `
+	args := []any{id}
+
+	_, err := s.db.Exec(stmt, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

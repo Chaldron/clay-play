@@ -61,6 +61,18 @@
         </article>
         {{end}}
     </section>
+    <section>
+        <h5>Admin tools</h5>
+
+        <span
+            class="delete"
+            hx-push-url="true"
+            hx-target="body"
+            hx-delete="/event/{{.Id}}"
+        >
+            Delete
+        </span>
+    </section>
     {{end}}
 </main>
 {{end}}

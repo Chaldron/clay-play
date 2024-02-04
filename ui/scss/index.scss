@@ -132,6 +132,11 @@ article {
     }
 }
 
+.delete {
+    color: $red-400;
+    cursor: pointer;
+}
+
 a.nostyle {
     &:link,
     &:visited {

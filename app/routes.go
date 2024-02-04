@@ -42,6 +42,7 @@ func (a *App) Routes() http.Handler {
 
 					r.Get("/new", a.renderNewEvent)
 					r.Post("/", a.createEvent)
+					r.Delete("/{id}", a.deleteEvent)
 				})
 			})
 		})
@@ -152,6 +153,17 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = a.event.CreateFromRequest(req)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
+func (a *App) deleteEvent(w http.ResponseWriter, r *http.Request) {
+	eventId := chi.URLParam(r, "id")
+	err := a.event.Delete(eventId)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return

@@ -70,6 +70,15 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 	return nil
 }
 
+func (s *Service) Delete(eventId string) error {
+    err := s.store.DeleteById(eventId)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) error {
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
@@ -85,5 +94,5 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		return err
 	}
 
-    return nil
+	return nil
 }
