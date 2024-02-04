@@ -7,6 +7,7 @@ import (
 )
 
 type Config struct {
+    Env string `yaml:"env"`
 	DbConn   string `yaml:"db_conn"`
 	Port     int    `yaml:"port"`
     FbAppId string `yaml:"fb_app_id"`

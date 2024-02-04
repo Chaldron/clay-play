@@ -4,7 +4,7 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/jvbe"
+  bin = "./tmp/jvbe app"
   cmd = "npm run build --prefix ./ui && go build -o ./tmp/jvbe ./cmd/jvbe"
   delay = 1000
   exclude_dir = ["ui/node_modules", "assets", "tmp", "vendor", "testdata"]

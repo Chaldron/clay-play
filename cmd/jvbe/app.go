@@ -77,10 +77,16 @@ func (p *appProgram) run() error {
 	userStore := user.NewStore(db)
 	userService := user.NewService(userStore)
 
+	callbackRelativeUrl := "/auth/callback"
+	host := fmt.Sprintf("http://localhost:%d", conf.Port)
+	if conf.Env == "prod" {
+		host = "https://jvbe.matthewfan.io"
+	}
+
 	oauthConf := &oauth2.Config{
 		ClientID:     conf.FbAppId,
 		ClientSecret: conf.FbSecret,
-		RedirectURL:  "http://localhost:8080/auth/callback",
+		RedirectURL:  host + callbackRelativeUrl,
 		Scopes:       []string{"public_profile"},
 		Endpoint:     oauthFacebook.Endpoint,
 	}
