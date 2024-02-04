@@ -15,6 +15,8 @@ func (a *App) Routes() http.Handler {
 	publicFileServer := http.FileServer(http.Dir("./ui/public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
 
+	r.Get("/privacy", a.renderPrivacy)
+
 	r.Group(func(r chi.Router) {
 		r.Use(a.recoverPanic)
 		r.Use(a.session.LoadAndSave)
@@ -49,6 +51,10 @@ func (a *App) Routes() http.Handler {
 	})
 
 	return r
+}
+
+func (a *App) renderPrivacy(w http.ResponseWriter, r *http.Request) {
+	a.renderPage(w, "privacy.html", nil)
 }
 
 func (a *App) renderIndex(w http.ResponseWriter, r *http.Request) {
