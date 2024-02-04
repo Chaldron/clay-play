@@ -1,0 +1,12 @@
+.DS_Store
+tmp/
+
+ui/node_modules/
+ui/public/**/*.css*
+
+config.yaml
+
+.git
+.gitignore
+
+.air.toml
