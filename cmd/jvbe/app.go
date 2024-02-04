@@ -68,7 +68,7 @@ func (p *appProgram) run() error {
 
 	gob.Register(user.SessionUser{}) // needed for scs library
 	session := scs.New()
-	session.Lifetime = 7 * 24 * time.Hour // 1 week
+	session.Lifetime = 30 * 24 * time.Hour // 30 days
 	session.Store = sqlite3store.New(db.DB)
 
 	eventStore := event.NewStore(db)
