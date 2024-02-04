@@ -1,74 +1,48 @@
 package main
 
 import (
-	"encoding/gob"
-	"flag"
 	"fmt"
-	appPkg "github/mattfan00/jvbe/app"
-	"github/mattfan00/jvbe/auth"
-	"github/mattfan00/jvbe/config"
-	"github/mattfan00/jvbe/event"
-	"github/mattfan00/jvbe/facebook"
-	"github/mattfan00/jvbe/template"
-	"github/mattfan00/jvbe/user"
-	"net/http"
-	"time"
-
-	"github.com/alexedwards/scs/sqlite3store"
-	"github.com/alexedwards/scs/v2"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/oauth2"
-	oauthFacebook "golang.org/x/oauth2/facebook"
+	"os"
 )
 
+type program interface {
+	name() string
+	parse() error
+	run() error
+}
+
+func run() error {
+	if len(os.Args) < 2 {
+		return fmt.Errorf("specify a program")
+	}
+
+	programArgs := os.Args[2:]
+	appProgram := newAppProgram(programArgs)
+	dbProgram := newDbProgram(programArgs)
+
+	programs := []program{
+		appProgram,
+		dbProgram,
+	}
+
+	input := os.Args[1]
+	for _, prog := range programs {
+		if input == prog.name() {
+			err := prog.parse()
+			if err != nil {
+				return err
+			}
+			return prog.run()
+		}
+	}
+
+	return fmt.Errorf("unknown program: %s", input)
+}
+
 func main() {
-	configPath := flag.String("c", "./config.yaml", "path to config file")
-	conf, err := config.ReadFile(*configPath)
+	err := run()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
-
-	db, err := sqlx.Connect("sqlite3", conf.DbConn)
-	if err != nil {
-		panic(err)
-	}
-
-	templates, err := template.Generate()
-	if err != nil {
-		panic(err)
-	}
-
-	gob.Register(user.SessionUser{}) // needed for scs library
-	session := scs.New()
-	session.Lifetime = 7 * 24 * time.Hour // 1 week
-	session.Store = sqlite3store.New(db.DB)
-
-	eventStore := event.NewStore(db)
-	eventService := event.NewService(eventStore, templates)
-
-	userStore := user.NewStore(db)
-	userService := user.NewService(userStore)
-
-	oauthConf := &oauth2.Config{
-		ClientID:     conf.FbAppId,
-		ClientSecret: conf.FbSecret,
-		RedirectURL:  "http://localhost:8080/auth/callback",
-		Scopes:       []string{"public_profile"},
-		Endpoint:     oauthFacebook.Endpoint,
-	}
-	facebookService := facebook.NewService(oauthConf)
-
-	authService := auth.NewService(userService, facebookService)
-
-	app := appPkg.New(
-		eventService,
-		userService,
-		authService,
-
-		session,
-		templates,
-	)
-
-	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), app.Routes())
 }
