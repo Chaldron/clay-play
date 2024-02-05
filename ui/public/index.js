@@ -10,3 +10,6 @@ document.addEventListener("htmx:beforeSwap", (e) => {
     }
 })
 
+function formatTime(t) {
+    return dayjs(t).format("ddd, MMM DD h:mm A")
+}

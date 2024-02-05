@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Map map[string]*template.Template
@@ -33,6 +34,10 @@ func Generate() (map[string]*template.Template, error) {
 		name := strings.TrimPrefix(pagePath, pagesPath+"/")
 		t := template.New(name)
 
+		t.Funcs(template.FuncMap{
+			"jsTime": jsTime,
+		})
+
 		t, err = t.ParseFiles(
 			filepath.Join(rootPath, "base.html"),
 			filepath.Join(rootPath, "header.html"),
@@ -54,4 +59,8 @@ func Generate() (map[string]*template.Template, error) {
 	templates[filepath.Base(errorNotifFile)] = errorNotifTemplate
 
 	return templates, nil
+}
+
+func jsTime(t time.Time) string {
+	return t.Format("2006-01-02T15:04:05Z")
 }

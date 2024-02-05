@@ -13,7 +13,7 @@
 
         <div 
             class="field"
-            x-data="{ start: dayjs('{{.Event.Start}}').format('ddd, MMM DD h:mm A') }"
+            x-data="{ start: formatTime('{{jsTime .Start}}') }"
         >
             <img class="feather" src="/public/icons/calendar.svg" />
             <span x-text="start"></span>

@@ -11,7 +11,7 @@
         {{block "event" .}}
         <div
             class="event" 
-            x-data="{ start: dayjs('{{.Start}}').format('ddd, MMM DD h:mm A') }"
+            x-data="{ start: formatTime('{{jsTime .Start}}') }"
         >
             <div class="flex-1">
                 <div><strong>{{.Name}}</strong></div>
