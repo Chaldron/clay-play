@@ -78,9 +78,10 @@ func create() {
         CREATE TABLE IF NOT EXISTS user (
             id TEXT PRIMARY KEY,
             full_name TEXT NOT NULL,
-            external_id TEXT,
+            external_id TEXT NOT NULL,
             is_admin BOOLEAN NOT NULL,
-            created_at DATETIME NOT NULL
+            created_at DATETIME NOT NULL,
+            picture TEXT
         )
 
     `)
