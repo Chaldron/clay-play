@@ -4,6 +4,7 @@ import (
 	"fmt"
 	eventPkg "github/mattfan00/jvbe/event"
 	userPkg "github/mattfan00/jvbe/user"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -188,6 +189,8 @@ func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
+	log.Printf("callback: %s", r.URL.String())
+
 	state := r.URL.Query().Get("state")
 	if state != expectedStateVal {
 		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedStateVal, state)
