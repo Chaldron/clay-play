@@ -1,55 +1,72 @@
 package auth
 
 import (
-	"fmt"
-	"github/mattfan00/jvbe/facebook"
-	userPkg "github/mattfan00/jvbe/user"
+	"context"
+	"errors"
+	"github/mattfan00/jvbe/config"
+	"github/mattfan00/jvbe/user"
+
+	"github.com/coreos/go-oidc/v3/oidc"
+	"golang.org/x/oauth2"
 )
 
 type Service struct {
-	user     *userPkg.Service
-	facebook *facebook.Service
+	oidcProvider *oidc.Provider
+	oauth2Conf   *oauth2.Config
 }
 
-func NewService(user *userPkg.Service, facebook *facebook.Service) *Service {
+func NewService(conf *config.Config) (*Service, error) {
+	provider, err := oidc.NewProvider(
+		context.Background(),
+		"https://"+conf.Auth0.Domain+"/",
+	)
+	if err != nil {
+		return &Service{}, err
+	}
+
+	oauth2Conf := &oauth2.Config{
+		ClientID:     conf.Auth0.ClientId,
+		ClientSecret: conf.Auth0.ClientSecret,
+		RedirectURL:  conf.Auth0.CallbackUrl,
+		Scopes:       []string{oidc.ScopeOpenID, "profile"},
+		Endpoint:     provider.Endpoint(),
+	}
+
 	return &Service{
-		user:     user,
-		facebook: facebook,
-	}
+		oidcProvider: provider,
+		oauth2Conf:   oauth2Conf,
+	}, nil
 }
 
-// TODO: state should be random
-var expectedStateVal = "state"
-
-func (s *Service) ValidateState(state string) error {
-	if state != expectedStateVal {
-		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedStateVal, state)
-		return err
-	}
-
-    return nil
+func (s *Service) AuthCodeUrl(state string) string {
+	return s.oauth2Conf.AuthCodeURL(state)
 }
 
-func (s *Service) GetOauthLoginUrl() string {
-	fbLoginUrl := s.facebook.GenerateAuthCodeUrl(expectedStateVal)
-	return fbLoginUrl
-}
-
-func (s *Service) GetUserFromOauthCode(code string) (userPkg.User, error) {
-	token, err := s.facebook.GetAccessToken(code)
+func (s *Service) ExternalUserFromProvider(code string) (user.ExternalUser, error) {
+	token, err := s.oauth2Conf.Exchange(context.Background(), code)
 	if err != nil {
-		return userPkg.User{}, err
+		return user.ExternalUser{}, err
 	}
 
-	externalUser, err := s.facebook.GetUser(token)
-	if err != nil {
-		return userPkg.User{}, err
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		return user.ExternalUser{}, errors.New("no id_token field in oauth2 token")
 	}
 
-	u, err := s.user.HandleFromExternal(externalUser)
-	if err != nil {
-		return userPkg.User{}, err
+	oidcConfig := &oidc.Config{
+		ClientID: s.oauth2Conf.ClientID,
 	}
 
-	return u, nil
+	idToken, err := s.oidcProvider.Verifier(oidcConfig).Verify(context.Background(), rawIDToken)
+	if err != nil {
+		return user.ExternalUser{}, err
+	}
+
+	var externalUser user.ExternalUser
+	err = idToken.Claims(&externalUser)
+	if err != nil {
+		return user.ExternalUser{}, err
+	}
+
+	return externalUser, nil
 }

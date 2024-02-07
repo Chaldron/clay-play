@@ -8,7 +8,6 @@ import (
 	"github/mattfan00/jvbe/auth"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
-	"github/mattfan00/jvbe/facebook"
 	"github/mattfan00/jvbe/template"
 	"github/mattfan00/jvbe/user"
 	"log"
@@ -19,8 +18,6 @@ import (
 	"github.com/alexedwards/scs/v2"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
-	"golang.org/x/oauth2"
-	oauthFacebook "golang.org/x/oauth2/facebook"
 )
 
 type appProgram struct {
@@ -77,22 +74,10 @@ func (p *appProgram) run() error {
 	userStore := user.NewStore(db)
 	userService := user.NewService(userStore)
 
-	callbackRelativeUrl := "/auth/callback"
-	host := fmt.Sprintf("http://localhost:%d", conf.Port)
-	if conf.Env == "prod" {
-		host = "https://jvbe.matthewfan.io"
-	}
-
-	oauthConf := &oauth2.Config{
-		ClientID:     conf.FbAppId,
-		ClientSecret: conf.FbSecret,
-		RedirectURL:  host + callbackRelativeUrl,
-		Scopes:       []string{"public_profile"},
-		Endpoint:     oauthFacebook.Endpoint,
-	}
-	facebookService := facebook.NewService(oauthConf)
-
-	authService := auth.NewService(userService, facebookService)
+	authService, err := auth.NewService(conf)
+    if err != nil {
+        return err
+    }
 
 	app := appPkg.New(
 		eventService,

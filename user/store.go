@@ -25,8 +25,9 @@ func (u *User) ToSessionUser() SessionUser {
 }
 
 type ExternalUser struct {
-	Id       string
-	FullName string
+	Id       string `json:"sub"`
+	FullName string `json:"name"`
+	Picture  string `json:"picture"`
 }
 
 type SessionUser struct {

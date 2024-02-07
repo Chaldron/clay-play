@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	eventPkg "github/mattfan00/jvbe/event"
 	userPkg "github/mattfan00/jvbe/user"
 	"net/http"
@@ -178,22 +179,31 @@ func (a *App) deleteEvent(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
+var expectedStateVal = "state"
+
 func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
-	url := a.auth.GetOauthLoginUrl()
+	// TODO: state should be random
+	url := a.auth.AuthCodeUrl(expectedStateVal)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
-	err := a.auth.ValidateState(state)
-	if err != nil {
+	if state != expectedStateVal {
+		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedStateVal, state)
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
 	// now that we are succesfully authenticated, use the code we got back to get the access token
 	code := r.URL.Query().Get("code")
-	u, err := a.auth.GetUserFromOauthCode(code)
+	externalUser, err := a.auth.ExternalUserFromProvider(code)
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	u, err := a.user.HandleFromExternal(externalUser)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
