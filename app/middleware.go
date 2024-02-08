@@ -6,7 +6,7 @@ import (
 	user "github/mattfan00/jvbe/user"
 	"net/http"
 
-	"github.com/golang-jwt/jwt/v5"
+	_ "github.com/golang-jwt/jwt/v5"
 )
 
 func (a *App) sessionUser(r *http.Request) (user.SessionUser, bool) {
