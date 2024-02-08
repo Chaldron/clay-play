@@ -60,7 +60,7 @@ func (a *App) renderPrivacy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) renderIndex(w http.ResponseWriter, r *http.Request) {
-	if _, ok := a.getSessionUser(r); ok {
+	if _, ok := a.sessionUser(r); ok {
 		http.Redirect(w, r, "/home", http.StatusSeeOther)
 		return
 	}
@@ -180,7 +180,7 @@ func (a *App) deleteEvent(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
 
-var expectedStateVal = "state"
+var expectedStateVal = "hellothisisalongstate"
 
 func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
 	// TODO: state should be random
@@ -200,7 +200,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	// now that we are succesfully authenticated, use the code we got back to get the access token
 	code := r.URL.Query().Get("code")
-	externalUser, err := a.auth.ExternalUserFromProvider(code)
+	externalUser, accessToken, err := a.auth.InfoFromProvider(code)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
@@ -221,6 +221,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.session.Put(r.Context(), "user", &sessionUser)
+	a.session.Put(r.Context(), "accessToken", &accessToken)
 
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }

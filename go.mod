@@ -9,6 +9,7 @@ require (
 	github.com/alexedwards/scs/v2 v2.7.0 // indirect
 	github.com/coreos/go-oidc/v3 v3.9.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/gorilla/schema v1.2.1 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect

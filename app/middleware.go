@@ -5,17 +5,38 @@ import (
 	"fmt"
 	user "github/mattfan00/jvbe/user"
 	"net/http"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
-func (a *App) getSessionUser(r *http.Request) (user.SessionUser, bool) {
+func (a *App) sessionUser(r *http.Request) (user.SessionUser, bool) {
 	u, ok := a.session.Get(r.Context(), "user").(user.SessionUser)
-	isAuth := ok && u.IsAuthenticated()
-	return u, isAuth
+	o := ok && u.IsAuthenticated()
+	return u, o
 }
 
+func (a *App) accessToken(r *http.Request) (string, bool) {
+	at := a.session.GetString(r.Context(), "accessToken")
+	return at, at != ""
+}
+
+// TODO: clear sessions if auth fails
 func (a *App) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := a.getSessionUser(r); ok {
+		_, sessionUserOk := a.sessionUser(r)
+		_, accessTokenOk := a.accessToken(r)
+
+		/*
+		   token, _ := jwt.Parse(accessToken, func(t *jwt.Token) (interface{}, error) { return "", nil })
+		       if err != nil {
+		           a.renderErrorPage(w, err, http.StatusForbidden)
+		           return
+		       }
+
+		   fmt.Printf("%+v\n", token.Claims)
+		*/
+
+		if sessionUserOk && accessTokenOk {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusForbidden
@@ -27,7 +48,7 @@ func (a *App) requireAuth(next http.Handler) http.Handler {
 
 func (a *App) requireAdmin(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if u, _ := a.getSessionUser(r); u.IsAdmin {
+		if u, _ := a.sessionUser(r); u.IsAdmin {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusUnauthorized
