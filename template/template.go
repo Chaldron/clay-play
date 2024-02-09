@@ -31,7 +31,7 @@ func Generate() (map[string]*template.Template, error) {
 	}
 
 	for _, pagePath := range pages {
-		name := strings.TrimPrefix(pagePath, pagesPath+"/")
+		name := pagePath[len(pagesPath) + 1:]
 		t := template.New(name)
 
 		t.Funcs(template.FuncMap{
