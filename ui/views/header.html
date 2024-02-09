@@ -7,9 +7,9 @@
         <ul>
             <li><a href="/home">Home</a></li>
             {{if .User.IsAuthenticated}}
-            <li><a href="/auth/logout">Logout</a></li>
+            <li><a href="/auth/logout" hx-boost="false">Logout</a></li>
             {{end}}
-            {{if .User.IsAdmin}}
+            {{if .User.CanCreateEvent}}
             <li><a href="/event/new">New Event</a></li>
             {{end}}
         </ul>

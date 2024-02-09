@@ -11,12 +11,13 @@ type Oauth struct {
 	ClientId     string `yaml:"client_id"`
 	ClientSecret string `yaml:"client_secret"`
 	CallbackUrl  string `yaml:"callback_url"`
+    LogoutRedirectUrl string `yaml:"logout_redirect_url"`
 }
 
 type Config struct {
 	DbConn string `yaml:"db_conn"`
 	Port   int    `yaml:"port"`
-	Oauth  Oauth `yaml:"oauth"`
+	Oauth  Oauth  `yaml:"oauth"`
 }
 
 func ReadFile(src string) (*Config, error) {

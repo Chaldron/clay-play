@@ -75,15 +75,16 @@ func (p *appProgram) run() error {
 	userService := user.NewService(userStore)
 
 	authService, err := auth.NewService(conf)
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
 	app := appPkg.New(
 		eventService,
 		userService,
 		authService,
 
+        conf,
 		session,
 		templates,
 	)

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	eventPkg "github/mattfan00/jvbe/event"
 	userPkg "github/mattfan00/jvbe/user"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/schema"
 )
 
@@ -40,14 +42,9 @@ func (a *App) Routes() http.Handler {
 			r.Route("/event", func(r chi.Router) {
 				r.Get("/{id}", a.renderEventDetails)
 				r.Post("/respond", a.respondEvent)
-
-				r.Group(func(r chi.Router) {
-					r.Use(a.requireAdmin)
-
-					r.Get("/new", a.renderNewEvent)
-					r.Post("/", a.createEvent)
-					r.Delete("/{id}", a.deleteEvent)
-				})
+				r.With(a.canCreateEvent).Get("/new", a.renderNewEvent)
+				r.With(a.canCreateEvent).Post("/", a.createEvent)
+				r.With(a.canDeleteEvent).Delete("/{id}", a.deleteEvent)
 			})
 		})
 	})
@@ -188,6 +185,11 @@ func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
+type customClaims struct {
+	Permissions []string `json:"permissions"`
+	jwt.RegisteredClaims
+}
+
 func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	log.Printf("callback: %s", r.URL.String())
 
@@ -214,6 +216,22 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	sessionUser := u.ToSessionUser()
 
+	// dont verify token since this should have come from oauth and I don't want to deal with verifying right now
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{"RS256"}))
+	token, _, err := parser.ParseUnverified(accessToken, &customClaims{})
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	claims, ok := token.Claims.(*customClaims)
+	if !ok {
+		a.renderErrorPage(w, errors.New("cannot get claims"), http.StatusInternalServerError)
+		return
+	}
+
+	sessionUser.Permissions = claims.Permissions
+
 	err = a.session.RenewToken(r.Context())
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
@@ -221,7 +239,6 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	a.session.Put(r.Context(), "user", &sessionUser)
-	a.session.Put(r.Context(), "accessToken", &accessToken)
 
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
@@ -233,7 +250,6 @@ func (a *App) handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.session.Remove(r.Context(), "user")
-
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	redirect := fmt.Sprintf("https://%s/logout?redirect=%s", a.conf.Oauth.Domain, a.conf.Oauth.LogoutRedirectUrl)
+	http.Redirect(w, r, redirect, http.StatusSeeOther)
 }

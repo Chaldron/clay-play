@@ -5,8 +5,6 @@ import (
 	"fmt"
 	user "github/mattfan00/jvbe/user"
 	"net/http"
-
-	_ "github.com/golang-jwt/jwt/v5"
 )
 
 func (a *App) sessionUser(r *http.Request) (user.SessionUser, bool) {
@@ -15,28 +13,12 @@ func (a *App) sessionUser(r *http.Request) (user.SessionUser, bool) {
 	return u, o
 }
 
-func (a *App) accessToken(r *http.Request) (string, bool) {
-	at := a.session.GetString(r.Context(), "accessToken")
-	return at, at != ""
-}
-
 // TODO: clear sessions if auth fails
 func (a *App) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, sessionUserOk := a.sessionUser(r)
-		_, accessTokenOk := a.accessToken(r)
+		_, ok := a.sessionUser(r)
 
-		/*
-		   token, _ := jwt.Parse(accessToken, func(t *jwt.Token) (interface{}, error) { return "", nil })
-		       if err != nil {
-		           a.renderErrorPage(w, err, http.StatusForbidden)
-		           return
-		       }
-
-		   fmt.Printf("%+v\n", token.Claims)
-		*/
-
-		if sessionUserOk && accessTokenOk {
+		if ok {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusForbidden
@@ -46,9 +28,21 @@ func (a *App) requireAuth(next http.Handler) http.Handler {
 	})
 }
 
-func (a *App) requireAdmin(next http.Handler) http.Handler {
+func (a *App) canCreateEvent(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if u, _ := a.sessionUser(r); u.IsAdmin {
+		if u, _ := a.sessionUser(r); u.CanCreateEvent() {
+			next.ServeHTTP(w, r)
+		} else {
+			status := http.StatusUnauthorized
+			a.renderErrorPage(w, errors.New(http.StatusText(status)), status)
+			return
+		}
+	})
+}
+
+func (a *App) canDeleteEvent(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, _ := a.sessionUser(r); u.CanDeleteEvent() {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusUnauthorized

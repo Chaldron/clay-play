@@ -3,6 +3,7 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"slices"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -19,8 +20,7 @@ type User struct {
 
 func (u *User) ToSessionUser() SessionUser {
 	return SessionUser{
-		Id:      u.Id,
-		IsAdmin: u.IsAdmin,
+		Id: u.Id,
 	}
 }
 
@@ -31,12 +31,24 @@ type ExternalUser struct {
 }
 
 type SessionUser struct {
-	Id      string
-	IsAdmin bool
+	Id          string
+	Permissions []string
 }
 
 func (u SessionUser) IsAuthenticated() bool {
 	return u.Id != ""
+}
+
+func (u SessionUser) hasPermission(p string) bool {
+	return slices.Contains[[]string](u.Permissions, p)
+}
+
+func (u SessionUser) CanCreateEvent() bool {
+	return u.hasPermission("create:event")
+}
+
+func (u SessionUser) CanDeleteEvent() bool {
+	return u.hasPermission("delete:event")
 }
 
 type Store struct {

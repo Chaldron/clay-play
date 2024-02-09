@@ -3,6 +3,7 @@ package app
 import (
 	"bytes"
 	"github/mattfan00/jvbe/auth"
+	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
 	"github/mattfan00/jvbe/template"
 	"github/mattfan00/jvbe/user"
@@ -16,6 +17,7 @@ type App struct {
 	user  *user.Service
 	auth  *auth.Service
 
+    conf *config.Config
 	session   *scs.SessionManager
 	templates template.Map
 }
@@ -25,6 +27,7 @@ func New(
 	user *user.Service,
 	auth *auth.Service,
 
+	conf *config.Config,
 	session *scs.SessionManager,
 	templates template.Map,
 ) *App {
@@ -33,6 +36,7 @@ func New(
 		user:  user,
 		auth:  auth,
 
+		conf:      conf,
 		session:   session,
 		templates: templates,
 	}
