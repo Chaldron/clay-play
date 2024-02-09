@@ -17,9 +17,9 @@ type App struct {
 	user  *user.Service
 	auth  *auth.Service
 
-    conf *config.Config
+	conf      *config.Config
 	session   *scs.SessionManager
-	templates template.Map
+	templates template.TemplateMap
 }
 
 func New(
@@ -29,7 +29,7 @@ func New(
 
 	conf *config.Config,
 	session *scs.SessionManager,
-	templates template.Map,
+	templates template.TemplateMap,
 ) *App {
 	return &App{
 		event: event,

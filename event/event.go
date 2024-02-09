@@ -8,11 +8,11 @@ import (
 
 type Service struct {
 	store             *Store
-	templates         template.Map
+	templates         template.TemplateMap
 	eventResponseLock sync.Mutex
 }
 
-func NewService(store *Store, templates template.Map) *Service {
+func NewService(store *Store, templates template.TemplateMap) *Service {
 	return &Service{
 		store:     store,
 		templates: templates,
@@ -71,12 +71,12 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 }
 
 func (s *Service) Delete(eventId string) error {
-    err := s.store.DeleteById(eventId)
-    if err != nil {
-        return err
-    }
+	err := s.store.DeleteById(eventId)
+	if err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) error {
