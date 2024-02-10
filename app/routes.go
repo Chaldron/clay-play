@@ -42,6 +42,7 @@ func (a *App) Routes() http.Handler {
 			r.Route("/event", func(r chi.Router) {
 				r.Get("/{id}", a.renderEventDetails)
 				r.Post("/respond", a.respondEvent)
+
 				r.With(a.canCreateEvent).Get("/new", a.renderNewEvent)
 				r.With(a.canCreateEvent).Post("/", a.createEvent)
 				r.With(a.canDeleteEvent).Delete("/{id}", a.deleteEvent)
@@ -98,6 +99,7 @@ func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 type eventDetailsData struct {
 	BaseData
 	Event eventPkg.EventDetailed
+	MaxAttendeeCount int
 }
 
 func (a *App) renderEventDetails(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +116,8 @@ func (a *App) renderEventDetails(w http.ResponseWriter, r *http.Request) {
 		BaseData: BaseData{
 			User: u,
 		},
-		Event: e,
+		Event:            e,
+		MaxAttendeeCount: eventPkg.MaxAttendeeCount,
 	})
 }
 
@@ -128,7 +131,9 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req eventPkg.RespondEventRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	err = decoder.Decode(&req, r.PostForm)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return

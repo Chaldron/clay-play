@@ -55,9 +55,20 @@ func (p *dbProgram) run() error {
 	switch action {
 	case "create":
 		create()
+	case "mod1":
+		mod1()
 	}
 
 	return nil
+}
+
+func colExists(table string, col string) bool {
+	_, err := db.Query(fmt.Sprintf("SELECT %s FROM %s", col, table))
+	if err == nil {
+		return true
+	} else {
+		return false
+	}
 }
 
 func create() {
@@ -79,7 +90,6 @@ func create() {
             id TEXT PRIMARY KEY,
             full_name TEXT NOT NULL,
             external_id TEXT NOT NULL,
-            is_admin BOOLEAN NOT NULL,
             created_at DATETIME NOT NULL,
             picture TEXT
         )
@@ -106,10 +116,36 @@ func create() {
         CREATE TABLE IF NOT EXISTS event_response (
             event_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
-            going BOOLEAN NOT NULL,
             updated_at DATETIME NOT NULL,
+            attendee_count INT NOT NULL DEFAULT 0,
             PRIMARY KEY (event_id, user_id)
         )   
     `)
 	log.Printf("created table: event_response")
+}
+
+func mod1() {
+	if ok := colExists("user", "is_admin"); ok {
+		db.MustExec(`
+            ALTER TABLE user 
+            DROP COLUMN is_admin
+        `)
+		log.Printf("dropped is_admin from user")
+	}
+
+	if ok := colExists("event_response", "going"); ok {
+		db.MustExec(`
+            ALTER TABLE event_response
+            DROP COLUMN going
+        `)
+		log.Printf("dropped going from event_response")
+	}
+
+	if ok := colExists("event_response", "attendee_count"); !ok {
+		db.MustExec(`
+            ALTER TABLE event_response
+            ADD COLUMN attendee_count INT NOT NULL DEFAULT 0
+        `)
+		log.Printf("added attendee_count to event_response")
+	}
 }

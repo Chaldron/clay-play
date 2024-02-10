@@ -30,11 +30,12 @@ func Generate() (map[string]*template.Template, error) {
 	}
 
 	for _, pagePath := range pages {
-		name := pagePath[len(pagesPath) + 1:]
+		name := pagePath[len(pagesPath)+1:]
 		t := template.New(name)
 
 		t.Funcs(template.FuncMap{
 			"jsTime": jsTime,
+            "l": l,
 		})
 
 		t, err = t.ParseFiles(
@@ -62,4 +63,13 @@ func Generate() (map[string]*template.Template, error) {
 
 func jsTime(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05Z")
+}
+
+func l(i int) []int {
+	r := []int{}
+	for j := 0; j < i; j++ {
+		r = append(r, j+1)
+	}
+
+	return r
 }

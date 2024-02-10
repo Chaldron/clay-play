@@ -1,6 +1,8 @@
 package event
 
 import (
+	"errors"
+	"fmt"
 	"github/mattfan00/jvbe/template"
 	"sync"
 	"time"
@@ -29,7 +31,7 @@ func (s *Service) GetCurrent(userId string) ([]Event, error) {
 }
 
 func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
-	event, err := s.store.GetById(eventId, userId)
+	event, err := s.store.GetById(eventId)
 	if err != nil {
 		return EventDetailed{}, err
 	}
@@ -39,9 +41,15 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 		return EventDetailed{}, err
 	}
 
+	userResponse, err := s.store.GetUserResponse(eventId, userId)
+	if err != nil {
+		return EventDetailed{}, err
+	}
+
 	e := EventDetailed{
-		Event:          event,
-		EventResponses: responses,
+		Event:        event,
+		UserResponse: userResponse,
+		Responses:    responses,
 	}
 
 	return e, nil
@@ -71,22 +79,32 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 }
 
 func (s *Service) Delete(eventId string) error {
-    err := s.store.DeleteById(eventId)
-    if err != nil {
-        return err
-    }
+	err := s.store.DeleteById(eventId)
+	if err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
+
+var MaxAttendeeCount = 2
 
 func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) error {
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
 
+	if req.AttendeeCount < 0 {
+		return errors.New("cannot have less than 0 attendees")
+	}
+
+	if req.AttendeeCount > MaxAttendeeCount {
+		return fmt.Errorf("maximum of %d plus one(s) allowed", MaxAttendeeCount - 1)
+	}
+
 	e := EventResponse{
-		EventId: req.Id,
-		UserId:  userId,
-		Going:   req.Going,
+		EventId:       req.Id,
+		UserId:        userId,
+		AttendeeCount: req.AttendeeCount,
 	}
 
 	err := s.store.UpdateResponse(e)

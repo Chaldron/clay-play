@@ -14,7 +14,6 @@ type User struct {
 	Id         string    `db:"id"`
 	FullName   string    `db:"full_name"`
 	ExternalId string    `db:"external_id"`
-	IsAdmin    bool      `db:"is_admin"`
 	CreatedAt  time.Time `db:"created_at"`
 }
 
@@ -67,7 +66,7 @@ var (
 
 func (s *Store) GetByExternalId(externalId string) (User, error) {
 	stmt := `
-        SELECT id, is_admin FROM user
+        SELECT id FROM user
         WHERE external_id = ?
     `
 	args := []any{externalId}
@@ -85,7 +84,7 @@ func (s *Store) GetByExternalId(externalId string) (User, error) {
 
 func (s *Store) GetById(id string) (User, error) {
 	stmt := `
-        SELECT id, full_name, external_id, is_admin, created_at FROM user
+        SELECT id, full_name, external_id, created_at FROM user
         WHERE id = ?
     `
 	args := []any{id}
@@ -106,17 +105,15 @@ func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
-	isAdmin := false
 
 	stmt := `
-        INSERT INTO user (id, full_name, external_id, is_admin, created_at)
+        INSERT INTO user (id, full_name, external_id, created_at)
         VALUES (?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
 		externalUser.FullName,
 		externalUser.Id,
-		isAdmin,
 		time.Now().UTC(),
 	}
 

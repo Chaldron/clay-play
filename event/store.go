@@ -1,6 +1,7 @@
 package event
 
 import (
+	"database/sql"
 	"errors"
 	"github/mattfan00/jvbe/user"
 	"time"
@@ -10,18 +11,17 @@ import (
 )
 
 type Event struct {
-	Id            string    `db:"id"`
-	Name          string    `db:"name"`
-	Capacity      int       `db:"capacity"`
-	Start         time.Time `db:"start"`
-	Location      string    `db:"location"`
-	CreatedAt     time.Time `db:"created_at"`
-	AttendeeCount int       `db:"attendee_count"`
-	EventResponse
+	Id                 string    `db:"id"`
+	Name               string    `db:"name"`
+	Capacity           int       `db:"capacity"`
+	Start              time.Time `db:"start"`
+	Location           string    `db:"location"`
+	CreatedAt          time.Time `db:"created_at"`
+	TotalAttendeeCount int       `db:"total_attendee_count"`
 }
 
 func (e Event) SpotsLeft() int {
-	return e.Capacity - e.AttendeeCount
+	return e.Capacity - e.TotalAttendeeCount
 }
 
 type CreateEventRequest struct {
@@ -33,21 +33,26 @@ type CreateEventRequest struct {
 }
 
 type EventResponse struct {
-	EventId   string    `db:"event_id"`
-	UserId    string    `db:"user_id"`
-	Going     bool      `db:"going"`
-	UpdatedAt time.Time `db:"updated_at"`
+	EventId       string    `db:"event_id"`
+	UserId        string    `db:"user_id"`
+	UpdatedAt     time.Time `db:"updated_at"`
+	AttendeeCount int       `db:"attendee_count"`
 	user.User
 }
 
+func (e EventResponse) PlusOnes() int {
+	return e.AttendeeCount - 1
+}
+
 type RespondEventRequest struct {
-	Id    string `schema:"id"`
-	Going bool   `schema:"going"`
+	Id            string `schema:"id"`
+	AttendeeCount int    `schema:"attendee_count"`
 }
 
 type EventDetailed struct {
 	Event
-	EventResponses []EventResponse
+	UserResponse *EventResponse
+	Responses    []EventResponse
 }
 
 type Store struct {
@@ -87,14 +92,10 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
 	stmt := `
         SELECT 
             e.id, e.name, e.capacity, e.start, e.location, e.created_at
-            , COALESCE(er.going, false) AS going
-            , COALESCE (ec.attendee_count, 0) AS attendee_count
+		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
         FROM event AS e
-        LEFT JOIN event_response AS er ON e.id = er.event_id 
-            AND er.user_id = ?
         LEFT JOIN (
-            SELECT event_id, COUNT(*) AS attendee_count FROM event_response
-            WHERE going = TRUE 
+            SELECT event_id, SUM(attendee_count) AS total_attendee_count FROM event_response
             GROUP BY event_id
         ) AS ec ON e.id = ec.event_id
         WHERE datetime() <= datetime(start) AND is_deleted = FALSE
@@ -111,27 +112,24 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
 	return events, nil
 }
 
-func prepareGetById(eventId string, userId string) (string, []any) {
+func prepareGetById(eventId string) (string, []any) {
 	stmt := `
-        SELECT 
+        SELECT
             e.id, e.name, e.capacity, e.start, e.location, e.created_at
-            , COALESCE(er.going, false) AS going
-            , (
-                SELECT COUNT(*) FROM event_response
-                WHERE event_id = ? AND going = TRUE 
-            ) AS attendee_count
+            , COALESCE((
+                SELECT SUM(attendee_count) FROM event_response
+                WHERE event_id = ?
+            ), 0) AS total_attendee_count
         FROM event AS e
-        LEFT JOIN event_response AS er ON e.id = er.event_id
-            AND er.user_id = ?
         WHERE id = ? AND is_deleted = FALSE
-    ` 
-	args := []any{eventId, userId, eventId}
+    `
+	args := []any{eventId, eventId}
 
 	return stmt, args
 }
 
-func (s *Store) GetById(eventId string, userId string) (Event, error) {
-	stmt, args := prepareGetById(eventId, userId)
+func (s *Store) GetById(eventId string) (Event, error) {
+	stmt, args := prepareGetById(eventId)
 
 	var event Event
 	err := s.db.Get(&event, stmt, args...)
@@ -151,17 +149,17 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 	defer tx.Rollback()
 
 	stmt := `
-        INSERT INTO event_response (event_id, user_id, going, updated_at)
+        INSERT INTO event_response (event_id, user_id, updated_at, attendee_count)
         VALUES (?, ?, ?, ?)
         ON CONFLICT (event_id, user_id) DO UPDATE SET
-            going = excluded.going,
-            updated_at = excluded.updated_at
+            updated_at = excluded.updated_at,
+            attendee_count = excluded.attendee_count
     `
 	args := []any{
 		e.EventId,
 		e.UserId,
-		e.Going,
 		time.Now().UTC(),
+		e.AttendeeCount,
 	}
 
 	_, err = tx.Exec(stmt, args...)
@@ -169,7 +167,7 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 		return err
 	}
 
-	stmt, args = prepareGetById(e.EventId, e.UserId)
+	stmt, args = prepareGetById(e.EventId)
 
 	var event Event
 	err = tx.Get(&event, stmt, args...)
@@ -191,9 +189,10 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 
 func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	stmt := `
-        SELECT er.event_id, er.user_id, er.going, u.full_name FROM event_response AS er
+        SELECT er.event_id, er.user_id, er.attendee_count, u.full_name 
+        FROM event_response AS er
         INNER JOIN user AS u ON er.user_id = u.id
-        WHERE er.event_id = ? AND er.going = TRUE
+        WHERE er.event_id = ? AND er.attendee_count > 0
     `
 	args := []any{eventId}
 
@@ -204,6 +203,25 @@ func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	}
 
 	return responses, nil
+}
+
+func (s *Store) GetUserResponse(eventId string, userId string) (*EventResponse, error) {
+	stmt := `
+        SELECT event_id, attendee_count
+        FROM event_response
+        WHERE event_id = ? AND user_id = ?
+    `
+	args := []any{eventId, userId}
+
+	var response EventResponse
+	err := s.db.Get(&response, stmt, args...)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
 }
 
 func (s *Store) DeleteById(id string) error {

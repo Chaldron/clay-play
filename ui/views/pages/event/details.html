@@ -5,63 +5,104 @@
 <main class="container-fluid">
     <div id="error"></div>
 
-    {{with .Event}}
     <section
         class="event_details"
     >
-        <h3>{{.Name}}</h3>
+        <h3>{{.Event.Name}}</h3>
 
         <div 
             class="field"
-            x-data="{ start: formatTime('{{jsTime .Start}}') }"
+            x-data="{ start: formatTime('{{jsTime .Event.Start}}') }"
         >
             <img class="feather" src="/public/icons/calendar.svg" />
             <span x-text="start"></span>
         </div>
         <div class="field">
             <img class="feather" src="/public/icons/map-pin.svg" />
-            <span>{{.Location}}</span>
+            <span>{{.Event.Location}}</span>
         </div>
+        <div class="field">
+            <img class="feather" src="/public/icons/map-pin.svg" />
+            <span>{{.Event.Capacity}} spots · {{.Event.SpotsLeft}} left</span>
+        </div>
+
         <div class="register">
             <form>
-                <input type="hidden" name="id" value="{{.Id}}" />
-                {{if .EventResponse.Going}} 
-                <input type="hidden" name="going" value="false" />
+                <input type="hidden" name="id" value="{{.Event.Id}}" />
+                {{if and (.Event.UserResponse) (gt .Event.UserResponse.AttendeeCount 0)}}
+                <input type="hidden" name="attendee_count" value="0" />
+                <div role="group">
+                    <button 
+                        class="outline"
+                        hx-post="/event/respond"
+                        hx-target="body"
+                    >
+                        Nope
+                    </button>
+                    <button class="no">Going</button>
+                </div>
                 {{else}}
-                <input type="hidden" name="going" value="true" />
+                <input type="hidden" name="attendee_count" value="1" />
+                <div role="group">
+                    <button class="no">Nope</button>
+                    <button 
+                        class="outline"
+                        hx-post="/event/respond"
+                        hx-target="body"
+                        {{if le .Event.SpotsLeft 0}}disabled{{end}}
+                    >
+                        Going
+                    </button>
+                </div>
                 {{end}}
-
-                <button 
-                    id="event_details_register"
-                    hx-post="/event/respond"
-                    hx-target="body"
-                    {{if and (le .SpotsLeft 0) (not .EventResponse.Going)}}disabled{{end}}
-                >
-                    {{if .EventResponse.Going}} 
-                    Going
-                    {{else}}
-                    Not going
-                    {{end}}
-                </button>
             </form>
 
-            <div>{{.SpotsLeft}} spots left</div>
+            <form>
+                <input type="hidden" name="id" value="{{.Event.Id}}" />
+                {{if gt .Event.SpotsLeft 0}}
+                    {{if and (.Event.UserResponse) (eq .Event.UserResponse.AttendeeCount 1)}}
+                    <input type="hidden" name="attendee_count" value="2" />
+                    <button 
+                        class="outline"
+                        hx-post="/event/respond"
+                        hx-target="body"
+                    >
+                        +1
+                    </button>
+                    {{else if and (.Event.UserResponse) (eq .Event.UserResponse.AttendeeCount 2)}}
+                    <input type="hidden" name="attendee_count" value="1" />
+                    <button
+                        hx-post="/event/respond"
+                        hx-target="body"
+                    >
+                        +1
+                    </button>
+                    {{end}}
+                {{end}}
+            </form>
         </div>
     </section>
     <section class="event_attendees">
-        <h5>Attendees ({{len .EventResponses}})</h5>
+        <h5>Attendees ({{.Event.TotalAttendeeCount}})</h5>
 
-        {{if gt (len .EventResponses) (0)}}
+        {{if gt (len .Event.Responses) (0)}}
         <article>
             <table>
-            {{range .EventResponses}}
-                <tr><td>{{.User.FullName}}</td></tr>
+            {{range .Event.Responses}}
+                <tr>
+                    <td>
+                        {{.User.FullName}} 
+                        {{if gt .AttendeeCount 1}}
+                        (+{{.PlusOnes}})
+                        {{end}}
+                    </td>
+                </tr>
             {{end}}
             </table>
         </article>
         {{end}}
     </section>
-    {{if $.User.CanDeleteEvent}}
+    {{if .User.CanDeleteEvent}}
     <section>
         <h5>Admin tools</h5>
 
@@ -70,12 +111,11 @@
             hx-push-url="true"
             hx-target="body"
             hx-confirm="Are you sure you want to delete this event?"
-            hx-delete="/event/{{.Id}}"
+            hx-delete="/event/{{.Event.Id}}"
         >
             Delete
         </span>
     </section>
-    {{end}}
     {{end}}
 </main>
 {{end}}
