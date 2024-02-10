@@ -26,4 +26,4 @@
 ### run with live reloading
 If you don't want to run the above commands every time a change occurs, you can do the following for live reloading
 1. Install [air](https://github.com/cosmtrek/air): `go install github.com/cosmtrek/air@latest`
-1. `air -c air.toml`
+1. `air -c .air.toml`
