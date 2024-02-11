@@ -35,6 +35,7 @@ type CreateEventRequest struct {
 type EventResponse struct {
 	EventId       string    `db:"event_id"`
 	UserId        string    `db:"user_id"`
+	CreatedAt     time.Time `db:"created_at"`
 	UpdatedAt     time.Time `db:"updated_at"`
 	AttendeeCount int       `db:"attendee_count"`
 	user.User
@@ -149,16 +150,19 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 	defer tx.Rollback()
 
 	stmt := `
-        INSERT INTO event_response (event_id, user_id, updated_at, attendee_count)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO event_response (event_id, user_id, created_at, updated_at, attendee_count)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT (event_id, user_id) DO UPDATE SET
             updated_at = excluded.updated_at,
             attendee_count = excluded.attendee_count
     `
+
+	now := time.Now().UTC()
 	args := []any{
 		e.EventId,
 		e.UserId,
-		time.Now().UTC(),
+		now,
+		now,
 		e.AttendeeCount,
 	}
 
@@ -187,18 +191,45 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 	return nil
 }
 
+func (s *Store) DeleteResponse(eventId string, userId string) error {
+	stmt := `
+        DELETE FROM event_response
+        WHERE event_id = ? AND user_id = ?
+    `
+	args := []any{eventId, userId}
+
+	_, err := s.db.Exec(stmt, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	stmt := `
-        SELECT er.event_id, er.user_id, er.attendee_count, u.full_name 
+        SELECT er.event_id, er.user_id, er.attendee_count, u.full_name, er.created_at
         FROM event_response AS er
         INNER JOIN user AS u ON er.user_id = u.id
-        WHERE er.event_id = ? AND er.attendee_count > 0
+        WHERE er.event_id = ?
+        ORDER BY er.created_at
     `
 	args := []any{eventId}
 
-	var responses []EventResponse
-	err := s.db.Select(&responses, stmt, args...)
+	rows, err := s.db.Query(stmt, args...)
 	if err != nil {
+		return []EventResponse{}, err
+	}
+	defer rows.Close()
+	var responses []EventResponse
+	for rows.Next() {
+		var i EventResponse
+		if err := rows.Scan(&i.EventId, &i.UserId, &i.AttendeeCount, &i.FullName, &i.CreatedAt); err != nil {
+			return []EventResponse{}, err
+		}
+		responses = append(responses, i)
+	}
+	if err := rows.Err(); err != nil {
 		return []EventResponse{}, err
 	}
 

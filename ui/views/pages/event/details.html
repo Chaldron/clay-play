@@ -78,6 +78,8 @@
                         +1
                     </button>
                     {{end}}
+                {{else}}
+                    <button class="outline" disabled>+1</button>
                 {{end}}
             </form>
         </div>
@@ -88,13 +90,16 @@
         {{if gt (len .Event.Responses) (0)}}
         <article>
             <table>
-            {{range .Event.Responses}}
+            {{range $i, $r := .Event.Responses}}
                 <tr>
+                    <td>{{add $i 1}}</td>
                     <td>
-                        {{.User.FullName}} 
-                        {{if gt .AttendeeCount 1}}
-                        (+{{.PlusOnes}})
+                        <span>{{$r.User.FullName}}</span>
+                        <span>
+                        {{if gt $r.AttendeeCount 1}}
+                         (+{{$r.PlusOnes}})
                         {{end}}
+                        </span>
                     </td>
                 </tr>
             {{end}}

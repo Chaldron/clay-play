@@ -98,18 +98,26 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 	}
 
 	if req.AttendeeCount > MaxAttendeeCount {
-		return fmt.Errorf("maximum of %d plus one(s) allowed", MaxAttendeeCount - 1)
+		return fmt.Errorf("maximum of %d plus one(s) allowed", MaxAttendeeCount-1)
 	}
 
-	e := EventResponse{
-		EventId:       req.Id,
-		UserId:        userId,
-		AttendeeCount: req.AttendeeCount,
-	}
+	// just delete the response, I don't think it really matters to keep it in DB
+	if req.AttendeeCount == 0 {
+		err := s.store.DeleteResponse(req.Id, userId)
+		if err != nil {
+			return err
+		}
+	} else {
+		e := EventResponse{
+			EventId:       req.Id,
+			UserId:        userId,
+			AttendeeCount: req.AttendeeCount,
+		}
 
-	err := s.store.UpdateResponse(e)
-	if err != nil {
-		return err
+		err := s.store.UpdateResponse(e)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

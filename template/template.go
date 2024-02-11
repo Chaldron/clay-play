@@ -35,7 +35,8 @@ func Generate() (TemplateMap, error) {
 
 		t.Funcs(template.FuncMap{
 			"jsTime": jsTime,
-            "l": l,
+			"l":      l,
+            "add": add,
 		})
 
 		t, err = t.ParseFiles(
@@ -72,4 +73,8 @@ func l(i int) []int {
 	}
 
 	return r
+}
+
+func add(x int, y int) int {
+	return x + y
 }

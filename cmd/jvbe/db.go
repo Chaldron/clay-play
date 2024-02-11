@@ -57,6 +57,8 @@ func (p *dbProgram) run() error {
 		create()
 	case "mod1":
 		mod1()
+	case "mod2":
+		mod2()
 	}
 
 	return nil
@@ -116,6 +118,7 @@ func create() {
         CREATE TABLE IF NOT EXISTS event_response (
             event_id TEXT NOT NULL,
             user_id TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             attendee_count INT NOT NULL DEFAULT 0,
             PRIMARY KEY (event_id, user_id)
@@ -147,5 +150,27 @@ func mod1() {
             ADD COLUMN attendee_count INT NOT NULL DEFAULT 0
         `)
 		log.Printf("added attendee_count to event_response")
+	}
+}
+
+func mod2() {
+	if ok := colExists("event_response", "created_at"); !ok {
+		db.MustExec(`
+            DROP TABLE IF EXISTS event_response
+        `)
+		log.Printf("dropped event_response")
+
+		db.MustExec(`
+            CREATE TABLE IF NOT EXISTS event_response (
+                event_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                attendee_count INT NOT NULL DEFAULT 0,
+                PRIMARY KEY (event_id, user_id)
+            )   
+        `)
+
+		log.Printf("created table event_response with new created_at column")
 	}
 }

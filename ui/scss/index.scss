@@ -137,6 +137,10 @@ article {
     tbody > tr:last-child > td {
       border-bottom: 0;
     }
+
+    tbody > tr > td:last-child {
+        width: 100%;
+    }
 }
 
 .delete {
