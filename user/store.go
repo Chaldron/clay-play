@@ -108,7 +108,7 @@ func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 
 	stmt := `
         INSERT INTO user (id, full_name, external_id, created_at)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?)
     `
 	args := []any{
 		newId,
