@@ -9,12 +9,14 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/schema"
 )
 
 func (a *App) Routes() http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 
 	publicFileServer := http.FileServer(http.Dir("./ui/public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
