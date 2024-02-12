@@ -22,7 +22,7 @@ func (a *App) requireAuth(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusForbidden
-			a.renderErrorPage(w, errors.New(http.StatusText(status)), status)
+			a.renderErrorPage(w, errors.New(http.StatusText(status) + ". User is not authenticated!"), status)
 			return
 		}
 	})
