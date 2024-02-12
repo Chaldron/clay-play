@@ -101,20 +101,58 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		return fmt.Errorf("maximum of %d plus one(s) allowed", MaxAttendeeCount-1)
 	}
 
-	// just delete the response, I don't think it really matters to keep it in DB
-	if req.AttendeeCount == 0 {
+	e, err := s.store.GetById(req.Id)
+	if err != nil {
+		return err
+	}
+
+	existingResponse, err := s.store.GetUserResponse(req.Id, userId)
+	if err != nil {
+		return err
+	}
+
+	attendeeCountDelta := req.AttendeeCount
+	if existingResponse != nil { // if a response exists already, need to factor the attendees in that one
+		attendeeCountDelta -= existingResponse.AttendeeCount
+	}
+
+	if req.AttendeeCount == 0 { // just delete the response, I don't think it really matters to keep it in DB
 		err := s.store.DeleteResponse(req.Id, userId)
 		if err != nil {
 			return err
 		}
 	} else {
-		e := EventResponse{
+		// if theres no space for the response coming in, add the response to the waitlist
+		// waitlist responses should ALWAYS be 1 attendee (no plus ones)
+		addToWaitlist := e.SpotsLeft()-attendeeCountDelta < 0
+		if addToWaitlist && req.AttendeeCount > 1 {
+			return errors.New("no plus ones when adding to waitlist")
+		}
+
+		er := EventResponse{
 			EventId:       req.Id,
 			UserId:        userId,
 			AttendeeCount: req.AttendeeCount,
+			OnWaitlist:    addToWaitlist,
 		}
 
-		err := s.store.UpdateResponse(e)
+		err = s.store.UpdateResponse(er)
+		if err != nil {
+			return err
+		}
+	}
+
+	// manage waitlist ugh
+	// only need to manage it if the event had no spots left and spots freed up from main attendee list
+	if e.SpotsLeft() == 0 &&
+		attendeeCountDelta < 0 &&
+		!(existingResponse != nil && existingResponse.OnWaitlist) {
+		waitlist, err := s.store.GetWaitlist(req.Id, attendeeCountDelta*-1)
+		if err != nil {
+			return err
+		}
+
+		err = s.store.UpdateWaitlist(waitlist)
 		if err != nil {
 			return err
 		}

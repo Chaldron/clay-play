@@ -40,9 +40,9 @@ func run() error {
 }
 
 func main() {
-	err := run()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+		err := run()
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 }

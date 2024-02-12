@@ -134,12 +134,26 @@ article {
         margin-bottom: 0;
     }
 
-    tbody > tr:last-child > td {
-      border-bottom: 0;
-    }
+    tr {
+        &:last-child > td {
+            border-bottom: 0;
+        }
 
-    tbody > tr > td:last-child {
-        width: 100%;
+        & > td:first-child {
+            width: 3rem;
+            padding-right: 0;
+        }
+
+        & > td:last-child {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        &.waitlist > td {
+            color: $grey-300;
+        }
     }
 }
 

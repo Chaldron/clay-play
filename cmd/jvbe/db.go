@@ -121,6 +121,7 @@ func create() {
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL,
             attendee_count INT NOT NULL DEFAULT 0,
+            on_waitlist BOOL NOT NULL DEFAULT 0,
             PRIMARY KEY (event_id, user_id)
         )   
     `)
@@ -172,5 +173,13 @@ func mod2() {
         `)
 
 		log.Printf("created table event_response with new created_at column")
+	}
+
+	if ok := colExists("event_response", "on_waitlist"); !ok {
+		db.MustExec(`
+            ALTER TABLE event_response
+            ADD COLUMN on_waitlist BOOL NOT NULL DEFAULT 0
+        `)
+		log.Printf("added on_waitlist to event_response")
 	}
 }

@@ -98,7 +98,7 @@ func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 
 type eventDetailsData struct {
 	BaseData
-	Event eventPkg.EventDetailed
+	Event            eventPkg.EventDetailed
 	MaxAttendeeCount int
 }
 

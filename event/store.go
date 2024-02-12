@@ -38,6 +38,7 @@ type EventResponse struct {
 	CreatedAt     time.Time `db:"created_at"`
 	UpdatedAt     time.Time `db:"updated_at"`
 	AttendeeCount int       `db:"attendee_count"`
+	OnWaitlist    bool      `db:"on_waitlist"`
 	user.User
 }
 
@@ -97,6 +98,7 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
         FROM event AS e
         LEFT JOIN (
             SELECT event_id, SUM(attendee_count) AS total_attendee_count FROM event_response
+            WHERE on_waitlist = FALSE
             GROUP BY event_id
         ) AS ec ON e.id = ec.event_id
         WHERE datetime() <= datetime(start) AND is_deleted = FALSE
@@ -119,10 +121,10 @@ func prepareGetById(eventId string) (string, []any) {
             e.id, e.name, e.capacity, e.start, e.location, e.created_at
             , COALESCE((
                 SELECT SUM(attendee_count) FROM event_response
-                WHERE event_id = ?
+                WHERE event_id = ? AND on_waitlist = FALSE
             ), 0) AS total_attendee_count
         FROM event AS e
-        WHERE id = ? AND is_deleted = FALSE
+        WHERE id = ? AND is_deleted = FALSE 
     `
 	args := []any{eventId, eventId}
 
@@ -142,16 +144,9 @@ func (s *Store) GetById(eventId string) (Event, error) {
 }
 
 func (s *Store) UpdateResponse(e EventResponse) error {
-	tx, err := s.db.Beginx()
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback()
-
 	stmt := `
-        INSERT INTO event_response (event_id, user_id, created_at, updated_at, attendee_count)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO event_response (event_id, user_id, created_at, updated_at, attendee_count, on_waitlist)
+        VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT (event_id, user_id) DO UPDATE SET
             updated_at = excluded.updated_at,
             attendee_count = excluded.attendee_count
@@ -164,30 +159,13 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 		now,
 		now,
 		e.AttendeeCount,
+		e.OnWaitlist,
 	}
 
-	_, err = tx.Exec(stmt, args...)
+	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
 		return err
 	}
-
-	stmt, args = prepareGetById(e.EventId)
-
-	var event Event
-	err = tx.Get(&event, stmt, args...)
-	if err != nil {
-		return err
-	}
-	// this statement along with the lock and transaction is the backbone of the concurrency issue
-	if event.SpotsLeft() < 0 {
-		return errors.New("no spots left")
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -208,7 +186,7 @@ func (s *Store) DeleteResponse(eventId string, userId string) error {
 
 func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	stmt := `
-        SELECT er.event_id, er.user_id, er.attendee_count, u.full_name, er.created_at
+        SELECT er.event_id, er.user_id, er.attendee_count, u.full_name, er.created_at, er.on_waitlist
         FROM event_response AS er
         INNER JOIN user AS u ON er.user_id = u.id
         WHERE er.event_id = ?
@@ -224,7 +202,7 @@ func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	var responses []EventResponse
 	for rows.Next() {
 		var i EventResponse
-		if err := rows.Scan(&i.EventId, &i.UserId, &i.AttendeeCount, &i.FullName, &i.CreatedAt); err != nil {
+		if err := rows.Scan(&i.EventId, &i.UserId, &i.AttendeeCount, &i.FullName, &i.CreatedAt, &i.OnWaitlist); err != nil {
 			return []EventResponse{}, err
 		}
 		responses = append(responses, i)
@@ -236,9 +214,59 @@ func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	return responses, nil
 }
 
+func (s *Store) GetWaitlist(eventId string, limit int) ([]EventResponse, error) {
+	stmt := `
+        SELECT er.event_id, er.user_id, er.on_waitlist
+        FROM event_response AS er
+        INNER JOIN user AS u ON er.user_id = u.id
+        WHERE er.event_id = ? AND er.on_waitlist = TRUE
+        ORDER BY er.created_at
+        LIMIT ?
+    `
+	args := []any{eventId, limit}
+
+	var waitlist []EventResponse
+	err := s.db.Select(&waitlist, stmt, args...)
+	if err != nil {
+		return []EventResponse{}, err
+	}
+
+	return waitlist, nil
+}
+
+func (s *Store) UpdateWaitlist(reqs []EventResponse) error {
+	t, err := s.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer t.Rollback()
+
+	stmt := `
+        UPDATE event_response
+        SET on_waitlist = 0
+        WHERE event_id = ? AND user_id = ?
+    `
+
+	for _, req := range reqs {
+		args := []any{req.EventId, req.UserId}
+
+		_, err := t.Exec(stmt, args...)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = t.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Store) GetUserResponse(eventId string, userId string) (*EventResponse, error) {
 	stmt := `
-        SELECT event_id, attendee_count
+        SELECT event_id, attendee_count, on_waitlist
         FROM event_response
         WHERE event_id = ? AND user_id = ?
     `

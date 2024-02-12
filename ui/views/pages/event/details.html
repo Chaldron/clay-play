@@ -22,7 +22,7 @@
             <span>{{.Event.Location}}</span>
         </div>
         <div class="field">
-            <img class="feather" src="/public/icons/map-pin.svg" />
+            <img class="feather" src="/public/icons/users.svg" />
             <span>{{.Event.Capacity}} spots · {{.Event.SpotsLeft}} left</span>
         </div>
 
@@ -49,7 +49,6 @@
                         class="outline"
                         hx-post="/event/respond"
                         hx-target="body"
-                        {{if le .Event.SpotsLeft 0}}disabled{{end}}
                     >
                         Going
                     </button>
@@ -57,19 +56,21 @@
                 {{end}}
             </form>
 
+            {{/* PLUS ONE LOGIC */}}
             <form>
                 <input type="hidden" name="id" value="{{.Event.Id}}" />
-                {{if gt .Event.SpotsLeft 0}}
-                    {{if and (.Event.UserResponse) (eq .Event.UserResponse.AttendeeCount 1)}}
+                {{if .Event.UserResponse}}
+                    {{if eq .Event.UserResponse.AttendeeCount 1}}
                     <input type="hidden" name="attendee_count" value="2" />
                     <button 
                         class="outline"
                         hx-post="/event/respond"
                         hx-target="body"
+                        {{if le .Event.SpotsLeft 0}}disabled{{end}}
                     >
                         +1
                     </button>
-                    {{else if and (.Event.UserResponse) (eq .Event.UserResponse.AttendeeCount 2)}}
+                    {{else if eq .Event.UserResponse.AttendeeCount 2}}
                     <input type="hidden" name="attendee_count" value="1" />
                     <button
                         hx-post="/event/respond"
@@ -77,12 +78,15 @@
                     >
                         +1
                     </button>
+                    {{else}}
+                        {{/* dont show */}}
                     {{end}}
-                {{else}}
-                    <button class="outline" disabled>+1</button>
                 {{end}}
             </form>
         </div>
+        {{if and (not .Event.UserResponse) (le .Event.SpotsLeft 0)}}
+        <small>You will be added to the waitlist if you mark going when capacity is full. You cannot add plus ones while you are on the waitlist.</small>
+        {{end}}
     </section>
     <section class="event_attendees">
         <h5>Attendees ({{.Event.TotalAttendeeCount}})</h5>
@@ -91,15 +95,33 @@
         <article>
             <table>
             {{range $i, $r := .Event.Responses}}
-                <tr>
+                <tr 
+                    class="
+                    {{if $r.OnWaitlist}}waitlist{{end}}
+                    "
+                >
                     <td>{{add $i 1}}</td>
                     <td>
-                        <span>{{$r.User.FullName}}</span>
-                        <span>
-                        {{if gt $r.AttendeeCount 1}}
-                         (+{{$r.PlusOnes}})
-                        {{end}}
-                        </span>
+                        <div>
+                            <span>{{$r.User.FullName}}</span>
+
+                            {{if gt $r.AttendeeCount 1}}
+                            <span>
+                             (+{{$r.PlusOnes}})
+                            </span>
+                            {{end}}
+
+                            {{if eq $r.UserId $.User.Id}}
+                            <span>
+                             (me)
+                            </span>
+                            {{end}}
+                        </div>
+                        <div>
+                            {{if $r.OnWaitlist}}
+                            Waitlist
+                            {{end}}
+                        </div>
                     </td>
                 </tr>
             {{end}}
