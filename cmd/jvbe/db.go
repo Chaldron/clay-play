@@ -59,6 +59,8 @@ func (p *dbProgram) run() error {
 		mod1()
 	case "mod2":
 		mod2()
+	case "mod3":
+		mod3()
 	}
 
 	return nil
@@ -66,11 +68,7 @@ func (p *dbProgram) run() error {
 
 func colExists(table string, col string) bool {
 	_, err := db.Query(fmt.Sprintf("SELECT %s FROM %s", col, table))
-	if err == nil {
-		return true
-	} else {
-		return false
-	}
+	return err == nil
 }
 
 func create() {
@@ -82,6 +80,7 @@ func create() {
             start DATETIME NOT NULL,
             location TEXT NOT NULL,
             created_at DATETIME NOT NULL,
+			creator TEXT NOT NULL,
             is_deleted BOOLEAN NOT NULL DEFAULT 0
         )
     `)
@@ -181,5 +180,15 @@ func mod2() {
             ADD COLUMN on_waitlist BOOL NOT NULL DEFAULT 0
         `)
 		log.Printf("added on_waitlist to event_response")
+	}
+}
+
+func mod3() {
+	if ok := colExists("event", "creator"); !ok {
+		db.MustExec(`
+            ALTER TABLE event
+            ADD COLUMN creator TEXT DEFAULT ''
+        `)
+		log.Printf("added creator to event")
 	}
 }

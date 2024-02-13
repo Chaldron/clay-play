@@ -55,7 +55,7 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 	return e, nil
 }
 
-func (s *Service) CreateFromRequest(req CreateEventRequest) error {
+func (s *Service) CreateFromRequest(req CreateEventRequest, creator string) error {
 	start, err := time.Parse("2006-01-02T15:04", req.Start)
 	if err != nil {
 		return err
@@ -68,6 +68,7 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 		Start:     start,
 		Location:  req.Location,
 		CreatedAt: time.Now(),
+		Creator:   creator,
 	}
 
 	err = s.store.InsertOne(newEvent)

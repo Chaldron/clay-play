@@ -17,6 +17,7 @@ type Event struct {
 	Start              time.Time `db:"start"`
 	Location           string    `db:"location"`
 	CreatedAt          time.Time `db:"created_at"`
+	Creator			   string    `db:"creator"`
 	TotalAttendeeCount int       `db:"total_attendee_count"`
 }
 
@@ -74,8 +75,8 @@ func (s *Store) InsertOne(e Event) error {
 	}
 
 	stmt := `
-        INSERT INTO event (id, name, capacity, start, location, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO event (id, name, capacity, start, location, created_at, creator)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
@@ -84,6 +85,7 @@ func (s *Store) InsertOne(e Event) error {
 		e.Start,
 		e.Location,
 		e.CreatedAt,
+		e.Creator,
 	}
 
 	_, err = s.db.Exec(stmt, args...)
@@ -93,7 +95,7 @@ func (s *Store) InsertOne(e Event) error {
 func (s *Store) GetCurrent(userId string) ([]Event, error) {
 	stmt := `
         SELECT 
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator
 		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
         FROM event AS e
         LEFT JOIN (
@@ -105,8 +107,8 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
         ORDER BY start DESC
     `
 	args := []any{userId}
-	var events []Event
 
+	var events []Event
 	err := s.db.Select(&events, stmt, args...)
 	if err != nil {
 		return []Event{}, err
@@ -115,10 +117,10 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
 	return events, nil
 }
 
-func prepareGetById(eventId string) (string, []any) {
+func (s *Store) GetById(eventId string) (Event, error) {
 	stmt := `
         SELECT
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator
             , COALESCE((
                 SELECT SUM(attendee_count) FROM event_response
                 WHERE event_id = ? AND on_waitlist = FALSE
@@ -127,12 +129,6 @@ func prepareGetById(eventId string) (string, []any) {
         WHERE id = ? AND is_deleted = FALSE 
     `
 	args := []any{eventId, eventId}
-
-	return stmt, args
-}
-
-func (s *Store) GetById(eventId string) (Event, error) {
-	stmt, args := prepareGetById(eventId)
 
 	var event Event
 	err := s.db.Get(&event, stmt, args...)

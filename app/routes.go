@@ -164,7 +164,8 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.event.CreateFromRequest(req)
+	u, _ := a.session.Get(r.Context(), "user").(userPkg.SessionUser)
+	err = a.event.CreateFromRequest(req, u.FirstName)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
