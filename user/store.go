@@ -79,7 +79,7 @@ var (
 
 func (s *Store) GetByExternalId(externalId string) (User, error) {
 	stmt := `
-        SELECT id FROM user
+        SELECT id, full_name, external_id, created_at FROM user
         WHERE external_id = ?
     `
 	args := []any{externalId}
