@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -20,7 +21,18 @@ type User struct {
 func (u *User) ToSessionUser() SessionUser {
 	return SessionUser{
 		Id: u.Id,
+		FirstName: extractFirstName(u.FullName),
 	}
+}
+
+func extractFirstName(fullName string) string {
+	nameParts := strings.Fields(fullName)
+	if len(nameParts) < 1 {
+		return ""
+	}
+
+	firstName := nameParts[0]
+	return firstName
 }
 
 type ExternalUser struct {
@@ -32,6 +44,7 @@ type ExternalUser struct {
 type SessionUser struct {
 	Id          string
 	Permissions []string
+	FirstName string
 }
 
 func (u SessionUser) IsAuthenticated() bool {
