@@ -104,7 +104,7 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
             GROUP BY event_id
         ) AS ec ON e.id = ec.event_id
         WHERE datetime() <= datetime(start) AND is_deleted = FALSE
-        ORDER BY start DESC
+        ORDER BY start ASC
     `
 	args := []any{userId}
 
