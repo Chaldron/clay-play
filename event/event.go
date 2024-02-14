@@ -3,21 +3,18 @@ package event
 import (
 	"errors"
 	"fmt"
-	"github/mattfan00/jvbe/template"
 	"sync"
 	"time"
 )
 
 type Service struct {
 	store             *Store
-	templates         template.TemplateMap
 	eventResponseLock sync.Mutex
 }
 
-func NewService(store *Store, templates template.TemplateMap) *Service {
+func NewService(store *Store) *Service {
 	return &Service{
 		store:     store,
-		templates: templates,
 	}
 }
 

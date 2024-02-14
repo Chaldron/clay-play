@@ -6,11 +6,9 @@
         </ul>
         <ul>
             <li><a href="/home">Home</a></li>
+            <li><a href="/group/list">Groups</a></li>
             {{if .User.IsAuthenticated}}
             <li><a href="/auth/logout" hx-boost="false">Logout</a></li>
-            {{end}}
-            {{if .User.CanCreateEvent}}
-            <li><a href="/event/new">New Event</a></li>
             {{end}}
         </ul>
     </nav>

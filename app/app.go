@@ -5,6 +5,7 @@ import (
 	"github/mattfan00/jvbe/auth"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
+	"github/mattfan00/jvbe/group"
 	"github/mattfan00/jvbe/template"
 	"github/mattfan00/jvbe/user"
 	"net/http"
@@ -16,6 +17,7 @@ type App struct {
 	event *event.Service
 	user  *user.Service
 	auth  *auth.Service
+	group *group.Service
 
 	conf      *config.Config
 	session   *scs.SessionManager
@@ -26,6 +28,7 @@ func New(
 	event *event.Service,
 	user *user.Service,
 	auth *auth.Service,
+	group *group.Service,
 
 	conf *config.Config,
 	session *scs.SessionManager,
@@ -35,6 +38,7 @@ func New(
 		event: event,
 		user:  user,
 		auth:  auth,
+		group: group,
 
 		conf:      conf,
 		session:   session,

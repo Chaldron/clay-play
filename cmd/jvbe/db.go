@@ -110,7 +110,7 @@ func create() {
 	log.Printf("created table: sessions")
 
 	db.MustExec(`
-        CREATE INDEX sessions_expiry_idx ON sessions(expiry);
+        CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions(expiry);
     `)
 	log.Printf("created index on table: sessions")
 
@@ -126,6 +126,27 @@ func create() {
         )   
     `)
 	log.Printf("created table: event_response")
+
+	db.MustExec(`
+        CREATE TABLE IF NOT EXISTS user_group (
+            id TEXT PRIMARY KEY,
+            created_at DATETIME NOT NULL,
+            is_deleted BOOL NOT NULL DEFAULT 0,
+            name TEXT NOT NULL,
+            invite_id TEXT NOT NULL UNIQUE
+        )
+    `)
+	log.Printf("created table: user_group")
+
+	db.MustExec(`
+        CREATE TABLE IF NOT EXISTS user_group_member (
+            group_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            PRIMARY KEY (group_id, user_id)
+        )
+    `)
+	log.Printf("created table: user_group_member")
 }
 
 func mod1() {

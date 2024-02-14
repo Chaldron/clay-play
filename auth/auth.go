@@ -27,7 +27,7 @@ func NewService(conf *config.Config) (*Service, error) {
 	oauthConf := &oauth2.Config{
 		ClientID:     conf.Oauth.ClientId,
 		ClientSecret: conf.Oauth.ClientSecret,
-		RedirectURL:  conf.Oauth.CallbackUrl,
+		RedirectURL:  conf.OauthCallbackUrl(),
 		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
 		Endpoint:     provider.Endpoint(),
 	}

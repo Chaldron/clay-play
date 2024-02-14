@@ -1,0 +1,19 @@
+{{define "body"}}
+<main class="container-fluid only">
+    <hgroup>
+        <h3>Joined "{{.Name}}" group</h3>
+        <p>Redirecting to group in 5 seconds...</p>
+    </hgroup>
+
+    <a
+        href="/group/{{.Id}}"
+    >
+        Redirect now
+    </a>
+</main>
+<script>
+    window.setTimeout(() => {
+        window.location.replace("/group/{{.Id}}")
+    }, 5000)
+</script>
+{{end}}

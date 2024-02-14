@@ -8,6 +8,7 @@ import (
 	"github/mattfan00/jvbe/auth"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/event"
+	"github/mattfan00/jvbe/group"
 	"github/mattfan00/jvbe/template"
 	"github/mattfan00/jvbe/user"
 	"log"
@@ -69,10 +70,13 @@ func (p *appProgram) run() error {
 	session.Store = sqlite3store.New(db.DB)
 
 	eventStore := event.NewStore(db)
-	eventService := event.NewService(eventStore, templates)
+	eventService := event.NewService(eventStore)
 
 	userStore := user.NewStore(db)
 	userService := user.NewService(userStore)
+
+	groupStore := group.NewStore(db)
+	groupService := group.NewService(groupStore, conf)
 
 	authService, err := auth.NewService(conf)
 	if err != nil {
@@ -83,8 +87,9 @@ func (p *appProgram) run() error {
 		eventService,
 		userService,
 		authService,
+        groupService,
 
-        conf,
+		conf,
 		session,
 		templates,
 	)

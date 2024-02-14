@@ -85,7 +85,24 @@ article {
     border-radius: var(#{$css-var-prefix}border-radius);
 }
 
-.event {
+.page_header {
+    margin-bottom: var(#{$css-var-prefix}block-spacing-vertical);
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+
+    h3 {
+        margin-bottom: 0;
+    }
+
+    .buttons {
+        flex-shrink: 0;
+    }
+}
+
+.item {
     display: flex;
     align-items: center;
 
@@ -129,6 +146,7 @@ article {
     }
 }
 
+.group_members,
 .event_attendees {
     table {
         margin-bottom: 0;

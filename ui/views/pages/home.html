@@ -5,26 +5,36 @@
 <main class="container-fluid">
     <div id="error"></div>
 
-    <h3>Upcoming Events</h3>
-    <div>
-    {{range .CurrEvents}}
-        {{block "event" .}}
-        <div
-            class="event" 
-            x-data="{ start: formatTime('{{jsTime .Start}}') }"
-        >
-            <div class="flex-1">
-                <div><strong>{{.Name}}</strong></div>
-                <div>
-                    <small>
-                        <span x-text="start"></span> · {{.SpotsLeft}} spots left
-                    </small>
-                </div>
-            </div>
-            <a href="/event/{{.Id}}">View</a>
+    <div class="page_header">
+        <h3>Upcoming Events</h3>
+        <div class="buttons">
+            {{if .User.CanCreateEvent}}
+            <a href="/event/new" role="button">New Event</a>
+            {{end}}
         </div>
-        {{end}}
-    {{end}}
     </div>
+
+    <section>
+        {{if gt (len .CurrEvents) (0)}}
+            {{range .CurrEvents}}
+            <div
+                class="item" 
+                x-data="{ start: formatTime('{{jsTime .Start}}') }"
+            >
+                <div class="flex-1">
+                    <div><strong>{{.Name}}</strong></div>
+                    <div>
+                        <small>
+                            <span x-text="start"></span> · {{.SpotsLeft}} spots left
+                        </small>
+                    </div>
+                </div>
+                <a href="/event/{{.Id}}">View</a>
+            </div>
+            {{end}}
+        {{else}}
+        <div>No events</div>
+        {{end}}
+    </section>
 </main>
 {{end}}

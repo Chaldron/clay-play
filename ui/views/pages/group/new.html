@@ -1,0 +1,27 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div id="error"></div>
+
+    <hgroup>
+        <h3>New Group</h3>
+        <p>Groups allow you to post events that only members of the group can interact with.</p>
+    </hgroup>
+
+    <article>
+        <form 
+            hx-post="/group"
+            hx-push-url="true"
+            hx-target="body"
+        >
+            <label>
+                Name
+                <input type="text" required name="name" />
+            </label>
+            <button type="submit">Submit</button>
+        </form>
+    </article>
+</main>
+{{end}}

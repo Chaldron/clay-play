@@ -1,0 +1,52 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div id="error"></div>
+
+    <div class="page_header">
+        <h3>{{.Group.Name}}</h3>
+        <div class="buttons">
+            <button 
+                x-data="{}"
+                class="outline" 
+                @click="() => {
+                    let copyText = window.location.protocol + '//' + window.location.host + '/group/{{.Group.InviteId}}/invite';
+                    navigator.clipboard.writeText(copyText);
+                    alert('Copied invite link!');
+                }"
+            >
+                Invite
+            </button>
+            <a href="/group/{{.Group.Id}}/edit" role="button">Edit</a>
+        </div>
+    </div>
+
+    <section class="group_members">
+        <h5>Members ({{len .Group.Members}})</h5>
+
+        {{if gt (len .Group.Members) (0)}}
+        <article>
+            <table>
+            {{range $i, $m := .Group.Members}}
+                <tr>
+                    <td>{{add $i 1}}</td>
+                    <td>
+                        <div>{{$m.UserFullName}}</div>
+                        <div
+                            class="delete"
+                            hx-confirm="Are you sure you want to remove {{$m.UserFullName}} from this group?"
+                            hx-delete="/group/{{$.Group.Id}}/member/{{$m.UserId}}"
+                            hx-target="body"
+                        >
+                            Remove
+                        </div>
+                    </td>
+                </tr>
+            {{end}}
+        </article>
+        {{end}}
+    </section>
+</main>
+{{end}}

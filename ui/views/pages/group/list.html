@@ -1,0 +1,34 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div id="error"></div>
+
+    <div class="page_header">
+        <h3>Groups</h3>
+        <div class="buttons">
+            <a href="/group/new" role="button">New Group</a>
+        </div>
+    </div>
+
+    <section>
+        {{if gt (len .Groups) (0)}}
+            {{range .Groups}}
+            <div class="item">
+                <div class="flex-1">
+                    <div><strong>{{.Name}}</strong></div>
+                    <div>
+                        <small>{{.TotalMemberCount}} members</small>
+                    </div>
+                </div>
+                <a href="/group/{{.Id}}">View</a>
+            </div>
+            {{end}}
+        {{else}}
+        <div>No Groups</div>
+        {{end}}
+    </section>
+</main>
+
+{{end}}

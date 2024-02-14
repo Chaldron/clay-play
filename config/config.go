@@ -7,17 +7,26 @@ import (
 )
 
 type Oauth struct {
-	Domain       string `yaml:"domain"`
-	ClientId     string `yaml:"client_id"`
-	ClientSecret string `yaml:"client_secret"`
-	CallbackUrl  string `yaml:"callback_url"`
-    LogoutRedirectUrl string `yaml:"logout_redirect_url"`
+	Domain            string `yaml:"domain"`
+	ClientId          string `yaml:"client_id"`
+	ClientSecret      string `yaml:"client_secret"`
+	CallbackUrl       string `yaml:"callback_url"`
+	LogoutRedirectUrl string `yaml:"logout_redirect_url"`
 }
 
 type Config struct {
-	DbConn string `yaml:"db_conn"`
-	Port   int    `yaml:"port"`
-	Oauth  Oauth  `yaml:"oauth"`
+	DbConn  string `yaml:"db_conn"`
+	Port    int    `yaml:"port"`
+	BaseUrl string `yaml:"base_url"`
+	Oauth   Oauth  `yaml:"oauth"`
+}
+
+func (c Config) OauthLogoutRedirectUrl() string {
+	return c.BaseUrl + c.Oauth.LogoutRedirectUrl
+}
+
+func (c Config) OauthCallbackUrl() string {
+	return c.BaseUrl + c.Oauth.CallbackUrl
 }
 
 func ReadFile(src string) (*Config, error) {
