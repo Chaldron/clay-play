@@ -102,11 +102,25 @@ func (a *App) renderHome(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type newEventData struct {
+	BaseData
+	Groups []groupPkg.Group
+}
+
 func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	a.renderPage(w, "event/new.html", BaseData{
-		User: u,
+	g, err := a.group.List()
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	a.renderPage(w, "event/new.html", newEventData{
+		BaseData: BaseData{
+			User: u,
+		},
+		Groups: g,
 	})
 }
 
@@ -177,7 +191,7 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
-    req.Creator = u.FirstName
+	req.Creator = u.FirstName
 
 	err = a.event.CreateFromRequest(req)
 	if err != nil {

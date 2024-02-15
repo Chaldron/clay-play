@@ -12,7 +12,12 @@
     <section
         class="event_details"
     >
-        <h6>Created by {{.Event.Creator}}</h6>
+        <p>
+            <span>Hosted by <strong>{{.Event.Creator}}</strong><span>
+            {{if .Event.GroupId.Valid}}
+            <span> in <strong>{{.Event.GroupName.String}}</strong></span>
+            {{end}}
+        </p>
         <div 
             class="field"
             x-data="{ start: formatTime('{{jsTime .Event.Start}}') }"

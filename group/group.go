@@ -1,6 +1,7 @@
 package group
 
 import (
+	"database/sql"
 	"errors"
 	"github/mattfan00/jvbe/config"
 
@@ -144,4 +145,13 @@ func (s *Service) CreateAndAddMember(req CreateRequest) error {
 	}
 
 	return nil
+}
+
+func (s *Service) CanAccess(groupId sql.NullString, userId string) (bool, error) {
+	if !groupId.Valid { // if NULL, then public group
+		return true, nil
+	}
+
+	exists, err := s.store.HasMember(groupId.String, userId)
+	return exists, err
 }

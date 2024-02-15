@@ -19,6 +19,15 @@
                 <input type="text" required name="name" />
             </label>
             <label>
+                Group
+                <select name="group_id">
+                    <option value="">None</option>
+                    {{range .Groups}} 
+                    <option value="{{.Id}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </label>
+            <label>
                 Capacity 
                 <input type="number" required name="capacity" min=0 max=100 />
             </label>

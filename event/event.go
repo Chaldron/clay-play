@@ -1,35 +1,60 @@
 package event
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	groupPkg "github/mattfan00/jvbe/group"
 	"sync"
 	"time"
 )
 
+var (
+	ErrNoAccess = errors.New("you do not have access to this event")
+)
+
 type Service struct {
 	store             *Store
+	group             *groupPkg.Service
 	eventResponseLock sync.Mutex
 }
 
-func NewService(store *Store) *Service {
+func NewService(store *Store, group *groupPkg.Service) *Service {
 	return &Service{
-		store:     store,
+		store: store,
+		group: group,
 	}
 }
 
 func (s *Service) GetCurrent(userId string) ([]Event, error) {
-	currEvents, err := s.store.GetCurrent(userId)
+	currEvents, err := s.store.GetCurrent()
 	if err != nil {
 		return []Event{}, err
 	}
 
-	return currEvents, nil
+	// filter out events you don't have access to
+	filtered := []Event{}
+	for _, e := range currEvents {
+        fmt.Printf("%+v\n", e.GroupId)
+		ok, err := s.group.CanAccess(e.GroupId, userId)
+		if err != nil {
+			return []Event{}, err
+		}
+		if ok {
+			filtered = append(filtered, e)
+		}
+	}
+
+	return filtered, nil
 }
 
 func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
 	event, err := s.store.GetById(eventId)
 	if err != nil {
+		return EventDetailed{}, err
+	}
+
+	if err = s.canAccessError(event.GroupId, userId); err != nil {
 		return EventDetailed{}, err
 	}
 
@@ -60,7 +85,11 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 	start = start.Add(time.Minute * time.Duration(req.TimezoneOffset))
 
 	newEvent := Event{
-		Name:      req.Name,
+		Name: req.Name,
+		GroupId: sql.NullString{
+			String: req.GroupId,
+			Valid:  req.GroupId != "",
+		},
 		Capacity:  req.Capacity,
 		Start:     start,
 		Location:  req.Location,
@@ -101,6 +130,10 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 
 	e, err := s.store.GetById(req.Id)
 	if err != nil {
+		return err
+	}
+
+	if err = s.canAccessError(e.GroupId, userId); err != nil {
 		return err
 	}
 
@@ -154,6 +187,18 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		if err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+func (s *Service) canAccessError(groupId sql.NullString, userId string) error {
+	ok, err := s.group.CanAccess(groupId, userId)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrNoAccess
 	}
 
 	return nil

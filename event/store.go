@@ -11,14 +11,16 @@ import (
 )
 
 type Event struct {
-	Id                 string    `db:"id"`
-	Name               string    `db:"name"`
-	Capacity           int       `db:"capacity"`
-	Start              time.Time `db:"start"`
-	Location           string    `db:"location"`
-	CreatedAt          time.Time `db:"created_at"`
-	Creator			   string    `db:"creator"`
-	TotalAttendeeCount int       `db:"total_attendee_count"`
+	Id                 string         `db:"id"`
+	Name               string         `db:"name"`
+	GroupId            sql.NullString `db:"group_id"`
+	GroupName          sql.NullString `db:"group_name"`
+	Capacity           int            `db:"capacity"`
+	Start              time.Time      `db:"start"`
+	Location           string         `db:"location"`
+	CreatedAt          time.Time      `db:"created_at"`
+	Creator            string         `db:"creator"`
+	TotalAttendeeCount int            `db:"total_attendee_count"`
 }
 
 func (e Event) SpotsLeft() int {
@@ -27,11 +29,12 @@ func (e Event) SpotsLeft() int {
 
 type CreateEventRequest struct {
 	Name           string `schema:"name"`
+	GroupId        string `schema:"group_id"`
 	Capacity       int    `schema:"capacity"`
 	Start          string `schema:"start"`
 	TimezoneOffset int    `schema:"timezoneOffset"`
 	Location       string `schema:"location"`
-    Creator string
+	Creator        string
 }
 
 type EventResponse struct {
@@ -76,12 +79,13 @@ func (s *Store) InsertOne(e Event) error {
 	}
 
 	stmt := `
-        INSERT INTO event (id, name, capacity, start, location, created_at, creator)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO event (id, name, group_id, capacity, start, location, created_at, creator)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
 		e.Name,
+		e.GroupId,
 		e.Capacity,
 		e.Start,
 		e.Location,
@@ -93,11 +97,12 @@ func (s *Store) InsertOne(e Event) error {
 	return err
 }
 
-func (s *Store) GetCurrent(userId string) ([]Event, error) {
+func (s *Store) GetCurrent() ([]Event, error) {
 	stmt := `
         SELECT 
             e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator
 		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
+            , e.group_id
         FROM event AS e
         LEFT JOIN (
             SELECT event_id, SUM(attendee_count) AS total_attendee_count FROM event_response
@@ -107,10 +112,9 @@ func (s *Store) GetCurrent(userId string) ([]Event, error) {
         WHERE datetime() <= datetime(start) AND is_deleted = FALSE
         ORDER BY start ASC
     `
-	args := []any{userId}
 
 	var events []Event
-	err := s.db.Select(&events, stmt, args...)
+	err := s.db.Select(&events, stmt)
 	if err != nil {
 		return []Event{}, err
 	}
@@ -126,8 +130,10 @@ func (s *Store) GetById(eventId string) (Event, error) {
                 SELECT SUM(attendee_count) FROM event_response
                 WHERE event_id = ? AND on_waitlist = FALSE
             ), 0) AS total_attendee_count
+            , e.group_id, ug.name AS group_name
         FROM event AS e
-        WHERE id = ? AND is_deleted = FALSE 
+        LEFT JOIN user_group AS ug ON e.group_id = ug.id
+        WHERE e.id = ? AND e.is_deleted = FALSE 
     `
 	args := []any{eventId, eventId}
 
