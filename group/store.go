@@ -21,6 +21,8 @@ func NewStore(db *sqlx.DB) *Store {
 type Group struct {
 	Id               string    `db:"id"`
 	CreatedAt        time.Time `db:"created_at"`
+	CreatorId        string    `db:"creator_id"`
+	CreatorFullName  string    `db:"creator_full_name"`
 	IsDeleted        bool      `db:"is_deleted"`
 	Name             string    `db:"name"`
 	InviteId         string    `db:"invite_id"`
@@ -28,11 +30,10 @@ type Group struct {
 }
 
 type GroupMember struct {
-	GroupId   string    `db:"group_id"`
-	UserId    string    `db:"user_id"`
-	CreatedAt time.Time `db:"created_at"`
-
-	UserFullName string `db:"user_full_name"`
+	GroupId      string    `db:"group_id"`
+	UserId       string    `db:"user_id"`
+	UserFullName string    `db:"user_full_name"`
+	CreatedAt    time.Time `db:"created_at"`
 }
 
 type GroupDetailed struct {
@@ -41,19 +42,21 @@ type GroupDetailed struct {
 }
 
 type CreateParams struct {
-	Id       string
-	Name     string
-	InviteId string
+	Id        string
+	CreatorId string
+	Name      string
+	InviteId  string
 }
 
 func (s *Store) Create(p CreateParams) error {
 	stmt := `
-        INSERT INTO user_group (id, created_at, name, invite_id)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO user_group (id, created_at, creator_id, name, invite_id)
+        VALUES (?, ?, ?, ?, ?)
     `
 	args := []any{
 		p.Id,
 		time.Now().UTC(),
+		p.CreatorId,
 		p.Name,
 		p.InviteId,
 	}
@@ -68,8 +71,9 @@ func (s *Store) Create(p CreateParams) error {
 
 func (s *Store) Get(id string) (Group, error) {
 	stmt := `
-        SELECT id, name, invite_id FROM user_group
-        WHERE id = ? AND is_deleted = FALSE
+        SELECT ug.id, ug.name, ug.invite_id, u.full_name AS creator_full_name FROM user_group ug
+        INNER JOIN user u ON ug.creator_id = u.id
+        WHERE ug.id = ? AND is_deleted = FALSE
     `
 	args := []any{id}
 
@@ -185,12 +189,12 @@ func (s *Store) Delete(id string) error {
 }
 
 func (s *Store) RemoveMember(groupId string, userId string) error {
-    stmt := `
+	stmt := `
         DELETE FROM user_group_member
         WHERE group_id = ? AND user_id = ?
     `
-    args := []any{groupId, userId}
+	args := []any{groupId, userId}
 
-    _, err := s.db.Exec(stmt, args...)
-    return err
+	_, err := s.db.Exec(stmt, args...)
+	return err
 }

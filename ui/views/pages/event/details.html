@@ -4,12 +4,14 @@
 
 <main class="container-fluid">
     <div id="error"></div>
+    
+    <div class="page_header">
+        <h3>{{.Event.Name}}</h3>
+    </div>
 
     <section
         class="event_details"
     >
-        <h3>{{.Event.Name}}</h3>
-
         <div 
             class="field"
             x-data="{ start: formatTime('{{jsTime .Event.Start}}') }"

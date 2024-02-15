@@ -19,7 +19,8 @@ func NewService(store *Store, conf *config.Config) *Service {
 }
 
 type CreateRequest struct {
-	Name string `schema:"name"`
+	CreatorId string
+	Name      string `schema:"name"`
 }
 
 func (s *Service) Create(req CreateRequest) (string, error) {
@@ -35,6 +36,7 @@ func (s *Service) Create(req CreateRequest) (string, error) {
 
 	err = s.store.Create(CreateParams{
 		Id:       id,
+        CreatorId: req.CreatorId,
 		Name:     req.Name,
 		InviteId: inviteId,
 	})
@@ -124,16 +126,16 @@ func (s *Service) RemoveMember(groupId string, userId string) error {
 	return err
 }
 
-func (s *Service) CreateAndAddMember(req CreateRequest, userId string) error {
+func (s *Service) CreateAndAddMember(req CreateRequest) error {
 	groupId, err := s.Create(req)
 	if err != nil {
 		return err
 	}
 
-	err = s.AddMember(groupId, userId)
+	err = s.AddMember(groupId, req.CreatorId)
 	if err != nil {
 		return err
 	}
 
-    return nil
+	return nil
 }

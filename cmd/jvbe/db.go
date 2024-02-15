@@ -131,6 +131,7 @@ func create() {
         CREATE TABLE IF NOT EXISTS user_group (
             id TEXT PRIMARY KEY,
             created_at DATETIME NOT NULL,
+            creator_id TEXT NOT NULL,
             is_deleted BOOL NOT NULL DEFAULT 0,
             name TEXT NOT NULL,
             invite_id TEXT NOT NULL UNIQUE

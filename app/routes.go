@@ -296,8 +296,9 @@ func (a *App) createGroup(w http.ResponseWriter, r *http.Request) {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
+	req.CreatorId = u.Id
 
-	err = a.group.CreateAndAddMember(req, u.Id)
+	err = a.group.CreateAndAddMember(req)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
