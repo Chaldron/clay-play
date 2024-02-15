@@ -1,6 +1,7 @@
 package group
 
 import (
+	"errors"
 	"github/mattfan00/jvbe/config"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -35,10 +36,10 @@ func (s *Service) Create(req CreateRequest) (string, error) {
 	}
 
 	err = s.store.Create(CreateParams{
-		Id:       id,
-        CreatorId: req.CreatorId,
-		Name:     req.Name,
-		InviteId: inviteId,
+		Id:        id,
+		CreatorId: req.CreatorId,
+		Name:      req.Name,
+		InviteId:  inviteId,
 	})
 	if err != nil {
 		return "", err
@@ -122,7 +123,12 @@ func (s *Service) Delete(id string) error {
 }
 
 func (s *Service) RemoveMember(groupId string, userId string) error {
-	err := s.store.RemoveMember(groupId, userId)
+	g, err := s.store.Get(groupId)
+	if g.CreatorId == userId {
+		return errors.New("cannot remove the creator of a group")
+	}
+
+	err = s.store.RemoveMember(groupId, userId)
 	return err
 }
 

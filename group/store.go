@@ -71,7 +71,9 @@ func (s *Store) Create(p CreateParams) error {
 
 func (s *Store) Get(id string) (Group, error) {
 	stmt := `
-        SELECT ug.id, ug.name, ug.invite_id, u.full_name AS creator_full_name FROM user_group ug
+        SELECT ug.id, ug.name, ug.invite_id, ug.creator_id
+            , u.full_name AS creator_full_name 
+        FROM user_group ug
         INNER JOIN user u ON ug.creator_id = u.id
         WHERE ug.id = ? AND is_deleted = FALSE
     `
@@ -87,6 +89,7 @@ func (s *Store) GetMembers(id string) ([]GroupMember, error) {
         SELECT ugm.group_id, ugm.user_id, u.full_name AS user_full_name FROM user_group_member ugm
         INNER JOIN user u ON u.id = ugm.user_id
         WHERE group_id = ?
+        ORDER BY ugm.created_at ASC
     `
 	args := []any{id}
 

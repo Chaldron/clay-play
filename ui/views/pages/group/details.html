@@ -38,6 +38,7 @@
                     <td>{{add $i 1}}</td>
                     <td>
                         <div>{{$m.UserFullName}}</div>
+                        {{if ne $.Group.CreatorId $m.UserId}}
                         <div
                             class="delete"
                             hx-confirm="Are you sure you want to remove {{$m.UserFullName}} from this group?"
@@ -46,6 +47,7 @@
                         >
                             Remove
                         </div>
+                        {{end}}
                     </td>
                 </tr>
             {{end}}
