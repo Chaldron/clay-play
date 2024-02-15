@@ -12,5 +12,8 @@
             {{end}}
         </ul>
     </nav>
+    {{if .User.IsAuthenticated}}
+    <h4>Hello {{.User.FirstName}}!</h4>
+    {{end}}
 </header>
 {{end}}

@@ -163,6 +163,8 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
 	err := r.ParseForm()
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
@@ -175,6 +177,7 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
+    req.Creator = u.FirstName
 
 	err = a.event.CreateFromRequest(req)
 	if err != nil {

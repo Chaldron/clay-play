@@ -65,6 +65,7 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 		Start:     start,
 		Location:  req.Location,
 		CreatedAt: time.Now(),
+		Creator:   req.Creator,
 	}
 
 	err = s.store.InsertOne(newEvent)

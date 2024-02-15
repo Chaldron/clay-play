@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"strings"
 )
 
 type TemplateMap map[string]*template.Template
@@ -30,6 +31,7 @@ func Generate() (TemplateMap, error) {
 	}
 
 	for _, pagePath := range pages {
+		pagePath = strings.ReplaceAll(pagePath, "\\", "/") // Standardizing the paths to only use '/' delimeter
 		name := pagePath[len(pagesPath)+1:]
 		t := template.New(name)
 
