@@ -55,12 +55,12 @@ func (u SessionUser) hasPermission(p string) bool {
 	return slices.Contains[[]string](u.Permissions, p)
 }
 
-func (u SessionUser) CanCreateEvent() bool {
-	return u.hasPermission("create:event")
+func (u SessionUser) CanModifyEvent() bool {
+	return u.hasPermission("modify:event")
 }
 
-func (u SessionUser) CanDeleteEvent() bool {
-	return u.hasPermission("delete:event")
+func (u SessionUser) CanModifyGroup() bool {
+	return u.hasPermission("modify:group")
 }
 
 type Store struct {

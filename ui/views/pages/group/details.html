@@ -19,12 +19,14 @@
             >
                 Invite
             </button>
+            {{if .User.CanModifyGroup}}
             <a href="/group/{{.Group.Id}}/edit" role="button">Edit</a>
+            {{end}}
         </div>
     </div>
 
     <section>
-        Created by {{.Group.CreatorFullName}}
+        <p>Created by <strong>{{.Group.CreatorFullName}}</strong></p>
     </section>
 
     <section class="group_members">
@@ -37,16 +39,25 @@
                 <tr>
                     <td>{{add $i 1}}</td>
                     <td>
-                        <div>{{$m.UserFullName}}</div>
-                        {{if ne $.Group.CreatorId $m.UserId}}
-                        <div
-                            class="delete"
-                            hx-confirm="Are you sure you want to remove {{$m.UserFullName}} from this group?"
-                            hx-delete="/group/{{$.Group.Id}}/member/{{$m.UserId}}"
-                            hx-target="body"
-                        >
-                            Remove
+                        <div>
+                            {{$m.UserFullName}}
+                            {{if eq $m.UserId $.User.Id}}
+                            <span>
+                             (me)
+                            </span>
+                            {{end}}
                         </div>
+                        {{if $.User.CanModifyGroup}}
+                            {{if ne $.Group.CreatorId $m.UserId}}
+                            <div
+                                class="delete"
+                                hx-confirm="Are you sure you want to remove {{$m.UserFullName}} from this group?"
+                                hx-delete="/group/{{$.Group.Id}}/member/{{$m.UserId}}"
+                                hx-target="body"
+                            >
+                                Remove
+                            </div>
+                            {{end}}
                         {{end}}
                     </td>
                 </tr>

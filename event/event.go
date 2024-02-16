@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-var (
-	ErrNoAccess = errors.New("you do not have access to this event")
-)
-
 type Service struct {
 	store             *Store
 	group             *groupPkg.Service
@@ -35,7 +31,6 @@ func (s *Service) GetCurrent(userId string) ([]Event, error) {
 	// filter out events you don't have access to
 	filtered := []Event{}
 	for _, e := range currEvents {
-        fmt.Printf("%+v\n", e.GroupId)
 		ok, err := s.group.CanAccess(e.GroupId, userId)
 		if err != nil {
 			return []Event{}, err
@@ -54,7 +49,7 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 		return EventDetailed{}, err
 	}
 
-	if err = s.canAccessError(event.GroupId, userId); err != nil {
+	if err = s.group.CanAccessError(event.GroupId, userId); err != nil {
 		return EventDetailed{}, err
 	}
 
@@ -133,7 +128,7 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		return err
 	}
 
-	if err = s.canAccessError(e.GroupId, userId); err != nil {
+	if err = s.group.CanAccessError(e.GroupId, userId); err != nil {
 		return err
 	}
 
@@ -187,18 +182,6 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		if err != nil {
 			return err
 		}
-	}
-
-	return nil
-}
-
-func (s *Service) canAccessError(groupId sql.NullString, userId string) error {
-	ok, err := s.group.CanAccess(groupId, userId)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return ErrNoAccess
 	}
 
 	return nil

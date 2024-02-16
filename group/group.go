@@ -4,8 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"github/mattfan00/jvbe/config"
+	"github/mattfan00/jvbe/user"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
+)
+
+var (
+	ErrNoAccess = errors.New("you do not have access")
 )
 
 type Service struct {
@@ -54,7 +59,16 @@ func (s *Service) Get(id string) (Group, error) {
 	return g, err
 }
 
-func (s *Service) GetDetailed(id string) (GroupDetailed, error) {
+func (s *Service) GetDetailed(id string, user user.SessionUser) (GroupDetailed, error) {
+    if !user.CanModifyGroup() {
+        if err := s.CanAccessError(sql.NullString{
+            String: id,
+            Valid: true,
+        }, user.Id); err != nil {
+            return GroupDetailed{}, err
+        }
+    }
+
 	g, err := s.store.Get(id)
 	if err != nil {
 		return GroupDetailed{}, err
@@ -154,4 +168,16 @@ func (s *Service) CanAccess(groupId sql.NullString, userId string) (bool, error)
 
 	exists, err := s.store.HasMember(groupId.String, userId)
 	return exists, err
+}
+
+func (s *Service) CanAccessError(groupId sql.NullString, userId string) error {
+	ok, err := s.CanAccess(groupId, userId)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return ErrNoAccess
+	}
+
+	return nil
 }

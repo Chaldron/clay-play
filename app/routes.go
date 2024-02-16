@@ -45,21 +45,26 @@ func (a *App) Routes() http.Handler {
 				r.Get("/{id}", a.renderEventDetails)
 				r.Post("/respond", a.respondEvent)
 
-				r.With(a.canCreateEvent).Get("/new", a.renderNewEvent)
-				r.With(a.canCreateEvent).Post("/", a.createEvent)
-				r.With(a.canDeleteEvent).Delete("/{id}", a.deleteEvent)
+				r.With(a.canModifyEvent).Get("/new", a.renderNewEvent)
+				r.With(a.canModifyEvent).Post("/", a.createEvent)
+				r.With(a.canModifyEvent).Delete("/{id}", a.deleteEvent)
 			})
 
 			r.Route("/group", func(r chi.Router) {
-				r.Get("/list", a.renderGroupList)
-				r.Get("/new", a.renderNewGroup)
-				r.Get("/{id}", a.renderGroupDetails)
+				r.Group(func(r chi.Router) {
+					r.Use(a.canModifyGroup)
+
+					r.Get("/list", a.renderGroupList)
+					r.Get("/new", a.renderNewGroup)
+					r.Post("/", a.createGroup)
+					r.Get("/{id}/edit", a.renderEditGroup)
+					r.Put("/{id}", a.updateGroup)
+					r.Delete("/{id}", a.deleteGroup)
+					r.Delete("/{id}/member/{userId}", a.removeGroupMember)
+				})
+
 				r.Get("/{id}/invite", a.inviteGroup)
-				r.Post("/", a.createGroup)
-				r.Get("/{id}/edit", a.renderEditGroup)
-				r.Put("/{id}", a.updateGroup)
-				r.Delete("/{id}", a.deleteGroup)
-				r.Delete("/{id}/member/{userId}", a.removeGroupMember)
+				r.Get("/{id}", a.renderGroupDetails)
 			})
 		})
 	})
@@ -333,7 +338,7 @@ func (a *App) renderGroupDetails(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 	id := chi.URLParam(r, "id")
 
-	g, err := a.group.GetDetailed(id)
+	g, err := a.group.GetDetailed(id, u)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return

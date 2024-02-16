@@ -7,6 +7,11 @@
     
     <div class="page_header">
         <h3>{{.Event.Name}}</h3>
+        <div class="buttons">
+            {{if .User.CanModifyEvent}}
+            <a href="/event/{{.Event.Id}}/edit" role="button">Edit</a>
+            {{end}}
+        </div>
     </div>
 
     <section
@@ -15,7 +20,7 @@
         <p>
             <span>Hosted by <strong>{{.Event.Creator}}</strong><span>
             {{if .Event.GroupId.Valid}}
-            <span> in <strong>{{.Event.GroupName.String}}</strong></span>
+            <span> in <a href="/group/{{.Event.GroupId.String}}">{{.Event.GroupName.String}}</a></span>
             {{end}}
         </p>
         <div 
@@ -137,7 +142,7 @@
         </article>
         {{end}}
     </section>
-    {{if .User.CanDeleteEvent}}
+    {{if .User.CanModifyEvent}}
     <section>
         <h5>Admin tools</h5>
 

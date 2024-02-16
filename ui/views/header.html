@@ -6,7 +6,9 @@
         </ul>
         <ul>
             <li><a href="/home">Home</a></li>
+            {{if .User.CanModifyGroup}}
             <li><a href="/group/list">Groups</a></li>
+            {{end}}
             {{if .User.IsAuthenticated}}
             <li><a href="/auth/logout" hx-boost="false">Logout</a></li>
             {{end}}

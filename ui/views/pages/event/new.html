@@ -18,6 +18,7 @@
                 Name
                 <input type="text" required name="name" />
             </label>
+            {{if .User.CanModifyGroup}}
             <label>
                 Group
                 <select name="group_id">
@@ -27,6 +28,7 @@
                     {{end}}
                 </select>
             </label>
+            {{end}}
             <label>
                 Capacity 
                 <input type="number" required name="capacity" min=0 max=100 />

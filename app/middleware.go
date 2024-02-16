@@ -28,9 +28,9 @@ func (a *App) requireAuth(next http.Handler) http.Handler {
 	})
 }
 
-func (a *App) canCreateEvent(next http.Handler) http.Handler {
+func (a *App) canModifyGroup(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if u, _ := a.sessionUser(r); u.CanCreateEvent() {
+		if u, _ := a.sessionUser(r); u.CanModifyGroup() {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusUnauthorized
@@ -40,9 +40,9 @@ func (a *App) canCreateEvent(next http.Handler) http.Handler {
 	})
 }
 
-func (a *App) canDeleteEvent(next http.Handler) http.Handler {
+func (a *App) canModifyEvent(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if u, _ := a.sessionUser(r); u.CanDeleteEvent() {
+		if u, _ := a.sessionUser(r); u.CanModifyEvent() {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusUnauthorized

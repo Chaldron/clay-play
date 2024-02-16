@@ -8,7 +8,7 @@
     <div class="page_header">
         <h3>Upcoming Events</h3>
         <div class="buttons">
-            {{if .User.CanCreateEvent}}
+            {{if .User.CanModifyEvent}}
             <a href="/event/new" role="button">New Event</a>
             {{end}}
         </div>
