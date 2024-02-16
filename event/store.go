@@ -3,7 +3,6 @@ package event
 import (
 	"database/sql"
 	"errors"
-	"github/mattfan00/jvbe/user"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -19,7 +18,8 @@ type Event struct {
 	Start              time.Time      `db:"start"`
 	Location           string         `db:"location"`
 	CreatedAt          time.Time      `db:"created_at"`
-	Creator            string         `db:"creator"`
+	CreatorId          string         `db:"creator_id"`
+	CreatorFullName    string         `db:"creator_full_name"`
 	TotalAttendeeCount int            `db:"total_attendee_count"`
 }
 
@@ -34,7 +34,7 @@ type CreateEventRequest struct {
 	Start          string `schema:"start"`
 	TimezoneOffset int    `schema:"timezoneOffset"`
 	Location       string `schema:"location"`
-	Creator        string
+	CreatorId      string `schema:"creator_id"`
 }
 
 type EventResponse struct {
@@ -44,7 +44,7 @@ type EventResponse struct {
 	UpdatedAt     time.Time `db:"updated_at"`
 	AttendeeCount int       `db:"attendee_count"`
 	OnWaitlist    bool      `db:"on_waitlist"`
-	user.User
+	UserFullName  string    `db:"user_full_name"`
 }
 
 func (e EventResponse) PlusOnes() int {
@@ -79,7 +79,7 @@ func (s *Store) InsertOne(e Event) error {
 	}
 
 	stmt := `
-        INSERT INTO event (id, name, group_id, capacity, start, location, created_at, creator)
+        INSERT INTO event (id, name, group_id, capacity, start, location, created_at, creator_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
 	args := []any{
@@ -90,7 +90,7 @@ func (s *Store) InsertOne(e Event) error {
 		e.Start,
 		e.Location,
 		e.CreatedAt,
-		e.Creator,
+		e.CreatorId,
 	}
 
 	_, err = s.db.Exec(stmt, args...)
@@ -100,7 +100,7 @@ func (s *Store) InsertOne(e Event) error {
 func (s *Store) GetCurrent() ([]Event, error) {
 	stmt := `
         SELECT 
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
 		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
             , e.group_id
         FROM event AS e
@@ -125,7 +125,8 @@ func (s *Store) GetCurrent() ([]Event, error) {
 func (s *Store) GetById(eventId string) (Event, error) {
 	stmt := `
         SELECT
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
+            , u.full_name AS creator_full_name
             , COALESCE((
                 SELECT SUM(attendee_count) FROM event_response
                 WHERE event_id = ? AND on_waitlist = FALSE
@@ -133,6 +134,7 @@ func (s *Store) GetById(eventId string) (Event, error) {
             , e.group_id, ug.name AS group_name
         FROM event AS e
         LEFT JOIN user_group AS ug ON e.group_id = ug.id
+        INNER JOIN user AS u ON e.creator_id = u.id
         WHERE e.id = ? AND e.is_deleted = FALSE 
     `
 	args := []any{eventId, eventId}
@@ -189,7 +191,7 @@ func (s *Store) DeleteResponse(eventId string, userId string) error {
 
 func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	stmt := `
-        SELECT er.event_id, er.user_id, er.attendee_count, u.full_name, er.created_at, er.on_waitlist
+        SELECT er.event_id, er.user_id, er.attendee_count, u.full_name AS user_full_name, er.created_at, er.on_waitlist
         FROM event_response AS er
         INNER JOIN user AS u ON er.user_id = u.id
         WHERE er.event_id = ?
@@ -205,7 +207,7 @@ func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	var responses []EventResponse
 	for rows.Next() {
 		var i EventResponse
-		if err := rows.Scan(&i.EventId, &i.UserId, &i.AttendeeCount, &i.FullName, &i.CreatedAt, &i.OnWaitlist); err != nil {
+		if err := rows.Scan(&i.EventId, &i.UserId, &i.AttendeeCount, &i.UserFullName, &i.CreatedAt, &i.OnWaitlist); err != nil {
 			return []EventResponse{}, err
 		}
 		responses = append(responses, i)
