@@ -7,7 +7,9 @@ require github.com/go-chi/chi/v5 v5.0.11
 require (
 	github.com/alexedwards/scs/sqlite3store v0.0.0-20231113091146-cef4b05350c8 // indirect
 	github.com/alexedwards/scs/v2 v2.7.0 // indirect
+	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/coreos/go-oidc/v3 v3.9.0 // indirect
+	github.com/go-chi/httprate v0.8.0 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect

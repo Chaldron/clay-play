@@ -3,6 +3,8 @@ package event
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -72,6 +74,10 @@ func NewStore(db *sqlx.DB) *Store {
 	}
 }
 
+func storeLog(format string, s ...any) {
+	log.Printf("event/store.go: %s", fmt.Sprintf(format, s...))
+}
+
 func (s *Store) InsertOne(e Event) error {
 	newId, err := gonanoid.New()
 	if err != nil {
@@ -92,6 +98,7 @@ func (s *Store) InsertOne(e Event) error {
 		e.CreatedAt,
 		e.CreatorId,
 	}
+	storeLog("InsertOne args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
 	return err
@@ -166,6 +173,7 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 		e.AttendeeCount,
 		e.OnWaitlist,
 	}
+	storeLog("UpdateResponse args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -180,6 +188,7 @@ func (s *Store) DeleteResponse(eventId string, userId string) error {
         WHERE event_id = ? AND user_id = ?
     `
 	args := []any{eventId, userId}
+	storeLog("DeleteResponse args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -254,6 +263,7 @@ func (s *Store) UpdateWaitlist(reqs []EventResponse) error {
 
 	for _, req := range reqs {
 		args := []any{req.EventId, req.UserId}
+		storeLog("UpdateWaitlist args %v", args)
 
 		_, err := t.Exec(stmt, args...)
 		if err != nil {
@@ -295,6 +305,7 @@ func (s *Store) DeleteById(id string) error {
         WHERE id = ?
     `
 	args := []any{id}
+	storeLog("DeleteById args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {

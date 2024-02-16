@@ -3,6 +3,8 @@ package group
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -16,6 +18,10 @@ func NewStore(db *sqlx.DB) *Store {
 	return &Store{
 		db: db,
 	}
+}
+
+func logger(format string, s ...any) {
+	log.Printf("group/store.go: %s", fmt.Sprintf(format, s...))
 }
 
 type Group struct {
@@ -60,6 +66,7 @@ func (s *Store) Create(p CreateParams) error {
 		p.Name,
 		p.InviteId,
 	}
+	logger("Create args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -157,6 +164,7 @@ func (s *Store) AddMember(groupId string, userId string) error {
 		userId,
 		time.Now().UTC(),
 	}
+	logger("AddMember args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
@@ -174,6 +182,7 @@ func (s *Store) Update(p UpdateParams) error {
         WHERE id = ?
     `
 	args := []any{p.Name, p.Id}
+	logger("Update args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
@@ -186,6 +195,7 @@ func (s *Store) Delete(id string) error {
         WHERE id = ?
     `
 	args := []any{id}
+	logger("Delete args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
@@ -197,6 +207,7 @@ func (s *Store) RemoveMember(groupId string, userId string) error {
         WHERE group_id = ? AND user_id = ?
     `
 	args := []any{groupId, userId}
+	logger("RemoveMember args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err

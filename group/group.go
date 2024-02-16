@@ -3,8 +3,10 @@ package group
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github/mattfan00/jvbe/config"
 	"github/mattfan00/jvbe/user"
+	"log"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
@@ -25,12 +27,17 @@ func NewService(store *Store, conf *config.Config) *Service {
 	}
 }
 
+func groupLog(format string, s ...any) {
+	log.Printf("group/group.go: %s", fmt.Sprintf(format, s...))
+}
+
 type CreateRequest struct {
 	CreatorId string
 	Name      string `schema:"name"`
 }
 
 func (s *Service) Create(req CreateRequest) (string, error) {
+	groupLog("Create req %+v", req)
 	id, err := gonanoid.New()
 	if err != nil {
 		return "", err
@@ -60,14 +67,14 @@ func (s *Service) Get(id string) (Group, error) {
 }
 
 func (s *Service) GetDetailed(id string, user user.SessionUser) (GroupDetailed, error) {
-    if !user.CanModifyGroup() {
-        if err := s.CanAccessError(sql.NullString{
-            String: id,
-            Valid: true,
-        }, user.Id); err != nil {
-            return GroupDetailed{}, err
-        }
-    }
+	if !user.CanModifyGroup() {
+		if err := s.CanAccessError(sql.NullString{
+			String: id,
+			Valid:  true,
+		}, user.Id); err != nil {
+			return GroupDetailed{}, err
+		}
+	}
 
 	g, err := s.store.Get(id)
 	if err != nil {
@@ -91,6 +98,7 @@ func (s *Service) List() ([]Group, error) {
 }
 
 func (s *Service) AddMember(groupId string, userId string) error {
+	groupLog("AddMember groupId:%s userId:%s", groupId, userId)
 	exists, err := s.store.HasMember(groupId, userId)
 	if err != nil {
 		return err
@@ -106,6 +114,7 @@ func (s *Service) AddMember(groupId string, userId string) error {
 }
 
 func (s *Service) AddMemberFromInvite(inviteId string, userId string) (Group, error) {
+	groupLog("AddMemberFromInvite inviteId:%s userId:%s", inviteId, userId)
 	g, err := s.store.GetByInviteId(inviteId)
 	if err != nil {
 		return Group{}, err
@@ -125,6 +134,7 @@ type UpdateRequest struct {
 }
 
 func (s *Service) Update(req UpdateRequest) error {
+	groupLog("Update req %+v", req)
 	err := s.store.Update(UpdateParams{
 		Id:   req.Id,
 		Name: req.Name,
@@ -133,11 +143,13 @@ func (s *Service) Update(req UpdateRequest) error {
 }
 
 func (s *Service) Delete(id string) error {
+	groupLog("Delete id:%s", id)
 	err := s.store.Delete(id)
 	return err
 }
 
 func (s *Service) RemoveMember(groupId string, userId string) error {
+	groupLog("RemoveMember groupId:%s userId:%s", groupId, userId)
 	g, err := s.store.Get(groupId)
 	if g.CreatorId == userId {
 		return errors.New("cannot remove the creator of a group")
@@ -148,6 +160,7 @@ func (s *Service) RemoveMember(groupId string, userId string) error {
 }
 
 func (s *Service) CreateAndAddMember(req CreateRequest) error {
+	groupLog("CreateAndAddMember req %+v", req)
 	groupId, err := s.Create(req)
 	if err != nil {
 		return err

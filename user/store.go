@@ -3,6 +3,8 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"slices"
 	"strings"
 	"time"
@@ -73,6 +75,10 @@ func NewStore(db *sqlx.DB) *Store {
 	}
 }
 
+func storeLog(format string, s ...any) {
+	log.Printf("user/store.go: %s", fmt.Sprintf(format, s...))
+}
+
 var (
 	ErrNoUser = errors.New("no user found")
 )
@@ -129,6 +135,7 @@ func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 		externalUser.Id,
 		time.Now().UTC(),
 	}
+    storeLog("CreateFromExternal args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
 	if err != nil {

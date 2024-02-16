@@ -6,6 +6,7 @@ import (
 	"fmt"
 	groupPkg "github/mattfan00/jvbe/group"
 	"github/mattfan00/jvbe/template"
+	"log"
 	"sync"
 	"time"
 )
@@ -21,6 +22,10 @@ func NewService(store *Store, group *groupPkg.Service) *Service {
 		store: store,
 		group: group,
 	}
+}
+
+func eventLog(format string, s ...any) {
+	log.Printf("event/event.go: %s", fmt.Sprintf(format, s...))
 }
 
 func (s *Service) GetCurrent(userId string) ([]Event, error) {
@@ -79,6 +84,7 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 }
 
 func (s *Service) CreateFromRequest(req CreateEventRequest) error {
+	eventLog("CreateFromRequest req %+v", req)
 	start, err := time.Parse(template.FormTimeFormat, req.Start)
 	if err != nil {
 		return err
@@ -107,6 +113,7 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 }
 
 func (s *Service) Delete(eventId string) error {
+	eventLog("Delete id:%s", eventId)
 	err := s.store.DeleteById(eventId)
 	if err != nil {
 		return err
@@ -118,6 +125,7 @@ func (s *Service) Delete(eventId string) error {
 var MaxAttendeeCount = 2
 
 func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) error {
+	eventLog("HandleEventResponse userId:%s req:%+v", userId, req)
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
 
@@ -174,11 +182,11 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		}
 	}
 
+	fromAttendee := !(existingResponse != nil && existingResponse.OnWaitlist)
+	eventLog("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
 	// manage waitlist ugh
 	// only need to manage it if the event had no spots left and spots freed up from main attendee list
-	if e.SpotsLeft() == 0 &&
-		attendeeCountDelta < 0 &&
-		!(existingResponse != nil && existingResponse.OnWaitlist) {
+	if e.SpotsLeft() == 0 && attendeeCountDelta < 0 && fromAttendee{
 		waitlist, err := s.store.GetWaitlist(req.Id, attendeeCountDelta*-1)
 		if err != nil {
 			return err

@@ -7,16 +7,17 @@ import (
 	groupPkg "github/mattfan00/jvbe/group"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/schema"
 )
 
 func (a *App) Routes() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
 
 	publicFileServer := http.FileServer(http.Dir("./ui/public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
@@ -24,6 +25,8 @@ func (a *App) Routes() http.Handler {
 	r.Get("/privacy", a.renderPrivacy)
 
 	r.Group(func(r chi.Router) {
+		r.Use(httprate.LimitAll(100, 1*time.Minute))
+		r.Use(middleware.Logger)
 		r.Use(a.recoverPanic)
 		r.Use(a.session.LoadAndSave)
 
@@ -266,7 +269,7 @@ type customClaims struct {
 }
 
 func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
-	log.Printf("callback: %s", r.URL.String())
+	log.Printf("login callback: %s", r.URL.String())
 
 	state := r.URL.Query().Get("state")
 	if state != expectedStateVal {
