@@ -42,12 +42,18 @@ func (a *App) Routes() http.Handler {
 			r.Get("/home", a.renderHome)
 
 			r.Route("/event", func(r chi.Router) {
+				r.Group(func(r chi.Router) {
+					r.Use(a.canModifyEvent)
+
+					r.Get("/new", a.renderNewEvent)
+					r.Post("/", a.createEvent)
+					r.Get("/{id}/edit", a.renderEditEvent)
+					r.Put("/{id}", a.updateEvent)
+					r.Delete("/{id}", a.deleteEvent)
+				})
+
 				r.Get("/{id}", a.renderEventDetails)
 				r.Post("/respond", a.respondEvent)
-
-				r.With(a.canModifyEvent).Get("/new", a.renderNewEvent)
-				r.With(a.canModifyEvent).Post("/", a.createEvent)
-				r.With(a.canModifyEvent).Delete("/{id}", a.deleteEvent)
 			})
 
 			r.Route("/group", func(r chi.Router) {
@@ -216,6 +222,34 @@ func (a *App) deleteEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
+type editEventData struct {
+	BaseData
+	Event eventPkg.Event
+}
+
+func (a *App) renderEditEvent(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+	id := chi.URLParam(r, "id")
+
+	e, err := a.event.Get(id)
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	a.renderPage(w, "event/edit.html", editEventData{
+		BaseData: BaseData{
+			User: u,
+		},
+		Event: e,
+	})
+}
+
+// TODO
+func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
+    w.Write(nil)
 }
 
 var expectedStateVal = "hellothisisalongstate"

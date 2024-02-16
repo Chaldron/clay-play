@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	groupPkg "github/mattfan00/jvbe/group"
+	"github/mattfan00/jvbe/template"
 	"sync"
 	"time"
 )
@@ -43,6 +44,11 @@ func (s *Service) GetCurrent(userId string) ([]Event, error) {
 	return filtered, nil
 }
 
+func (s *Service) Get(id string) (Event, error) {
+	e, err := s.store.GetById(id)
+	return e, err
+}
+
 func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
 	event, err := s.store.GetById(eventId)
 	if err != nil {
@@ -73,7 +79,7 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 }
 
 func (s *Service) CreateFromRequest(req CreateEventRequest) error {
-	start, err := time.Parse("2006-01-02T15:04", req.Start)
+	start, err := time.Parse(template.FormTimeFormat, req.Start)
 	if err != nil {
 		return err
 	}

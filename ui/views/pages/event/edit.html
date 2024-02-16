@@ -1,0 +1,53 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div id="error"></div>
+
+    <h3>Edit Event</h3>
+
+
+    <section>
+        Coming soon, I'm lazy.
+        {{/*
+        <article>
+            <form 
+                hx-put="/event/{{.Event.Id}}"
+                hx-push-url="true"
+                hx-target="body"
+                hx-vals="js:{timezoneOffset: new Date().getTimezoneOffset()}"
+                x-data="{ start: formFormatTime('{{jsTime .Event.Start}}') }"
+            >
+                <label>
+                    Name
+                    <input type="text" required name="name" value="{{.Event.Name}}" />
+                </label>
+                <label>
+                    Capacity 
+                    <input type="number" required name="capacity" min=0 max=100 value="{{.Event.Capacity}}" />
+                </label>
+                <label>
+                    Start time
+                    <input type="datetime-local" required name="start" step="1800" :value="start" />
+                </label>
+                <label>
+                    Location
+                    <input type="text" required name="location" value="{{.Event.Location}}" />
+                </label>
+                <button type="submit">Update</button>
+            </form>
+        </article>
+        */}}
+    </section>
+    <span
+        class="delete"
+        hx-push-url="true"
+        hx-target="body"
+        hx-confirm="Are you sure you want to delete this event?"
+        hx-delete="/event/{{.Event.Id}}"
+    >
+        Delete
+    </span>
+</main>
+{{end}}

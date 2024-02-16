@@ -4,8 +4,8 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
-	"time"
 	"strings"
+	"time"
 )
 
 type TemplateMap map[string]*template.Template
@@ -36,9 +36,9 @@ func Generate() (TemplateMap, error) {
 		t := template.New(name)
 
 		t.Funcs(template.FuncMap{
-			"jsTime": jsTime,
-			"l":      l,
-            "add": add,
+			"jsTime":   jsTime,
+			"l":        l,
+			"add":      add,
 		})
 
 		t, err = t.ParseFiles(
@@ -67,6 +67,8 @@ func Generate() (TemplateMap, error) {
 func jsTime(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05Z")
 }
+
+var FormTimeFormat = "2006-01-02T15:04"
 
 func l(i int) []int {
 	r := []int{}

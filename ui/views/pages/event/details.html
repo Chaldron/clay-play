@@ -142,20 +142,5 @@
         </article>
         {{end}}
     </section>
-    {{if .User.CanModifyEvent}}
-    <section>
-        <h5>Admin tools</h5>
-
-        <span
-            class="delete"
-            hx-push-url="true"
-            hx-target="body"
-            hx-confirm="Are you sure you want to delete this event?"
-            hx-delete="/event/{{.Event.Id}}"
-        >
-            Delete
-        </span>
-    </section>
-    {{end}}
 </main>
 {{end}}
