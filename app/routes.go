@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/httprate"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/schema"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 func (a *App) Routes() http.Handler {
@@ -258,8 +259,14 @@ func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
 var expectedStateVal = "hellothisisalongstate"
 
 func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
-	// TODO: state should be random
-	url := a.auth.AuthCodeUrl(expectedStateVal)
+	state, err := gonanoid.New()
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+	}
+
+	a.session.Put(r.Context(), "state", state)
+
+	url := a.auth.AuthCodeUrl(state)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
@@ -272,8 +279,9 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	log.Printf("login callback: %s", r.URL.String())
 
 	state := r.URL.Query().Get("state")
-	if state != expectedStateVal {
-		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedStateVal, state)
+    expectedState := a.session.PopString(r.Context(), "state")
+	if state != expectedState {
+		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedState, state)
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
