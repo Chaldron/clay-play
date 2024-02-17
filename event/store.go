@@ -29,14 +29,23 @@ func (e Event) SpotsLeft() int {
 	return e.Capacity - e.TotalAttendeeCount
 }
 
-type CreateEventRequest struct {
+type CreateRequest struct {
 	Name           string `schema:"name"`
 	GroupId        string `schema:"groupId"`
 	Capacity       int    `schema:"capacity"`
 	Start          string `schema:"start"`
 	TimezoneOffset int    `schema:"timezoneOffset"`
 	Location       string `schema:"location"`
-	CreatorId      string 
+	CreatorId      string
+}
+
+type UpdateRequest struct {
+	Id             string
+	Name           string `schema:"name"`
+	Capacity       int    `schema:"capacity"`
+	Start          string `schema:"start"`
+	TimezoneOffset int    `schema:"timezoneOffset"`
+	Location       string `schema:"location"`
 }
 
 type EventResponse struct {
@@ -101,6 +110,33 @@ func (s *Store) InsertOne(e Event) error {
 	storeLog("InsertOne args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
+	return err
+}
+
+type UpdateParams struct {
+	Id       string
+	Name     string
+	Capacity int
+	Start    time.Time
+	Location string
+}
+
+func (s *Store) Update(p UpdateParams) error {
+	stmt := `
+        UPDATE event
+        SET name = ?, capacity = ?, start = ?, location = ?
+        WHERE id = ?
+    `
+	args := []any{
+		p.Name,
+		p.Capacity,
+		p.Start,
+		p.Location,
+		p.Id,
+	}
+	storeLog("Update args %v", args)
+
+	_, err := s.db.Exec(stmt, args...)
 	return err
 }
 

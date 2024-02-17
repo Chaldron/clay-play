@@ -83,13 +83,22 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 	return e, nil
 }
 
-func (s *Service) CreateFromRequest(req CreateEventRequest) error {
+func timeFromForm(t string, offset int) (time.Time, error) {
+	r, err := time.Parse(template.FormTimeFormat, t)
+	if err != nil {
+		return time.Time{}, err
+	}
+	r = r.Add(time.Minute * time.Duration(offset))
+
+	return r, nil
+}
+
+func (s *Service) CreateFromRequest(req CreateRequest) error {
 	eventLog("CreateFromRequest req %+v", req)
-	start, err := time.Parse(template.FormTimeFormat, req.Start)
+	start, err := timeFromForm(req.Start, req.TimezoneOffset)
 	if err != nil {
 		return err
 	}
-	start = start.Add(time.Minute * time.Duration(req.TimezoneOffset))
 
 	newEvent := Event{
 		Name: req.Name,
@@ -101,7 +110,7 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 		Start:     start,
 		Location:  req.Location,
 		CreatedAt: time.Now(),
-		CreatorId:   req.CreatorId,
+		CreatorId: req.CreatorId,
 	}
 
 	err = s.store.InsertOne(newEvent)
@@ -110,6 +119,25 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 	}
 
 	return nil
+}
+
+// TODO: handle managing the waitlist if there were people on the waitlist and capacity increased
+func (s *Service) Update(req UpdateRequest) error {
+	eventLog("Update req %+v", req)
+	start, err := timeFromForm(req.Start, req.TimezoneOffset)
+	if err != nil {
+		return err
+	}
+
+	err = s.store.Update(UpdateParams{
+		Id:       req.Id,
+		Name:     req.Name,
+		Capacity: req.Capacity,
+		Start:    start,
+		Location: req.Location,
+	})
+
+	return err
 }
 
 func (s *Service) Delete(eventId string) error {
@@ -186,16 +214,26 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 	eventLog("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
 	// manage waitlist ugh
 	// only need to manage it if the event had no spots left and spots freed up from main attendee list
-	if e.SpotsLeft() == 0 && attendeeCountDelta < 0 && fromAttendee{
-		waitlist, err := s.store.GetWaitlist(req.Id, attendeeCountDelta*-1)
+	if e.SpotsLeft() == 0 && attendeeCountDelta < 0 && fromAttendee {
+		err := s.ManageWaitlist(req.Id, attendeeCountDelta*-1)
 		if err != nil {
 			return err
 		}
+	}
 
-		err = s.store.UpdateWaitlist(waitlist)
-		if err != nil {
-			return err
-		}
+	return nil
+}
+
+// take people off the waitlist based off count
+func (s *Service) ManageWaitlist(eventId string, count int) error {
+	waitlist, err := s.store.GetWaitlist(eventId, count)
+	if err != nil {
+		return err
+	}
+
+	err = s.store.UpdateWaitlist(waitlist)
+	if err != nil {
+		return err
 	}
 
 	return nil
