@@ -21,7 +21,7 @@
             {{if .User.CanModifyGroup}}
             <label>
                 Group
-                <select name="group_id">
+                <select name="groupId">
                     <option value="">None</option>
                     {{range .Groups}} 
                     <option value="{{.Id}}">{{.Name}}</option>

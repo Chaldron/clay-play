@@ -31,12 +31,12 @@ func (e Event) SpotsLeft() int {
 
 type CreateEventRequest struct {
 	Name           string `schema:"name"`
-	GroupId        string `schema:"group_id"`
+	GroupId        string `schema:"groupId"`
 	Capacity       int    `schema:"capacity"`
 	Start          string `schema:"start"`
 	TimezoneOffset int    `schema:"timezoneOffset"`
 	Location       string `schema:"location"`
-	CreatorId      string `schema:"creator_id"`
+	CreatorId      string 
 }
 
 type EventResponse struct {
@@ -55,7 +55,7 @@ func (e EventResponse) PlusOnes() int {
 
 type RespondEventRequest struct {
 	Id            string `schema:"id"`
-	AttendeeCount int    `schema:"attendee_count"`
+	AttendeeCount int    `schema:"attendeeCount"`
 }
 
 type EventDetailed struct {

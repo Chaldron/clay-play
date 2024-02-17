@@ -64,7 +64,6 @@ func (u SessionUser) CanModifyEvent() bool {
 func (u SessionUser) CanModifyGroup() bool {
 	return u.hasPermission("modify:group")
 }
-
 type Store struct {
 	db *sqlx.DB
 }
@@ -135,7 +134,7 @@ func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 		externalUser.Id,
 		time.Now().UTC(),
 	}
-    storeLog("CreateFromExternal args %v", args)
+	storeLog("CreateFromExternal args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
 	if err != nil {

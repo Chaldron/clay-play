@@ -47,6 +47,18 @@ type GroupDetailed struct {
 	Members []GroupMember
 }
 
+type CreateRequest struct {
+	CreatorId string
+	Name      string `schema:"name"`
+}
+
+type UpdateRequest struct {
+	Id   string
+	Name string `schema:"name"`
+}
+
+
+
 type CreateParams struct {
 	Id        string
 	CreatorId string

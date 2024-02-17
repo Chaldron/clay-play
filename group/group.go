@@ -31,11 +31,6 @@ func groupLog(format string, s ...any) {
 	log.Printf("group/group.go: %s", fmt.Sprintf(format, s...))
 }
 
-type CreateRequest struct {
-	CreatorId string
-	Name      string `schema:"name"`
-}
-
 func (s *Service) Create(req CreateRequest) (string, error) {
 	groupLog("Create req %+v", req)
 	id, err := gonanoid.New()
@@ -126,11 +121,6 @@ func (s *Service) AddMemberFromInvite(inviteId string, userId string) (Group, er
 	}
 
 	return g, nil
-}
-
-type UpdateRequest struct {
-	Id   string
-	Name string `schema:"name"`
 }
 
 func (s *Service) Update(req UpdateRequest) error {

@@ -43,7 +43,7 @@
             <form>
                 <input type="hidden" name="id" value="{{.Event.Id}}" />
                 {{if and (.Event.UserResponse) (gt .Event.UserResponse.AttendeeCount 0)}}
-                <input type="hidden" name="attendee_count" value="0" />
+                <input type="hidden" name="attendeeCount" value="0" />
                 <div role="group">
                     <button 
                         class="outline"
@@ -55,7 +55,7 @@
                     <button class="no">Going</button>
                 </div>
                 {{else}}
-                <input type="hidden" name="attendee_count" value="1" />
+                <input type="hidden" name="attendeeCount" value="1" />
                 <div role="group">
                     <button class="no">Nope</button>
                     <button 
@@ -74,7 +74,7 @@
                 <input type="hidden" name="id" value="{{.Event.Id}}" />
                 {{if .Event.UserResponse}}
                     {{if eq .Event.UserResponse.AttendeeCount 1}}
-                    <input type="hidden" name="attendee_count" value="2" />
+                    <input type="hidden" name="attendeeCount" value="2" />
                     <button 
                         class="outline"
                         hx-post="/event/respond"
@@ -84,7 +84,7 @@
                         +1
                     </button>
                     {{else if eq .Event.UserResponse.AttendeeCount 2}}
-                    <input type="hidden" name="attendee_count" value="1" />
+                    <input type="hidden" name="attendeeCount" value="1" />
                     <button
                         hx-post="/event/respond"
                         hx-target="body"
