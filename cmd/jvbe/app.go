@@ -78,7 +78,7 @@ func (p *appProgram) run() error {
 	userStore := user.NewStore(db)
 	userService := user.NewService(userStore)
 
-	authService, err := auth.NewService(conf)
+	authService, err := auth.NewService(conf, userService)
 	if err != nil {
 		return err
 	}

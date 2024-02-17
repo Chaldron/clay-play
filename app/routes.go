@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	eventPkg "github/mattfan00/jvbe/event"
 	groupPkg "github/mattfan00/jvbe/group"
@@ -12,7 +11,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/schema"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
@@ -270,53 +268,23 @@ func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-type customClaims struct {
-	Permissions []string `json:"permissions"`
-	jwt.RegisteredClaims
-}
-
 func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 	log.Printf("login callback: %s", r.URL.String())
 
 	state := r.URL.Query().Get("state")
-    expectedState := a.session.PopString(r.Context(), "state")
+	expectedState := a.session.PopString(r.Context(), "state")
 	if state != expectedState {
 		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedState, state)
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	// now that we are succesfully authenticated, use the code we got back to get the access token
 	code := r.URL.Query().Get("code")
-	externalUser, accessToken, err := a.auth.InfoFromProvider(code)
+	u, err := a.auth.HandleLogin(code)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
-
-	u, err := a.user.HandleFromExternal(externalUser)
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	sessionUser := u.ToSessionUser()
-
-	// dont verify token since this should have come from oauth and I don't want to deal with verifying right now
-	parser := jwt.NewParser(jwt.WithValidMethods([]string{"RS256"}))
-	token, _, err := parser.ParseUnverified(accessToken, &customClaims{})
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	claims, ok := token.Claims.(*customClaims)
-	if !ok {
-		a.renderErrorPage(w, errors.New("cannot get claims"), http.StatusInternalServerError)
-		return
-	}
-
-	sessionUser.Permissions = claims.Permissions
 
 	err = a.session.RenewToken(r.Context())
 	if err != nil {
@@ -324,7 +292,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.session.Put(r.Context(), "user", &sessionUser)
+	a.session.Put(r.Context(), "user", &u)
 
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
