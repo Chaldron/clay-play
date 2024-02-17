@@ -254,8 +254,6 @@ func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
 	w.Write(nil)
 }
 
-var expectedStateVal = "hellothisisalongstate"
-
 func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
 	state, err := gonanoid.New()
 	if err != nil {
