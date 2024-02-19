@@ -27,3 +27,10 @@
 If you don't want to run the above commands every time a change occurs, you can do the following for live reloading
 1. Install [air](https://github.com/cosmtrek/air): `go install github.com/cosmtrek/air@latest`
 1. `air -c .air.toml`
+
+## migrations
+
+Migrations are handled through [goose](https://github.com/pressly/goose). We only use goose as a library rather than the CLI so no need to download the CLI.
+- **Create a new migration**: `go run ./cmd/jvbe migration create <name>`
+    - This will create a new migration file named something like `migrations/20240219151811_<name>.sql`, where you can put the migration details in
+- On app startup, `goose.Up(...)` runs to always bring the DB schema up to date

@@ -18,11 +18,11 @@ func run() error {
 
 	programArgs := os.Args[2:]
 	appProgram := newAppProgram(programArgs)
-	dbProgram := newDbProgram(programArgs)
+	migrationProgram := newMigrationProgram(programArgs)
 
 	programs := []program{
 		appProgram,
-		dbProgram,
+		migrationProgram,
 	}
 
 	input := os.Args[1]
@@ -40,9 +40,9 @@ func run() error {
 }
 
 func main() {
-		err := run()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+	err := run()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }
