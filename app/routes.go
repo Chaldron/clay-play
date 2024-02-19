@@ -101,7 +101,7 @@ type homeData struct {
 func (a *App) renderHome(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	currEvents, err := a.event.GetCurrent(u.Id)
+	currEvents, err := a.event.ListCurrent(u.Id)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
@@ -180,7 +180,7 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.event.HandleEventResponse(u.Id, req)
+	err = a.event.HandleResponse(u.Id, req)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -206,7 +206,7 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	req.CreatorId = u.Id
 
-	err = a.event.CreateFromRequest(req)
+	err = a.event.Create(req)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -251,31 +251,31 @@ func (a *App) renderEditEvent(w http.ResponseWriter, r *http.Request) {
 
 // TODO
 func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
-    /*
-	u, _ := a.sessionUser(r)
-	id := chi.URLParam(r, "id")
-	log.Printf("user updating event %s: %s", id, u.Id)
+	/*
+		u, _ := a.sessionUser(r)
+		id := chi.URLParam(r, "id")
+		log.Printf("user updating event %s: %s", id, u.Id)
 
-	if err := r.ParseForm(); err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
+		if err := r.ParseForm(); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
 
-	var req eventPkg.UpdateRequest
-	if err := schema.NewDecoder().Decode(&req, r.PostForm); err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-	req.Id = id
+		var req eventPkg.UpdateRequest
+		if err := schema.NewDecoder().Decode(&req, r.PostForm); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+		req.Id = id
 
-	if err := a.event.Update(req); err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
+		if err := a.event.Update(req); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
 
-	http.Redirect(w, r, "/event/"+id, http.StatusSeeOther)
-    */
-    w.Write(nil)
+		http.Redirect(w, r, "/event/"+id, http.StatusSeeOther)
+	*/
+	w.Write(nil)
 }
 
 func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {

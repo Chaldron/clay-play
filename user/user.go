@@ -22,7 +22,7 @@ func userLog(format string, s ...any) {
 
 func (s *Service) HandleFromExternal(externalUser ExternalUser) (User, error) {
     userLog("HandleFromExternal externalUser %+v", externalUser)
-	user, err := s.store.GetByExternalId(externalUser.Id)
+	user, err := s.store.GetByExternal(externalUser.Id)
 	// if cant retrieve user, then need to create
 	if errors.Is(err, ErrNoUser) {
 		user, err = s.store.CreateFromExternal(externalUser)

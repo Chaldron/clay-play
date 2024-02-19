@@ -13,6 +13,24 @@ import (
 	"github.com/matoous/go-nanoid/v2"
 )
 
+type Store struct {
+	db *sqlx.DB
+}
+
+func NewStore(db *sqlx.DB) *Store {
+	return &Store{
+		db: db,
+	}
+}
+
+func storeLog(format string, s ...any) {
+	log.Printf("user/store.go: %s", fmt.Sprintf(format, s...))
+}
+
+var (
+	ErrNoUser = errors.New("no user found")
+)
+
 type User struct {
 	Id         string    `db:"id"`
 	FullName   string    `db:"full_name"`
@@ -64,25 +82,8 @@ func (u SessionUser) CanModifyEvent() bool {
 func (u SessionUser) CanModifyGroup() bool {
 	return u.hasPermission("modify:group")
 }
-type Store struct {
-	db *sqlx.DB
-}
 
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{
-		db: db,
-	}
-}
-
-func storeLog(format string, s ...any) {
-	log.Printf("user/store.go: %s", fmt.Sprintf(format, s...))
-}
-
-var (
-	ErrNoUser = errors.New("no user found")
-)
-
-func (s *Store) GetByExternalId(externalId string) (User, error) {
+func (s *Store) GetByExternal(externalId string) (User, error) {
 	stmt := `
         SELECT id, full_name, external_id, created_at FROM user
         WHERE external_id = ?
@@ -100,7 +101,7 @@ func (s *Store) GetByExternalId(externalId string) (User, error) {
 	return user, nil
 }
 
-func (s *Store) GetById(id string) (User, error) {
+func (s *Store) Get(id string) (User, error) {
 	stmt := `
         SELECT id, full_name, external_id, created_at FROM user
         WHERE id = ?
@@ -141,7 +142,7 @@ func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 		return User{}, err
 	}
 
-	newUser, err := s.GetById(newId)
+	newUser, err := s.Get(newId)
 	if err != nil {
 		return User{}, err
 	}

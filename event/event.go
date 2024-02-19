@@ -28,8 +28,8 @@ func eventLog(format string, s ...any) {
 	log.Printf("event/event.go: %s", fmt.Sprintf(format, s...))
 }
 
-func (s *Service) GetCurrent(userId string) ([]Event, error) {
-	currEvents, err := s.store.GetCurrent()
+func (s *Service) ListCurrent(userId string) ([]Event, error) {
+	currEvents, err := s.store.ListCurrent()
 	if err != nil {
 		return []Event{}, err
 	}
@@ -50,12 +50,12 @@ func (s *Service) GetCurrent(userId string) ([]Event, error) {
 }
 
 func (s *Service) Get(id string) (Event, error) {
-	e, err := s.store.GetById(id)
+	e, err := s.store.Get(id)
 	return e, err
 }
 
 func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
-	event, err := s.store.GetById(eventId)
+	event, err := s.store.Get(eventId)
 	if err != nil {
 		return EventDetailed{}, err
 	}
@@ -64,7 +64,7 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 		return EventDetailed{}, err
 	}
 
-	responses, err := s.store.GetResponsesByEventId(eventId)
+	responses, err := s.store.ListResponses(eventId)
 	if err != nil {
 		return EventDetailed{}, err
 	}
@@ -93,8 +93,18 @@ func timeFromForm(t string, offset int) (time.Time, error) {
 	return r, nil
 }
 
-func (s *Service) CreateFromRequest(req CreateRequest) error {
-	eventLog("CreateFromRequest req %+v", req)
+type CreateRequest struct {
+	Name           string `schema:"name"`
+	GroupId        string `schema:"groupId"`
+	Capacity       int    `schema:"capacity"`
+	Start          string `schema:"start"`
+	TimezoneOffset int    `schema:"timezoneOffset"`
+	Location       string `schema:"location"`
+	CreatorId      string
+}
+
+func (s *Service) Create(req CreateRequest) error {
+	eventLog("Create req %+v", req)
 	start, err := timeFromForm(req.Start, req.TimezoneOffset)
 	if err != nil {
 		return err
@@ -113,12 +123,21 @@ func (s *Service) CreateFromRequest(req CreateRequest) error {
 		CreatorId: req.CreatorId,
 	}
 
-	err = s.store.InsertOne(newEvent)
+	err = s.store.Create(newEvent)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+type UpdateRequest struct {
+	Id             string
+	Name           string `schema:"name"`
+	Capacity       int    `schema:"capacity"`
+	Start          string `schema:"start"`
+	TimezoneOffset int    `schema:"timezoneOffset"`
+	Location       string `schema:"location"`
 }
 
 // TODO: handle managing the waitlist if there were people on the waitlist and capacity increased
@@ -142,7 +161,7 @@ func (s *Service) Update(req UpdateRequest) error {
 
 func (s *Service) Delete(eventId string) error {
 	eventLog("Delete id:%s", eventId)
-	err := s.store.DeleteById(eventId)
+	err := s.store.Delete(eventId)
 	if err != nil {
 		return err
 	}
@@ -152,8 +171,13 @@ func (s *Service) Delete(eventId string) error {
 
 var MaxAttendeeCount = 2
 
-func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) error {
-	eventLog("HandleEventResponse userId:%s req:%+v", userId, req)
+type RespondEventRequest struct {
+	Id            string `schema:"id"`
+	AttendeeCount int    `schema:"attendeeCount"`
+}
+
+func (s *Service) HandleResponse(userId string, req RespondEventRequest) error {
+	eventLog("HandleResponse userId:%s req:%+v", userId, req)
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
 
@@ -165,7 +189,7 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		return fmt.Errorf("maximum of %d plus one(s) allowed", MaxAttendeeCount-1)
 	}
 
-	e, err := s.store.GetById(req.Id)
+	e, err := s.store.Get(req.Id)
 	if err != nil {
 		return err
 	}
@@ -226,7 +250,7 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 
 // take people off the waitlist based off count
 func (s *Service) ManageWaitlist(eventId string, count int) error {
-	waitlist, err := s.store.GetWaitlist(eventId, count)
+	waitlist, err := s.store.ListWaitlist(eventId, count)
 	if err != nil {
 		return err
 	}

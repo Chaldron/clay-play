@@ -20,7 +20,7 @@ func NewStore(db *sqlx.DB) *Store {
 	}
 }
 
-func logger(format string, s ...any) {
+func storeLog(format string, s ...any) {
 	log.Printf("group/store.go: %s", fmt.Sprintf(format, s...))
 }
 
@@ -47,18 +47,6 @@ type GroupDetailed struct {
 	Members []GroupMember
 }
 
-type CreateRequest struct {
-	CreatorId string
-	Name      string `schema:"name"`
-}
-
-type UpdateRequest struct {
-	Id   string
-	Name string `schema:"name"`
-}
-
-
-
 type CreateParams struct {
 	Id        string
 	CreatorId string
@@ -78,7 +66,7 @@ func (s *Store) Create(p CreateParams) error {
 		p.Name,
 		p.InviteId,
 	}
-	logger("Create args %v", args)
+	storeLog("Create args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -103,7 +91,7 @@ func (s *Store) Get(id string) (Group, error) {
 	return g, err
 }
 
-func (s *Store) GetMembers(id string) ([]GroupMember, error) {
+func (s *Store) ListMembers(id string) ([]GroupMember, error) {
 	stmt := `
         SELECT ugm.group_id, ugm.user_id, u.full_name AS user_full_name FROM user_group_member ugm
         INNER JOIN user u ON u.id = ugm.user_id
@@ -136,7 +124,7 @@ func (s *Store) List() ([]Group, error) {
 	return g, err
 }
 
-func (s *Store) GetByInviteId(inviteId string) (Group, error) {
+func (s *Store) GetByInvite(inviteId string) (Group, error) {
 	stmt := `
         SELECT id, name FROM user_group
         WHERE invite_id = ? AND is_deleted = FALSE
@@ -176,7 +164,7 @@ func (s *Store) AddMember(groupId string, userId string) error {
 		userId,
 		time.Now().UTC(),
 	}
-	logger("AddMember args %v", args)
+	storeLog("AddMember args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
@@ -194,7 +182,7 @@ func (s *Store) Update(p UpdateParams) error {
         WHERE id = ?
     `
 	args := []any{p.Name, p.Id}
-	logger("Update args %v", args)
+	storeLog("Update args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
@@ -207,7 +195,7 @@ func (s *Store) Delete(id string) error {
         WHERE id = ?
     `
 	args := []any{id}
-	logger("Delete args %v", args)
+	storeLog("Delete args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
@@ -219,7 +207,7 @@ func (s *Store) RemoveMember(groupId string, userId string) error {
         WHERE group_id = ? AND user_id = ?
     `
 	args := []any{groupId, userId}
-	logger("RemoveMember args %v", args)
+	storeLog("RemoveMember args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err

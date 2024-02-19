@@ -31,6 +31,11 @@ func groupLog(format string, s ...any) {
 	log.Printf("group/group.go: %s", fmt.Sprintf(format, s...))
 }
 
+type CreateRequest struct {
+	CreatorId string
+	Name      string `schema:"name"`
+}
+
 func (s *Service) Create(req CreateRequest) (string, error) {
 	groupLog("Create req %+v", req)
 	id, err := gonanoid.New()
@@ -76,7 +81,7 @@ func (s *Service) GetDetailed(id string, user user.SessionUser) (GroupDetailed, 
 		return GroupDetailed{}, err
 	}
 
-	m, err := s.store.GetMembers(id)
+	m, err := s.store.ListMembers(id)
 	if err != nil {
 		return GroupDetailed{}, err
 	}
@@ -110,7 +115,7 @@ func (s *Service) AddMember(groupId string, userId string) error {
 
 func (s *Service) AddMemberFromInvite(inviteId string, userId string) (Group, error) {
 	groupLog("AddMemberFromInvite inviteId:%s userId:%s", inviteId, userId)
-	g, err := s.store.GetByInviteId(inviteId)
+	g, err := s.store.GetByInvite(inviteId)
 	if err != nil {
 		return Group{}, err
 	}
@@ -121,6 +126,11 @@ func (s *Service) AddMemberFromInvite(inviteId string, userId string) (Group, er
 	}
 
 	return g, nil
+}
+
+type UpdateRequest struct {
+	Id   string
+	Name string `schema:"name"`
 }
 
 func (s *Service) Update(req UpdateRequest) error {
