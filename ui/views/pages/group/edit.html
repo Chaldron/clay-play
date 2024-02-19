@@ -10,9 +10,8 @@
     <section>
         <article>
             <form 
-                hx-put="/group/{{.Group.Id}}"
-                hx-push-url="true"
-                hx-target="body"
+                action="/group/{{.Group.Id}}/edit"
+                method="post"
             >
                 <label>
                     Name
@@ -27,7 +26,7 @@
         hx-push-url="true"
         hx-target="body"
         hx-confirm="Are you sure you want to delete this group?"
-        hx-delete="/group/{{.Group.Id}}"
+        hx-delete="/group/{{.Group.Id}}/edit"
     >
         Delete
     </span>

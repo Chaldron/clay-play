@@ -9,9 +9,8 @@
 
     <article>
         <form 
-            hx-post="/event"
-            hx-push-url="true"
-            hx-target="body"
+            action="/event/new"
+            method="post"
             hx-vals="js:{timezoneOffset: new Date().getTimezoneOffset()}"
         >
             <label>

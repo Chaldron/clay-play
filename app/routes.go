@@ -48,10 +48,10 @@ func (a *App) Routes() http.Handler {
 					r.Use(a.canModifyEvent)
 
 					r.Get("/new", a.renderNewEvent)
-					r.Post("/", a.createEvent)
+					r.Post("/new", a.createEvent)
 					r.Get("/{id}/edit", a.renderEditEvent)
-					r.Put("/{id}", a.updateEvent)
-					r.Delete("/{id}", a.deleteEvent)
+					r.Post("/{id}/edit", a.updateEvent)
+					r.Delete("/{id}/edit", a.deleteEvent)
 				})
 
 				r.Get("/{id}", a.renderEventDetails)
@@ -64,10 +64,10 @@ func (a *App) Routes() http.Handler {
 
 					r.Get("/list", a.renderGroupList)
 					r.Get("/new", a.renderNewGroup)
-					r.Post("/", a.createGroup)
+					r.Post("/new", a.createGroup)
 					r.Get("/{id}/edit", a.renderEditGroup)
-					r.Put("/{id}", a.updateGroup)
-					r.Delete("/{id}", a.deleteGroup)
+					r.Post("/{id}/edit", a.updateGroup)
+					r.Delete("/{id}/edit", a.deleteGroup)
 					r.Delete("/{id}/member/{userId}", a.removeGroupMember)
 				})
 
@@ -137,6 +137,32 @@ func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	err := r.ParseForm()
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	var req eventPkg.CreateRequest
+	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+	req.CreatorId = u.Id
+
+	err = a.event.Create(req)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
 type eventDetailsData struct {
 	BaseData
 	Event            eventPkg.EventDetailed
@@ -189,34 +215,9 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/event/"+req.Id, http.StatusSeeOther)
 }
 
-func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-
-	err := r.ParseForm()
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	var req eventPkg.CreateRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-	req.CreatorId = u.Id
-
-	err = a.event.Create(req)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/home", http.StatusSeeOther)
-}
-
 func (a *App) deleteEvent(w http.ResponseWriter, r *http.Request) {
 	eventId := chi.URLParam(r, "id")
+
 	err := a.event.Delete(eventId)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
