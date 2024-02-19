@@ -2,10 +2,13 @@
 <header class="container-fluid">
     <nav>
         <ul>
-            <li><strong>jvbe</strong></li>
+            <li>
+                <a href="/home">
+                    <img class="logo" src="/public/logo.png" />
+                </a>
+            </li>
         </ul>
         <ul>
-            <li><a href="/home">Home</a></li>
             {{if .User.CanModifyGroup}}
             <li><a href="/group/list">Groups</a></li>
             {{end}}

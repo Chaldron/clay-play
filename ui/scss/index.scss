@@ -79,6 +79,10 @@ main {
 
 header {
     max-width: map.get(map.get($breakpoints, "md"), "viewport");
+
+    .logo {
+        width: 5em;
+    }
 }
 
 footer {
