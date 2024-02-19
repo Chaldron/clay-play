@@ -47,7 +47,7 @@ func New(
 }
 
 type BaseData struct {
-	User  user.SessionUser
+	User user.SessionUser
 }
 
 func (a *App) renderTemplate(
