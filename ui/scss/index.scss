@@ -194,10 +194,30 @@ article {
     }
 }
 
+.controls {
+    display: flex;
+    flex-direction: row;
+
+    & > * {
+        cursor: pointer;
+        padding-left: var(#{$css-var-prefix}nav-link-spacing-horizontal);
+        padding-right: var(#{$css-var-prefix}nav-link-spacing-horizontal);
+
+        &:first-child {
+            padding-left: 0;
+        }
+
+        &:last-child {
+            padding-right: 0;
+        }
+    }
+}
+
 .delete {
     color: $red-400;
     cursor: pointer;
 }
+
 
 a.nostyle {
     &:link,

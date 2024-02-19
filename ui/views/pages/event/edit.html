@@ -39,14 +39,16 @@
         </article>
         */}}
     </section>
-    <span
-        class="delete"
-        hx-push-url="true"
-        hx-target="body"
-        hx-confirm="Are you sure you want to delete this event?"
-        hx-delete="/event/{{.Event.Id}}/edit"
-    >
-        Delete
-    </span>
+    <section class="controls">
+        <div
+            class="delete"
+            hx-push-url="true"
+            hx-target="body"
+            hx-confirm="Are you sure you want to delete this event?"
+            hx-delete="/event/{{.Event.Id}}/edit"
+        >
+            Delete
+        </div>
+    </section>
 </main>
 {{end}}

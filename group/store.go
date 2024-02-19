@@ -212,3 +212,16 @@ func (s *Store) RemoveMember(groupId string, userId string) error {
 	_, err := s.db.Exec(stmt, args...)
 	return err
 }
+
+func (s *Store) RefreshInviteId(groupId string, newInviteId string) error {
+	stmt := `
+        UPDATE user_group
+        SET invite_id = ?
+        WHERE id = ?
+    `
+	args := []any{newInviteId, groupId}
+	storeLog("RefreshInviteId args %v", args)
+
+	_, err := s.db.Exec(stmt, args...)
+	return err
+}

@@ -194,3 +194,12 @@ func (s *Service) CanAccessError(groupId sql.NullString, userId string) error {
 
 	return nil
 }
+
+func (s *Service) RefreshInviteId(groupId string) error {
+	inviteId, err := gonanoid.New()
+	if err != nil {
+		return err
+	}
+
+    return s.store.RefreshInviteId(groupId, inviteId)
+}

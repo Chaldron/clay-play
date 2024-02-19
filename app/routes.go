@@ -69,6 +69,7 @@ func (a *App) Routes() http.Handler {
 					r.Post("/{id}/edit", a.updateGroup)
 					r.Delete("/{id}/edit", a.deleteGroup)
 					r.Delete("/{id}/member/{userId}", a.removeGroupMember)
+					r.Post("/{id}/invite", a.refreshInviteLinkGroup)
 				})
 
 				r.Get("/{id}/invite", a.inviteGroup)
@@ -500,4 +501,17 @@ func (a *App) removeGroupMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/group/"+id, http.StatusSeeOther)
+}
+
+func (a *App) refreshInviteLinkGroup(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	err := a.group.RefreshInviteId(id)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("HX-Location", "/group/"+id)
+	w.Write(nil)
 }
