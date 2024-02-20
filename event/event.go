@@ -172,12 +172,13 @@ func (s *Service) Delete(eventId string) error {
 var MaxAttendeeCount = 2
 
 type RespondEventRequest struct {
+	UserId        string
 	Id            string `schema:"id"`
 	AttendeeCount int    `schema:"attendeeCount"`
 }
 
-func (s *Service) HandleResponse(userId string, req RespondEventRequest) error {
-	eventLog("HandleResponse userId:%s req:%+v", userId, req)
+func (s *Service) HandleResponse(req RespondEventRequest) error {
+	eventLog("HandleResponse req %+v", req)
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
 
@@ -194,11 +195,11 @@ func (s *Service) HandleResponse(userId string, req RespondEventRequest) error {
 		return err
 	}
 
-	if err = s.group.CanAccessError(e.GroupId, userId); err != nil {
+	if err = s.group.CanAccessError(e.GroupId, req.UserId); err != nil {
 		return err
 	}
 
-	existingResponse, err := s.store.GetUserResponse(req.Id, userId)
+	existingResponse, err := s.store.GetUserResponse(req.Id, req.UserId)
 	if err != nil {
 		return err
 	}
@@ -209,7 +210,7 @@ func (s *Service) HandleResponse(userId string, req RespondEventRequest) error {
 	}
 
 	if req.AttendeeCount == 0 { // just delete the response, I don't think it really matters to keep it in DB
-		err := s.store.DeleteResponse(req.Id, userId)
+		err := s.store.DeleteResponse(req.Id, req.UserId)
 		if err != nil {
 			return err
 		}
@@ -223,7 +224,7 @@ func (s *Service) HandleResponse(userId string, req RespondEventRequest) error {
 
 		er := EventResponse{
 			EventId:       req.Id,
-			UserId:        userId,
+			UserId:        req.UserId,
 			AttendeeCount: req.AttendeeCount,
 			OnWaitlist:    addToWaitlist,
 		}

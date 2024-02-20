@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/gorilla/schema"
 )
 
 type App struct {
@@ -104,4 +105,20 @@ func (a *App) renderErrorPage(
 	a.renderPage(w, "error.html", map[string]any{
 		"Error": err,
 	})
+}
+
+func schemaDecode[T any](r *http.Request) (T, error) {
+	var v T
+
+	if err := r.ParseForm(); err != nil {
+		return v, err
+	}
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	if err := decoder.Decode(&v, r.PostForm); err != nil {
+		return v, err
+	}
+
+	return v, nil
 }

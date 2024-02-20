@@ -11,7 +11,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
-	"github.com/gorilla/schema"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
@@ -141,14 +140,7 @@ func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	err := r.ParseForm()
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	var req eventPkg.CreateRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	req, err := schemaDecode[eventPkg.CreateRequest](r)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -192,22 +184,14 @@ func (a *App) renderEventDetails(w http.ResponseWriter, r *http.Request) {
 func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	err := r.ParseForm()
+	req, err := schemaDecode[eventPkg.RespondEventRequest](r)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
+	req.UserId = u.Id
 
-	var req eventPkg.RespondEventRequest
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-	err = decoder.Decode(&req, r.PostForm)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	err = a.event.HandleResponse(u.Id, req)
+	err = a.event.HandleResponse(req)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -343,14 +327,7 @@ func (a *App) renderNewGroup(w http.ResponseWriter, r *http.Request) {
 func (a *App) createGroup(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	err := r.ParseForm()
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	var req groupPkg.CreateRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	req, err := schemaDecode[groupPkg.CreateRequest](r)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -455,14 +432,7 @@ func (a *App) renderEditGroup(w http.ResponseWriter, r *http.Request) {
 func (a *App) updateGroup(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	err := r.ParseForm()
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	var req groupPkg.UpdateRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	req, err := schemaDecode[groupPkg.UpdateRequest](r)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
