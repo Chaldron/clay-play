@@ -28,6 +28,7 @@ WORKDIR /app
 
 COPY --from=ui /ui/public ./ui/public
 COPY --from=ui /ui/views ./ui/views
+COPY --from=app /app/migrations ./migrations
 COPY --from=app /app/jvbe ./
 
 ENTRYPOINT [ "./jvbe" ]
