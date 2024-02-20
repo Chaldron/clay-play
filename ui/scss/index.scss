@@ -58,6 +58,16 @@
 
 $border-color: $grey-300;
 
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+
+    .spacer {
+        flex: 1 0 auto;
+    }
+}
+
 main {
     max-width: map.get(map.get($breakpoints, "md"), "viewport");
 
@@ -69,6 +79,15 @@ main {
 
 header {
     max-width: map.get(map.get($breakpoints, "md"), "viewport");
+
+    .logo {
+        width: 5em;
+    }
+}
+
+footer {
+    display: flex;
+    justify-content: center;
 }
 
 button {
@@ -175,10 +194,30 @@ article {
     }
 }
 
+.controls {
+    display: flex;
+    flex-direction: row;
+
+    & > * {
+        cursor: pointer;
+        padding-left: var(#{$css-var-prefix}nav-link-spacing-horizontal);
+        padding-right: var(#{$css-var-prefix}nav-link-spacing-horizontal);
+
+        &:first-child {
+            padding-left: 0;
+        }
+
+        &:last-child {
+            padding-right: 0;
+        }
+    }
+}
+
 .delete {
     color: $red-400;
     cursor: pointer;
 }
+
 
 a.nostyle {
     &:link,

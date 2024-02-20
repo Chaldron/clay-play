@@ -3,12 +3,32 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/matoous/go-nanoid/v2"
+)
+
+type Store struct {
+	db *sqlx.DB
+}
+
+func NewStore(db *sqlx.DB) *Store {
+	return &Store{
+		db: db,
+	}
+}
+
+func storeLog(format string, s ...any) {
+	log.Printf("user/store.go: %s", fmt.Sprintf(format, s...))
+}
+
+var (
+	ErrNoUser = errors.New("no user found")
 )
 
 type User struct {
@@ -63,21 +83,7 @@ func (u SessionUser) CanModifyGroup() bool {
 	return u.hasPermission("modify:group")
 }
 
-type Store struct {
-	db *sqlx.DB
-}
-
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{
-		db: db,
-	}
-}
-
-var (
-	ErrNoUser = errors.New("no user found")
-)
-
-func (s *Store) GetByExternalId(externalId string) (User, error) {
+func (s *Store) GetByExternal(externalId string) (User, error) {
 	stmt := `
         SELECT id, full_name, external_id, created_at FROM user
         WHERE external_id = ?
@@ -95,7 +101,7 @@ func (s *Store) GetByExternalId(externalId string) (User, error) {
 	return user, nil
 }
 
-func (s *Store) GetById(id string) (User, error) {
+func (s *Store) Get(id string) (User, error) {
 	stmt := `
         SELECT id, full_name, external_id, created_at FROM user
         WHERE id = ?
@@ -129,13 +135,14 @@ func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 		externalUser.Id,
 		time.Now().UTC(),
 	}
+	storeLog("CreateFromExternal args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
 	if err != nil {
 		return User{}, err
 	}
 
-	newUser, err := s.GetById(newId)
+	newUser, err := s.Get(newId)
 	if err != nil {
 		return User{}, err
 	}

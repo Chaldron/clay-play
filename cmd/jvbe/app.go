@@ -59,6 +59,15 @@ func (p *appProgram) run() error {
 	}
 	log.Print("connected to db: ", conf.DbConn)
 
+	log.Print("beginning migration")
+	migration, err := newMigration(db.DB)
+	if err != nil {
+		return err
+	}
+	if err := migration.Up(); err != nil {
+		return err
+	}
+
 	templates, err := template.Generate()
 	if err != nil {
 		return err
@@ -78,7 +87,7 @@ func (p *appProgram) run() error {
 	userStore := user.NewStore(db)
 	userService := user.NewService(userStore)
 
-	authService, err := auth.NewService(conf)
+	authService, err := auth.NewService(conf, userService)
 	if err != nil {
 		return err
 	}
@@ -87,7 +96,7 @@ func (p *appProgram) run() error {
 		eventService,
 		userService,
 		authService,
-        groupService,
+		groupService,
 
 		conf,
 		session,

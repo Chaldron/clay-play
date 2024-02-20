@@ -9,9 +9,8 @@
 
     <article>
         <form 
-            hx-post="/event"
-            hx-push-url="true"
-            hx-target="body"
+            action="/event/new"
+            method="post"
             hx-vals="js:{timezoneOffset: new Date().getTimezoneOffset()}"
         >
             <label>
@@ -21,17 +20,18 @@
             {{if .User.CanModifyGroup}}
             <label>
                 Group
-                <select name="group_id">
+                <select name="groupId">
                     <option value="">None</option>
                     {{range .Groups}} 
                     <option value="{{.Id}}">{{.Name}}</option>
                     {{end}}
                 </select>
+                <small>Choose a group the event should only be available to. "None" will make it publicly available.</small>
             </label>
             {{end}}
             <label>
                 Capacity 
-                <input type="number" required name="capacity" min=0 max=100 />
+                <input type="number" required name="capacity" min=0 max=100 value=19 />
             </label>
             <label>
                 Start time
@@ -39,7 +39,7 @@
             </label>
             <label>
                 Location
-                <input type="text" required name="location" />
+                <input type="text" required name="location" value="Alta @ K Station" />
             </label>
             <button type="submit">Submit</button>
         </form>

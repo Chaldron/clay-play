@@ -3,11 +3,27 @@ package event
 import (
 	"database/sql"
 	"errors"
+	"fmt"
+	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
+
+type Store struct {
+	db *sqlx.DB
+}
+
+func NewStore(db *sqlx.DB) *Store {
+	return &Store{
+		db: db,
+	}
+}
+
+func storeLog(format string, s ...any) {
+	log.Printf("event/store.go: %s", fmt.Sprintf(format, s...))
+}
 
 type Event struct {
 	Id                 string         `db:"id"`
@@ -27,16 +43,6 @@ func (e Event) SpotsLeft() int {
 	return e.Capacity - e.TotalAttendeeCount
 }
 
-type CreateEventRequest struct {
-	Name           string `schema:"name"`
-	GroupId        string `schema:"group_id"`
-	Capacity       int    `schema:"capacity"`
-	Start          string `schema:"start"`
-	TimezoneOffset int    `schema:"timezoneOffset"`
-	Location       string `schema:"location"`
-	CreatorId      string `schema:"creator_id"`
-}
-
 type EventResponse struct {
 	EventId       string    `db:"event_id"`
 	UserId        string    `db:"user_id"`
@@ -51,28 +57,13 @@ func (e EventResponse) PlusOnes() int {
 	return e.AttendeeCount - 1
 }
 
-type RespondEventRequest struct {
-	Id            string `schema:"id"`
-	AttendeeCount int    `schema:"attendee_count"`
-}
-
 type EventDetailed struct {
 	Event
 	UserResponse *EventResponse
 	Responses    []EventResponse
 }
 
-type Store struct {
-	db *sqlx.DB
-}
-
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{
-		db: db,
-	}
-}
-
-func (s *Store) InsertOne(e Event) error {
+func (s *Store) Create(e Event) error {
 	newId, err := gonanoid.New()
 	if err != nil {
 		return err
@@ -92,12 +83,40 @@ func (s *Store) InsertOne(e Event) error {
 		e.CreatedAt,
 		e.CreatorId,
 	}
+	storeLog("Create args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
 	return err
 }
 
-func (s *Store) GetCurrent() ([]Event, error) {
+type UpdateParams struct {
+	Id       string
+	Name     string
+	Capacity int
+	Start    time.Time
+	Location string
+}
+
+func (s *Store) Update(p UpdateParams) error {
+	stmt := `
+        UPDATE event
+        SET name = ?, capacity = ?, start = ?, location = ?
+        WHERE id = ?
+    `
+	args := []any{
+		p.Name,
+		p.Capacity,
+		p.Start,
+		p.Location,
+		p.Id,
+	}
+	storeLog("Update args %v", args)
+
+	_, err := s.db.Exec(stmt, args...)
+	return err
+}
+
+func (s *Store) ListCurrent() ([]Event, error) {
 	stmt := `
         SELECT 
             e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
@@ -122,7 +141,7 @@ func (s *Store) GetCurrent() ([]Event, error) {
 	return events, nil
 }
 
-func (s *Store) GetById(eventId string) (Event, error) {
+func (s *Store) Get(eventId string) (Event, error) {
 	stmt := `
         SELECT
             e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
@@ -166,6 +185,7 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 		e.AttendeeCount,
 		e.OnWaitlist,
 	}
+	storeLog("UpdateResponse args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -180,6 +200,7 @@ func (s *Store) DeleteResponse(eventId string, userId string) error {
         WHERE event_id = ? AND user_id = ?
     `
 	args := []any{eventId, userId}
+	storeLog("DeleteResponse args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -189,7 +210,7 @@ func (s *Store) DeleteResponse(eventId string, userId string) error {
 	return nil
 }
 
-func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
+func (s *Store) ListResponses(eventId string) ([]EventResponse, error) {
 	stmt := `
         SELECT er.event_id, er.user_id, er.attendee_count, u.full_name AS user_full_name, er.created_at, er.on_waitlist
         FROM event_response AS er
@@ -219,7 +240,7 @@ func (s *Store) GetResponsesByEventId(eventId string) ([]EventResponse, error) {
 	return responses, nil
 }
 
-func (s *Store) GetWaitlist(eventId string, limit int) ([]EventResponse, error) {
+func (s *Store) ListWaitlist(eventId string, limit int) ([]EventResponse, error) {
 	stmt := `
         SELECT er.event_id, er.user_id, er.on_waitlist
         FROM event_response AS er
@@ -254,6 +275,7 @@ func (s *Store) UpdateWaitlist(reqs []EventResponse) error {
 
 	for _, req := range reqs {
 		args := []any{req.EventId, req.UserId}
+		storeLog("UpdateWaitlist args %v", args)
 
 		_, err := t.Exec(stmt, args...)
 		if err != nil {
@@ -288,13 +310,14 @@ func (s *Store) GetUserResponse(eventId string, userId string) (*EventResponse, 
 	return &response, nil
 }
 
-func (s *Store) DeleteById(id string) error {
+func (s *Store) Delete(id string) error {
 	stmt := `
         UPDATE event
         SET is_deleted = TRUE
         WHERE id = ?
     `
 	args := []any{id}
+	storeLog("DeleteById args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {

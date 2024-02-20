@@ -3,19 +3,23 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github/mattfan00/jvbe/config"
-	"github/mattfan00/jvbe/user"
+	userPkg "github/mattfan00/jvbe/user"
+	"log"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 )
 
 type Service struct {
 	oidcProvider *oidc.Provider
 	oauthConf    *oauth2.Config
+	user         *userPkg.Service
 }
 
-func NewService(conf *config.Config) (*Service, error) {
+func NewService(conf *config.Config, user *userPkg.Service) (*Service, error) {
 	provider, err := oidc.NewProvider(
 		context.Background(),
 		"https://"+conf.Oauth.Domain,
@@ -35,24 +39,29 @@ func NewService(conf *config.Config) (*Service, error) {
 	return &Service{
 		oidcProvider: provider,
 		oauthConf:    oauthConf,
+		user:         user,
 	}, nil
+}
+
+func authLog(format string, s ...any) {
+	log.Printf("auth/auth.go: %s", fmt.Sprintf(format, s...))
 }
 
 func (s *Service) AuthCodeUrl(state string) string {
 	return s.oauthConf.AuthCodeURL(state)
 }
 
-func (s *Service) InfoFromProvider(code string) (user.ExternalUser, string, error) {
+func (s *Service) InfoFromProvider(code string) (userPkg.ExternalUser, string, error) {
 	token, err := s.oauthConf.Exchange(context.Background(), code)
 	if err != nil {
-		return user.ExternalUser{}, "", err
+		return userPkg.ExternalUser{}, "", err
 	}
 
 	accessToken := token.AccessToken
 
 	rawIDToken, ok := token.Extra("id_token").(string)
 	if !ok {
-		return user.ExternalUser{}, "", errors.New("no id_token field in oauth2 token")
+		return userPkg.ExternalUser{}, "", errors.New("no id_token field in oauth2 token")
 	}
 
 	oidcConfig := &oidc.Config{
@@ -61,14 +70,52 @@ func (s *Service) InfoFromProvider(code string) (user.ExternalUser, string, erro
 
 	idToken, err := s.oidcProvider.Verifier(oidcConfig).Verify(context.Background(), rawIDToken)
 	if err != nil {
-		return user.ExternalUser{}, "", err
+		return userPkg.ExternalUser{}, "", err
 	}
 
-	var externalUser user.ExternalUser
+	var externalUser userPkg.ExternalUser
 	err = idToken.Claims(&externalUser)
 	if err != nil {
-		return user.ExternalUser{}, "", err
+		return userPkg.ExternalUser{}, "", err
 	}
+	authLog("externalUser:%+v accessToken:%s", externalUser, accessToken)
 
 	return externalUser, accessToken, nil
+}
+
+type customClaims struct {
+	Permissions []string `json:"permissions"`
+	jwt.RegisteredClaims
+}
+
+func (s *Service) HandleLogin(code string) (userPkg.SessionUser, error) {
+	externalUser, accessToken, err := s.InfoFromProvider(code)
+	if err != nil {
+		return userPkg.SessionUser{}, err
+	}
+
+	u, err := s.user.HandleFromExternal(externalUser)
+	if err != nil {
+		return userPkg.SessionUser{}, err
+	}
+
+	sessionUser := u.ToSessionUser()
+
+	// dont verify token since this should have come from oauth and I don't want to deal with verifying right now
+	parser := jwt.NewParser(jwt.WithValidMethods([]string{"RS256"}))
+	token, _, err := parser.ParseUnverified(accessToken, &customClaims{})
+	if err != nil {
+		return userPkg.SessionUser{}, err
+	}
+
+	claims, ok := token.Claims.(*customClaims)
+	if !ok {
+		return userPkg.SessionUser{}, errors.New("cannot get claims")
+	}
+
+	sessionUser.Permissions = claims.Permissions
+
+	authLog("sessionUser:%+v", sessionUser)
+
+	return sessionUser, nil
 }

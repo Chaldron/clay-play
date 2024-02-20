@@ -2,6 +2,8 @@ package user
 
 import (
 	"errors"
+	"fmt"
+	"log"
 )
 
 type Service struct {
@@ -14,8 +16,13 @@ func NewService(store *Store) *Service {
 	}
 }
 
+func userLog(format string, s ...any) {
+	log.Printf("user/user.go: %s", fmt.Sprintf(format, s...))
+}
+
 func (s *Service) HandleFromExternal(externalUser ExternalUser) (User, error) {
-	user, err := s.store.GetByExternalId(externalUser.Id)
+    userLog("HandleFromExternal externalUser %+v", externalUser)
+	user, err := s.store.GetByExternal(externalUser.Id)
 	// if cant retrieve user, then need to create
 	if errors.Is(err, ErrNoUser) {
 		user, err = s.store.CreateFromExternal(externalUser)

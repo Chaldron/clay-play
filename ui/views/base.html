@@ -10,9 +10,22 @@
     <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
     <script src="/public/index.js"></script>
     <link rel="stylesheet" href="/public/index.css">
+    <link rel="icon" type="image/png" href="/public/favicon.png" />
 </head>
 <body hx-boost="true">
     {{ template "body" . }}
+
+    <div class="spacer"></div>
+    <footer>
+        <small>
+            <nav>
+                <ul>
+                    <li>© 2024 jvbe, Inc.</li>
+                    <li><a href="/privacy">Privacy</a></li>
+                </ul>
+            </nav>
+        </small>
+    </footer>
 </body>
 </html>
 {{end}}

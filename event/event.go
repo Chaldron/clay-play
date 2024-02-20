@@ -6,6 +6,7 @@ import (
 	"fmt"
 	groupPkg "github/mattfan00/jvbe/group"
 	"github/mattfan00/jvbe/template"
+	"log"
 	"sync"
 	"time"
 )
@@ -23,8 +24,12 @@ func NewService(store *Store, group *groupPkg.Service) *Service {
 	}
 }
 
-func (s *Service) GetCurrent(userId string) ([]Event, error) {
-	currEvents, err := s.store.GetCurrent()
+func eventLog(format string, s ...any) {
+	log.Printf("event/event.go: %s", fmt.Sprintf(format, s...))
+}
+
+func (s *Service) ListCurrent(userId string) ([]Event, error) {
+	currEvents, err := s.store.ListCurrent()
 	if err != nil {
 		return []Event{}, err
 	}
@@ -45,12 +50,12 @@ func (s *Service) GetCurrent(userId string) ([]Event, error) {
 }
 
 func (s *Service) Get(id string) (Event, error) {
-	e, err := s.store.GetById(id)
+	e, err := s.store.Get(id)
 	return e, err
 }
 
 func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
-	event, err := s.store.GetById(eventId)
+	event, err := s.store.Get(eventId)
 	if err != nil {
 		return EventDetailed{}, err
 	}
@@ -59,7 +64,7 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 		return EventDetailed{}, err
 	}
 
-	responses, err := s.store.GetResponsesByEventId(eventId)
+	responses, err := s.store.ListResponses(eventId)
 	if err != nil {
 		return EventDetailed{}, err
 	}
@@ -78,12 +83,32 @@ func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, err
 	return e, nil
 }
 
-func (s *Service) CreateFromRequest(req CreateEventRequest) error {
-	start, err := time.Parse(template.FormTimeFormat, req.Start)
+func timeFromForm(t string, offset int) (time.Time, error) {
+	r, err := time.Parse(template.FormTimeFormat, t)
+	if err != nil {
+		return time.Time{}, err
+	}
+	r = r.Add(time.Minute * time.Duration(offset))
+
+	return r, nil
+}
+
+type CreateRequest struct {
+	Name           string `schema:"name"`
+	GroupId        string `schema:"groupId"`
+	Capacity       int    `schema:"capacity"`
+	Start          string `schema:"start"`
+	TimezoneOffset int    `schema:"timezoneOffset"`
+	Location       string `schema:"location"`
+	CreatorId      string
+}
+
+func (s *Service) Create(req CreateRequest) error {
+	eventLog("Create req %+v", req)
+	start, err := timeFromForm(req.Start, req.TimezoneOffset)
 	if err != nil {
 		return err
 	}
-	start = start.Add(time.Minute * time.Duration(req.TimezoneOffset))
 
 	newEvent := Event{
 		Name: req.Name,
@@ -95,10 +120,10 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 		Start:     start,
 		Location:  req.Location,
 		CreatedAt: time.Now(),
-		CreatorId:   req.CreatorId,
+		CreatorId: req.CreatorId,
 	}
 
-	err = s.store.InsertOne(newEvent)
+	err = s.store.Create(newEvent)
 	if err != nil {
 		return err
 	}
@@ -106,8 +131,37 @@ func (s *Service) CreateFromRequest(req CreateEventRequest) error {
 	return nil
 }
 
+type UpdateRequest struct {
+	Id             string
+	Name           string `schema:"name"`
+	Capacity       int    `schema:"capacity"`
+	Start          string `schema:"start"`
+	TimezoneOffset int    `schema:"timezoneOffset"`
+	Location       string `schema:"location"`
+}
+
+// TODO: handle managing the waitlist if there were people on the waitlist and capacity increased
+func (s *Service) Update(req UpdateRequest) error {
+	eventLog("Update req %+v", req)
+	start, err := timeFromForm(req.Start, req.TimezoneOffset)
+	if err != nil {
+		return err
+	}
+
+	err = s.store.Update(UpdateParams{
+		Id:       req.Id,
+		Name:     req.Name,
+		Capacity: req.Capacity,
+		Start:    start,
+		Location: req.Location,
+	})
+
+	return err
+}
+
 func (s *Service) Delete(eventId string) error {
-	err := s.store.DeleteById(eventId)
+	eventLog("Delete id:%s", eventId)
+	err := s.store.Delete(eventId)
 	if err != nil {
 		return err
 	}
@@ -117,7 +171,14 @@ func (s *Service) Delete(eventId string) error {
 
 var MaxAttendeeCount = 2
 
-func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) error {
+type RespondEventRequest struct {
+	UserId        string
+	Id            string `schema:"id"`
+	AttendeeCount int    `schema:"attendeeCount"`
+}
+
+func (s *Service) HandleResponse(req RespondEventRequest) error {
+	eventLog("HandleResponse req %+v", req)
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
 
@@ -129,16 +190,16 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		return fmt.Errorf("maximum of %d plus one(s) allowed", MaxAttendeeCount-1)
 	}
 
-	e, err := s.store.GetById(req.Id)
+	e, err := s.store.Get(req.Id)
 	if err != nil {
 		return err
 	}
 
-	if err = s.group.CanAccessError(e.GroupId, userId); err != nil {
+	if err = s.group.CanAccessError(e.GroupId, req.UserId); err != nil {
 		return err
 	}
 
-	existingResponse, err := s.store.GetUserResponse(req.Id, userId)
+	existingResponse, err := s.store.GetUserResponse(req.Id, req.UserId)
 	if err != nil {
 		return err
 	}
@@ -149,7 +210,7 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 	}
 
 	if req.AttendeeCount == 0 { // just delete the response, I don't think it really matters to keep it in DB
-		err := s.store.DeleteResponse(req.Id, userId)
+		err := s.store.DeleteResponse(req.Id, req.UserId)
 		if err != nil {
 			return err
 		}
@@ -163,7 +224,7 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 
 		er := EventResponse{
 			EventId:       req.Id,
-			UserId:        userId,
+			UserId:        req.UserId,
 			AttendeeCount: req.AttendeeCount,
 			OnWaitlist:    addToWaitlist,
 		}
@@ -174,20 +235,30 @@ func (s *Service) HandleEventResponse(userId string, req RespondEventRequest) er
 		}
 	}
 
+	fromAttendee := !(existingResponse != nil && existingResponse.OnWaitlist)
+	eventLog("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
 	// manage waitlist ugh
 	// only need to manage it if the event had no spots left and spots freed up from main attendee list
-	if e.SpotsLeft() == 0 &&
-		attendeeCountDelta < 0 &&
-		!(existingResponse != nil && existingResponse.OnWaitlist) {
-		waitlist, err := s.store.GetWaitlist(req.Id, attendeeCountDelta*-1)
+	if e.SpotsLeft() == 0 && attendeeCountDelta < 0 && fromAttendee {
+		err := s.ManageWaitlist(req.Id, attendeeCountDelta*-1)
 		if err != nil {
 			return err
 		}
+	}
 
-		err = s.store.UpdateWaitlist(waitlist)
-		if err != nil {
-			return err
-		}
+	return nil
+}
+
+// take people off the waitlist based off count
+func (s *Service) ManageWaitlist(eventId string, count int) error {
+	waitlist, err := s.store.ListWaitlist(eventId, count)
+	if err != nil {
+		return err
+	}
+
+	err = s.store.UpdateWaitlist(waitlist)
+	if err != nil {
+		return err
 	}
 
 	return nil

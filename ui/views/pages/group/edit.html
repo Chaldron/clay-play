@@ -10,9 +10,8 @@
     <section>
         <article>
             <form 
-                hx-put="/group/{{.Group.Id}}"
-                hx-push-url="true"
-                hx-target="body"
+                action="/group/{{.Group.Id}}/edit"
+                method="post"
             >
                 <label>
                     Name
@@ -22,14 +21,23 @@
             </form>
         </article>
     </section>
-    <span
-        class="delete"
-        hx-push-url="true"
-        hx-target="body"
-        hx-confirm="Are you sure you want to delete this group?"
-        hx-delete="/group/{{.Group.Id}}"
-    >
-        Delete
-    </span>
+    <section class="controls">
+        <div
+            hx-confirm="Are you sure you want to refresh the invite link?"
+            hx-post="/group/{{.Group.Id}}/invite"
+            hx-target="body"
+        >
+           Refresh invite link 
+        </div>
+        <div
+            class="delete"
+            hx-push-url="true"
+            hx-target="body"
+            hx-confirm="Are you sure you want to delete this group?"
+            hx-delete="/group/{{.Group.Id}}/edit"
+        >
+            Delete
+        </div>
+    </section>
 </main>
 {{end}}

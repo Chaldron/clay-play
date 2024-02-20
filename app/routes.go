@@ -1,22 +1,21 @@
 package app
 
 import (
-	"errors"
 	"fmt"
 	eventPkg "github/mattfan00/jvbe/event"
 	groupPkg "github/mattfan00/jvbe/group"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/golang-jwt/jwt/v5"
-	"github.com/gorilla/schema"
+	"github.com/go-chi/httprate"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 func (a *App) Routes() http.Handler {
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
 
 	publicFileServer := http.FileServer(http.Dir("./ui/public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
@@ -24,6 +23,8 @@ func (a *App) Routes() http.Handler {
 	r.Get("/privacy", a.renderPrivacy)
 
 	r.Group(func(r chi.Router) {
+		r.Use(httprate.LimitAll(100, 1*time.Minute))
+		r.Use(middleware.Logger)
 		r.Use(a.recoverPanic)
 		r.Use(a.session.LoadAndSave)
 
@@ -46,10 +47,10 @@ func (a *App) Routes() http.Handler {
 					r.Use(a.canModifyEvent)
 
 					r.Get("/new", a.renderNewEvent)
-					r.Post("/", a.createEvent)
+					r.Post("/new", a.createEvent)
 					r.Get("/{id}/edit", a.renderEditEvent)
-					r.Put("/{id}", a.updateEvent)
-					r.Delete("/{id}", a.deleteEvent)
+					r.Post("/{id}/edit", a.updateEvent)
+					r.Delete("/{id}/edit", a.deleteEvent)
 				})
 
 				r.Get("/{id}", a.renderEventDetails)
@@ -62,11 +63,12 @@ func (a *App) Routes() http.Handler {
 
 					r.Get("/list", a.renderGroupList)
 					r.Get("/new", a.renderNewGroup)
-					r.Post("/", a.createGroup)
+					r.Post("/new", a.createGroup)
 					r.Get("/{id}/edit", a.renderEditGroup)
-					r.Put("/{id}", a.updateGroup)
-					r.Delete("/{id}", a.deleteGroup)
+					r.Post("/{id}/edit", a.updateGroup)
+					r.Delete("/{id}/edit", a.deleteGroup)
 					r.Delete("/{id}/member/{userId}", a.removeGroupMember)
+					r.Post("/{id}/invite", a.refreshInviteLinkGroup)
 				})
 
 				r.Get("/{id}/invite", a.inviteGroup)
@@ -99,7 +101,7 @@ type homeData struct {
 func (a *App) renderHome(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	currEvents, err := a.event.GetCurrent(u.Id)
+	currEvents, err := a.event.ListCurrent(u.Id)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
@@ -135,6 +137,25 @@ func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	req, err := schemaDecode[eventPkg.CreateRequest](r)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+	req.CreatorId = u.Id
+
+	err = a.event.Create(req)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/home", http.StatusSeeOther)
+}
+
 type eventDetailsData struct {
 	BaseData
 	Event            eventPkg.EventDetailed
@@ -163,22 +184,14 @@ func (a *App) renderEventDetails(w http.ResponseWriter, r *http.Request) {
 func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	err := r.ParseForm()
+	req, err := schemaDecode[eventPkg.RespondEventRequest](r)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
+	req.UserId = u.Id
 
-	var req eventPkg.RespondEventRequest
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-	err = decoder.Decode(&req, r.PostForm)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	err = a.event.HandleEventResponse(u.Id, req)
+	err = a.event.HandleResponse(req)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -187,34 +200,9 @@ func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/event/"+req.Id, http.StatusSeeOther)
 }
 
-func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-
-	err := r.ParseForm()
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	var req eventPkg.CreateEventRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-	req.CreatorId = u.Id
-
-	err = a.event.CreateFromRequest(req)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/home", http.StatusSeeOther)
-}
-
 func (a *App) deleteEvent(w http.ResponseWriter, r *http.Request) {
 	eventId := chi.URLParam(r, "id")
+
 	err := a.event.Delete(eventId)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
@@ -249,63 +237,62 @@ func (a *App) renderEditEvent(w http.ResponseWriter, r *http.Request) {
 
 // TODO
 func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
+	/*
+		u, _ := a.sessionUser(r)
+		id := chi.URLParam(r, "id")
+		log.Printf("user updating event %s: %s", id, u.Id)
+
+		if err := r.ParseForm(); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		var req eventPkg.UpdateRequest
+		if err := schema.NewDecoder().Decode(&req, r.PostForm); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+		req.Id = id
+
+		if err := a.event.Update(req); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/event/"+id, http.StatusSeeOther)
+	*/
 	w.Write(nil)
 }
 
-var expectedStateVal = "hellothisisalongstate"
-
 func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
-	// TODO: state should be random
-	url := a.auth.AuthCodeUrl(expectedStateVal)
+	state, err := gonanoid.New()
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+	}
+
+	a.session.Put(r.Context(), "state", state)
+
+	url := a.auth.AuthCodeUrl(state)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-type customClaims struct {
-	Permissions []string `json:"permissions"`
-	jwt.RegisteredClaims
-}
-
 func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
-	log.Printf("callback: %s", r.URL.String())
+	log.Printf("login callback: %s", r.URL.String())
 
 	state := r.URL.Query().Get("state")
-	if state != expectedStateVal {
-		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedStateVal, state)
+	expectedState := a.session.PopString(r.Context(), "state")
+	if state != expectedState {
+		err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedState, state)
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
 
-	// now that we are succesfully authenticated, use the code we got back to get the access token
 	code := r.URL.Query().Get("code")
-	externalUser, accessToken, err := a.auth.InfoFromProvider(code)
+	u, err := a.auth.HandleLogin(code)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
-
-	u, err := a.user.HandleFromExternal(externalUser)
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	sessionUser := u.ToSessionUser()
-
-	// dont verify token since this should have come from oauth and I don't want to deal with verifying right now
-	parser := jwt.NewParser(jwt.WithValidMethods([]string{"RS256"}))
-	token, _, err := parser.ParseUnverified(accessToken, &customClaims{})
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	claims, ok := token.Claims.(*customClaims)
-	if !ok {
-		a.renderErrorPage(w, errors.New("cannot get claims"), http.StatusInternalServerError)
-		return
-	}
-
-	sessionUser.Permissions = claims.Permissions
 
 	err = a.session.RenewToken(r.Context())
 	if err != nil {
@@ -313,7 +300,7 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.session.Put(r.Context(), "user", &sessionUser)
+	a.session.Put(r.Context(), "user", &u)
 
 	http.Redirect(w, r, "/home", http.StatusSeeOther)
 }
@@ -340,14 +327,7 @@ func (a *App) renderNewGroup(w http.ResponseWriter, r *http.Request) {
 func (a *App) createGroup(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	err := r.ParseForm()
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	var req groupPkg.CreateRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	req, err := schemaDecode[groupPkg.CreateRequest](r)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -452,14 +432,7 @@ func (a *App) renderEditGroup(w http.ResponseWriter, r *http.Request) {
 func (a *App) updateGroup(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	err := r.ParseForm()
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	var req groupPkg.UpdateRequest
-	err = schema.NewDecoder().Decode(&req, r.PostForm)
+	req, err := schemaDecode[groupPkg.UpdateRequest](r)
 	if err != nil {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
@@ -498,4 +471,17 @@ func (a *App) removeGroupMember(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/group/"+id, http.StatusSeeOther)
+}
+
+func (a *App) refreshInviteLinkGroup(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+
+	err := a.group.RefreshInviteId(id)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Add("HX-Location", "/group/"+id)
+	w.Write(nil)
 }
