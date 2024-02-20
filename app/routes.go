@@ -202,7 +202,7 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 		a.renderErrorNotif(w, err, http.StatusInternalServerError)
 		return
 	}
-	req.Creator = u.FirstName
+	req.CreatorId = u.Id
 
 	err = a.event.CreateFromRequest(req)
 	if err != nil {
@@ -249,7 +249,7 @@ func (a *App) renderEditEvent(w http.ResponseWriter, r *http.Request) {
 
 // TODO
 func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
-    w.Write(nil)
+	w.Write(nil)
 }
 
 var expectedStateVal = "hellothisisalongstate"

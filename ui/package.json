@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@picocss/pico": "^2.0.0-rc3",
+    "@picocss/pico": "^2.0.0",
     "sass": "^1.70.0"
   }
 }

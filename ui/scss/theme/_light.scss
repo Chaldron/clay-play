@@ -1,8 +1,7 @@
 @use "sass:map";
 @use "@picocss/pico/scss/colors" as *;
 @use "@picocss/pico/scss/settings" as *;
-@use "@picocss/pico/scss/utils/box-shadow";
-@use "@picocss/pico/scss/utils/functions";
+@use "@picocss/pico/scss/helpers/functions";
 
 // Default: Light theme
 @mixin theme {
@@ -55,7 +54,7 @@
   #{$css-var-prefix}contrast-inverse: #{$white};
 
   // Box shadow
-  #{$css-var-prefix}box-shadow: box-shadow.shadow($slate-400);
+  #{$css-var-prefix}box-shadow: functions.shadow($slate-400);
 
   // Typography
   @if map.get($modules, "content/typography") {

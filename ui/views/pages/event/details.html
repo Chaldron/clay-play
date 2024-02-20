@@ -18,7 +18,7 @@
         class="event_details"
     >
         <p>
-            <span>Hosted by <strong>{{.Event.Creator}}</strong><span>
+            <span>Hosted by <strong>{{.Event.CreatorFullName}}</strong><span>
             {{if .Event.GroupId.Valid}}
             <span> in <a href="/group/{{.Event.GroupId.String}}">{{.Event.GroupName.String}}</a></span>
             {{end}}
@@ -116,7 +116,7 @@
                     <td>{{add $i 1}}</td>
                     <td>
                         <div>
-                            <span>{{$r.User.FullName}}</span>
+                            <span>{{$r.UserFullName}}</span>
 
                             {{if gt $r.AttendeeCount 1}}
                             <span>
