@@ -34,3 +34,6 @@ Using SQlite as database. Migrations are handled through [goose](https://github.
 - **Create a new migration:** `go run ./cmd/jvbe migration create <name>`
     - This will create a new migration file named something like `migrations/20240219151811_<name>.sql`, where you can put the migration details in
 - On app startup, `goose.Up(...)` runs to always bring the DB schema up to date
+
+## feature requests
+If you want to request a new feature, please create a new issue on this repo
