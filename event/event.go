@@ -11,14 +11,25 @@ import (
 	"time"
 )
 
-type Service struct {
-	store             *Store
-	group             *groupPkg.Service
+type Service interface {
+	ListCurrent(string) ([]Event, error)
+	Get(string) (Event, error)
+	GetDetailed(string, string) (EventDetailed, error)
+	Update(UpdateRequest) error
+	Create(CreateRequest) error
+	Delete(string) error
+	HandleResponse(RespondEventRequest) error
+	ManageWaitlist(string, int) error
+}
+
+type service struct {
+	store             Store
+	group             groupPkg.Service
 	eventResponseLock sync.Mutex
 }
 
-func NewService(store *Store, group *groupPkg.Service) *Service {
-	return &Service{
+func NewService(store Store, group groupPkg.Service) *service {
+	return &service{
 		store: store,
 		group: group,
 	}
@@ -28,7 +39,7 @@ func eventLog(format string, s ...any) {
 	log.Printf("event/event.go: %s", fmt.Sprintf(format, s...))
 }
 
-func (s *Service) ListCurrent(userId string) ([]Event, error) {
+func (s *service) ListCurrent(userId string) ([]Event, error) {
 	currEvents, err := s.store.ListCurrent()
 	if err != nil {
 		return []Event{}, err
@@ -49,12 +60,12 @@ func (s *Service) ListCurrent(userId string) ([]Event, error) {
 	return filtered, nil
 }
 
-func (s *Service) Get(id string) (Event, error) {
+func (s *service) Get(id string) (Event, error) {
 	e, err := s.store.Get(id)
 	return e, err
 }
 
-func (s *Service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
+func (s *service) GetDetailed(eventId string, userId string) (EventDetailed, error) {
 	event, err := s.store.Get(eventId)
 	if err != nil {
 		return EventDetailed{}, err
@@ -103,7 +114,7 @@ type CreateRequest struct {
 	CreatorId      string
 }
 
-func (s *Service) Create(req CreateRequest) error {
+func (s *service) Create(req CreateRequest) error {
 	eventLog("Create req %+v", req)
 	start, err := timeFromForm(req.Start, req.TimezoneOffset)
 	if err != nil {
@@ -141,7 +152,7 @@ type UpdateRequest struct {
 }
 
 // TODO: handle managing the waitlist if there were people on the waitlist and capacity increased
-func (s *Service) Update(req UpdateRequest) error {
+func (s *service) Update(req UpdateRequest) error {
 	eventLog("Update req %+v", req)
 	start, err := timeFromForm(req.Start, req.TimezoneOffset)
 	if err != nil {
@@ -159,7 +170,7 @@ func (s *Service) Update(req UpdateRequest) error {
 	return err
 }
 
-func (s *Service) Delete(eventId string) error {
+func (s *service) Delete(eventId string) error {
 	eventLog("Delete id:%s", eventId)
 	err := s.store.Delete(eventId)
 	if err != nil {
@@ -177,7 +188,7 @@ type RespondEventRequest struct {
 	AttendeeCount int    `schema:"attendeeCount"`
 }
 
-func (s *Service) HandleResponse(req RespondEventRequest) error {
+func (s *service) HandleResponse(req RespondEventRequest) error {
 	eventLog("HandleResponse req %+v", req)
 	s.eventResponseLock.Lock()
 	defer s.eventResponseLock.Unlock()
@@ -250,7 +261,7 @@ func (s *Service) HandleResponse(req RespondEventRequest) error {
 }
 
 // take people off the waitlist based off count
-func (s *Service) ManageWaitlist(eventId string, count int) error {
+func (s *service) ManageWaitlist(eventId string, count int) error {
 	waitlist, err := s.store.ListWaitlist(eventId, count)
 	if err != nil {
 		return err

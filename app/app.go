@@ -16,10 +16,10 @@ import (
 )
 
 type App struct {
-	event *event.Service
-	user  *user.Service
-	auth  *auth.Service
-	group *group.Service
+	event event.Service
+	user  user.Service
+	auth  auth.Service
+	group group.Service
 
 	conf      *config.Config
 	session   *scs.SessionManager
@@ -27,10 +27,10 @@ type App struct {
 }
 
 func New(
-	event *event.Service,
-	user *user.Service,
-	auth *auth.Service,
-	group *group.Service,
+	event event.Service,
+	user user.Service,
+	auth auth.Service,
+	group group.Service,
 
 	conf *config.Config,
 	session *scs.SessionManager,
@@ -92,7 +92,7 @@ func (a *App) renderErrorNotif(
 	err error,
 	status int,
 ) {
-    errorLog(err)
+	errorLog(err)
 	w.Header().Add("HX-Reswap", "none") // so that UI does not swap rest of the blank template
 	w.WriteHeader(status)
 	a.renderTemplate(w, "error-notif.html", "error", map[string]any{
@@ -105,7 +105,7 @@ func (a *App) renderErrorPage(
 	err error,
 	status int,
 ) {
-    errorLog(err)
+	errorLog(err)
 	w.Header().Add("HX-Retarget", "body")
 	w.Header().Add("HX-Reswap", "innerHTML")
 	w.WriteHeader(status)
