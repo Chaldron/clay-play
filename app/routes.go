@@ -56,8 +56,14 @@ func (a *App) Routes() http.Handler {
 				r.Get("/{id}", a.renderEventDetails)
 				r.Post("/respond", a.respondEvent)
 			})
+		})
 
-			r.Route("/group", func(r chi.Router) {
+		r.Route("/group", func(r chi.Router) {
+			r.Get("/{id}/invite", a.inviteGroup)
+
+			r.Group(func(r chi.Router) {
+				r.Use(a.requireAuth)
+
 				r.Group(func(r chi.Router) {
 					r.Use(a.canModifyGroup)
 
@@ -71,7 +77,6 @@ func (a *App) Routes() http.Handler {
 					r.Post("/{id}/invite", a.refreshInviteLinkGroup)
 				})
 
-				r.Get("/{id}/invite", a.inviteGroup)
 				r.Get("/{id}", a.renderGroupDetails)
 			})
 		})
@@ -302,7 +307,12 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	a.session.Put(r.Context(), "user", &u)
 
-	http.Redirect(w, r, "/home", http.StatusSeeOther)
+	redirect := a.session.PopString(r.Context(), "redirect")
+	if redirect != "" {
+		http.Redirect(w, r, redirect, http.StatusSeeOther)
+	} else {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+	}
 }
 
 func (a *App) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -391,7 +401,8 @@ func (a *App) renderGroupList(w http.ResponseWriter, r *http.Request) {
 func (a *App) inviteGroup(w http.ResponseWriter, r *http.Request) {
 	u, ok := a.sessionUser(r)
 	if !ok {
-		w.Write([]byte("need to redirect login here"))
+		a.session.Put(r.Context(), "redirect", r.URL.String())
+		http.Redirect(w, r, "/auth/login", http.StatusSeeOther)
 		return
 	}
 
