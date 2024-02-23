@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	eventPkg "github/mattfan00/jvbe/event"
-	groupPkg "github/mattfan00/jvbe/group"
+	eventPkg "github.com/mattfan00/jvbe/event"
+	groupPkg "github.com/mattfan00/jvbe/group"
 	"log"
 	"net/http"
 	"time"

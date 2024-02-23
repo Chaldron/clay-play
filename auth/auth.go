@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github/mattfan00/jvbe/config"
-	userPkg "github/mattfan00/jvbe/user"
+	"github.com/mattfan00/jvbe/config"
+	userPkg "github.com/mattfan00/jvbe/user"
 	"log"
 
 	"github.com/coreos/go-oidc/v3/oidc"

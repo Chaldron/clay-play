@@ -3,7 +3,7 @@ package app
 import (
 	"errors"
 	"fmt"
-	user "github/mattfan00/jvbe/user"
+	user "github.com/mattfan00/jvbe/user"
 	"net/http"
 )
 

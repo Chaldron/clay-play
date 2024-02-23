@@ -1,7 +1,7 @@
 package event
 
 import (
-	"github/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/group"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

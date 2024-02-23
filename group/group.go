@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github/mattfan00/jvbe/config"
-	"github/mattfan00/jvbe/user"
+	"github.com/mattfan00/jvbe/config"
+	"github.com/mattfan00/jvbe/user"
 	"log"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"

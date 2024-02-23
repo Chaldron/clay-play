@@ -2,12 +2,12 @@ package app
 
 import (
 	"bytes"
-	"github/mattfan00/jvbe/auth"
-	"github/mattfan00/jvbe/config"
-	"github/mattfan00/jvbe/event"
-	"github/mattfan00/jvbe/group"
-	"github/mattfan00/jvbe/template"
-	"github/mattfan00/jvbe/user"
+	"github.com/mattfan00/jvbe/auth"
+	"github.com/mattfan00/jvbe/config"
+	"github.com/mattfan00/jvbe/event"
+	"github.com/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/template"
+	"github.com/mattfan00/jvbe/user"
 	"log"
 	"net/http"
 

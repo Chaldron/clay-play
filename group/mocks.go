@@ -2,7 +2,7 @@ package group
 
 import (
 	"database/sql"
-	"github/mattfan00/jvbe/user"
+	"github.com/mattfan00/jvbe/user"
 
 	"github.com/stretchr/testify/mock"
 )
