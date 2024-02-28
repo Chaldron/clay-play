@@ -17,6 +17,8 @@ type Store interface {
 	GetByExternal(string) (User, error)
 	Get(string) (User, error)
 	CreateFromExternal(ExternalUser) (User, error)
+	GetReview(string) (UserReview, error)
+	UpdateReview(UpdateReviewParams) error
 }
 
 type store struct {
@@ -37,18 +39,35 @@ var (
 	ErrNoUser = errors.New("no user found")
 )
 
+type UserStatus int
+
+const (
+	UserStatusActive   UserStatus = iota // has full control of application
+	UserStatusInactive                   // has not been approved yet
+)
+
 type User struct {
-	Id         string    `db:"id"`
-	FullName   string    `db:"full_name"`
-	ExternalId string    `db:"external_id"`
-	CreatedAt  time.Time `db:"created_at"`
+	Id         string     `db:"id"`
+	FullName   string     `db:"full_name"`
+	ExternalId string     `db:"external_id"`
+	CreatedAt  time.Time  `db:"created_at"`
+	Status     UserStatus `db:"status"`
 }
 
 func (u *User) ToSessionUser() SessionUser {
 	return SessionUser{
 		Id:       u.Id,
 		FullName: u.FullName,
+		Status:   u.Status,
 	}
+}
+
+type UserReview struct {
+	UserId     string         `db:"user_id"`
+	CreatedAt  time.Time      `db:"created_at"`
+	ReviewedAt sql.NullTime      `db:"reviewed_at"`
+	Comment    sql.NullString `db:"comment"`
+	IsApproved string         `db:"is_approved"`
 }
 
 type ExternalUser struct {
@@ -61,6 +80,7 @@ type SessionUser struct {
 	Id          string
 	Permissions []string
 	FullName    string
+	Status      UserStatus
 }
 
 func (u SessionUser) IsAuthenticated() bool {
@@ -91,7 +111,9 @@ func (u SessionUser) CanModifyGroup() bool {
 
 func (s *store) GetByExternal(externalId string) (User, error) {
 	stmt := `
-        SELECT id, full_name, external_id, created_at FROM user
+        SELECT 
+            id, full_name, external_id, created_at, status
+        FROM user
         WHERE external_id = ?
     `
 	args := []any{externalId}
@@ -109,7 +131,7 @@ func (s *store) GetByExternal(externalId string) (User, error) {
 
 func (s *store) Get(id string) (User, error) {
 	stmt := `
-        SELECT id, full_name, external_id, created_at FROM user
+        SELECT id, full_name, external_id, created_at, status FROM user
         WHERE id = ?
     `
 	args := []any{id}
@@ -125,6 +147,43 @@ func (s *store) Get(id string) (User, error) {
 	return user, nil
 }
 
+func (s *store) GetReview(userId string) (UserReview, error) {
+	stmt := `
+        SELECT user_id, comment FROM user_review
+        WHERE user_id = ?
+    `
+	args := []any{userId}
+
+	var userReview UserReview
+	err := s.db.Get(&userReview, stmt, args...)
+	return userReview, err
+}
+
+type UpdateReviewParams struct {
+	UserId    string
+	CreatedAt time.Time
+	Comment   sql.NullString
+}
+
+func (s *store) UpdateReview(p UpdateReviewParams) error {
+	stmt := `
+        INSERT INTO user_review (user_id, created_at, comment)
+        VALUES (?, ?, ?)
+        ON CONFLICT (user_id) DO UPDATE SET
+            comment = excluded.comment
+    `
+	args := []any{
+		p.UserId,
+		time.Now().UTC(),
+		p.Comment,
+	}
+	storeLog("CreateReview args %v", args)
+
+	_, err := s.db.Exec(stmt, args...)
+	return err
+}
+
+// TODO: use transactions
 func (s *store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 	newId, err := gonanoid.New()
 	if err != nil {
@@ -132,18 +191,27 @@ func (s *store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 	}
 
 	stmt := `
-        INSERT INTO user (id, full_name, external_id, created_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO user (id, full_name, external_id, created_at, status)
+        VALUES (?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
 		externalUser.FullName,
 		externalUser.Id,
 		time.Now().UTC(),
+		UserStatusInactive,
 	}
 	storeLog("CreateFromExternal args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
+	if err != nil {
+		return User{}, err
+	}
+
+	err = s.UpdateReview(UpdateReviewParams{
+		UserId:  newId,
+		Comment: sql.NullString{},
+	})
 	if err != nil {
 		return User{}, err
 	}

@@ -14,9 +14,9 @@ import (
 )
 
 type Service interface {
-    AuthCodeUrl(string) string
-    InfoFromProvider(code string) (userPkg.ExternalUser, string, error)
-    HandleLogin(code string) (userPkg.SessionUser, error)
+	AuthCodeUrl(string) string
+	InfoFromProvider(code string) (userPkg.ExternalUser, string, error)
+	HandleLogin(code string) (userPkg.SessionUser, error)
 }
 
 type service struct {

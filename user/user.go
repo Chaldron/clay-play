@@ -1,6 +1,7 @@
 package user
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -8,6 +9,8 @@ import (
 
 type Service interface {
 	HandleFromExternal(ExternalUser) (User, error)
+    GetReview(string) (UserReview, error)
+	UpdateReview(UpdateReviewRequest) error
 }
 
 type service struct {
@@ -39,3 +42,29 @@ func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
 
 	return user, nil
 }
+
+func (s *service) GetReview(userId string) (UserReview, error) {
+    return s.store.GetReview(userId)
+}
+
+type UpdateReviewRequest struct {
+	UserId  string
+	Comment string `schema:"comment"`
+}
+
+func (s *service) UpdateReview(req UpdateReviewRequest) error {
+	userLog("UpdateReview req %+v", req)
+	if len(req.Comment) > 500 {
+		return errors.New("comment too long")
+	}
+
+	err := s.store.UpdateReview(UpdateReviewParams{
+		UserId: req.UserId,
+		Comment: sql.NullString{
+			String: req.Comment,
+			Valid:  req.Comment != "",
+		},
+	})
+	return err
+}
+

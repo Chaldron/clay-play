@@ -2,11 +2,14 @@ package app
 
 import (
 	"fmt"
-	eventPkg "github.com/mattfan00/jvbe/event"
-	groupPkg "github.com/mattfan00/jvbe/group"
 	"log"
 	"net/http"
 	"time"
+
+	eventPkg "github.com/mattfan00/jvbe/event"
+	groupPkg "github.com/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/user"
+	userPkg "github.com/mattfan00/jvbe/user"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -80,6 +83,11 @@ func (a *App) Routes() http.Handler {
 				r.Get("/{id}", a.renderGroupDetails)
 			})
 		})
+
+		r.Route("/review", func(r chi.Router) {
+			r.Get("/request", a.renderReviewRequest)
+			r.Post("/request", a.updateReview)
+		})
 	})
 
 	return r
@@ -90,11 +98,6 @@ func (a *App) renderPrivacy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) renderIndex(w http.ResponseWriter, r *http.Request) {
-	if _, ok := a.sessionUser(r); ok {
-		http.Redirect(w, r, "/home", http.StatusSeeOther)
-		return
-	}
-
 	a.renderPage(w, "index.html", nil)
 }
 
@@ -307,6 +310,13 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 
 	a.session.Put(r.Context(), "user", &u)
 
+	/*
+		if u.Status != user.UserStatusActive {
+			w.Write([]byte("not active"))
+			return
+		}
+	*/
+
 	redirect := a.session.PopString(r.Context(), "redirect")
 	if redirect != "" {
 		http.Redirect(w, r, redirect, http.StatusSeeOther)
@@ -495,4 +505,49 @@ func (a *App) refreshInviteLinkGroup(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("HX-Location", "/group/"+id)
 	w.Write(nil)
+}
+
+type reviewRequestData struct {
+	BaseData
+	UserReview userPkg.UserReview
+}
+
+func (a *App) renderReviewRequest(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+	if u.Status == user.UserStatusActive {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+
+	userReview, err := a.user.GetReview(u.Id)
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	a.renderPage(w, "review/request.html", reviewRequestData{
+		BaseData: BaseData{
+			User: u,
+		},
+		UserReview: userReview,
+	})
+}
+
+func (a *App) updateReview(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	req, err := schemaDecode[userPkg.UpdateReviewRequest](r)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+	req.UserId = u.Id
+
+	err = a.user.UpdateReview(req)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Successfully updated your review!"))
 }
