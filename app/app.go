@@ -114,6 +114,17 @@ func (a *App) renderErrorPage(
 	})
 }
 
+func (a *App) renewSessionUser(r *http.Request, u *user.SessionUser) error {
+	err := a.session.RenewToken(r.Context())
+	if err != nil {
+		return err
+	}
+
+	a.session.Put(r.Context(), "user", u)
+
+	return nil
+}
+
 func schemaDecode[T any](r *http.Request) (T, error) {
 	var v T
 

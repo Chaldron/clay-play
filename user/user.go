@@ -8,8 +8,9 @@ import (
 )
 
 type Service interface {
-	HandleFromExternal(ExternalUser) (User, error)
-    GetReview(string) (UserReview, error)
+    Get(string) (User, error)
+	HandleFromExternal(ExternalUser) (User, error) 
+	GetReview(string) (UserReview, error)
 	UpdateReview(UpdateReviewRequest) error
 }
 
@@ -25,6 +26,10 @@ func NewService(store Store) *service {
 
 func userLog(format string, s ...any) {
 	log.Printf("user/user.go: %s", fmt.Sprintf(format, s...))
+}
+
+func (s *service) Get(id string) (User, error) {
+    return s.store.Get(id)
 }
 
 func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
@@ -44,7 +49,7 @@ func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
 }
 
 func (s *service) GetReview(userId string) (UserReview, error) {
-    return s.store.GetReview(userId)
+	return s.store.GetReview(userId)
 }
 
 type UpdateReviewRequest struct {
@@ -67,4 +72,3 @@ func (s *service) UpdateReview(req UpdateReviewRequest) error {
 	})
 	return err
 }
-

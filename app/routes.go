@@ -302,14 +302,10 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.session.RenewToken(r.Context())
-	if err != nil {
+	if err := a.renewSessionUser(r, &u); err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
-
-	a.session.Put(r.Context(), "user", &u)
-
 	/*
 		if u.Status != user.UserStatusActive {
 			w.Write([]byte("not active"))
@@ -513,13 +509,27 @@ type reviewRequestData struct {
 }
 
 func (a *App) renderReviewRequest(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-	if u.Status == user.UserStatusActive {
+	su, _ := a.sessionUser(r)
+
+    // recheck if the user is active so that user is redirected to application once they are
+	u, err := a.user.Get(su.Id)
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+	su = u.ToSessionUser()
+
+	if err := a.renewSessionUser(r, &su); err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if su.Status == user.UserStatusActive {
 		http.Redirect(w, r, "/home", http.StatusSeeOther)
 		return
 	}
 
-	userReview, err := a.user.GetReview(u.Id)
+	userReview, err := a.user.GetReview(su.Id)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
@@ -527,7 +537,7 @@ func (a *App) renderReviewRequest(w http.ResponseWriter, r *http.Request) {
 
 	a.renderPage(w, "review/request.html", reviewRequestData{
 		BaseData: BaseData{
-			User: u,
+			User: su,
 		},
 		UserReview: userReview,
 	})
