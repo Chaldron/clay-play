@@ -87,7 +87,16 @@ func (a *App) Routes() http.Handler {
 		r.Route("/review", func(r chi.Router) {
 			r.Get("/request", a.renderReviewRequest)
 			r.Post("/request", a.updateReview)
+
+			r.Group(func(r chi.Router) {
+				r.Use(a.canReviewUser)
+
+				r.Get("/list", a.renderReviewList)
+				r.Post("/approve", a.approveReview)
+			})
 		})
+
+		r.With(a.canDoEverything).Get("/overlord", a.renderOverlord)
 	})
 
 	return r
@@ -511,13 +520,16 @@ type reviewRequestData struct {
 func (a *App) renderReviewRequest(w http.ResponseWriter, r *http.Request) {
 	su, _ := a.sessionUser(r)
 
-    // recheck if the user is active so that user is redirected to application once they are
+	// recheck if the user is active so that user is redirected to application once they are
 	u, err := a.user.Get(su.Id)
 	if err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
-	su = u.ToSessionUser()
+	t := u.ToSessionUser()
+	t.Permissions = su.Permissions
+	su = t
+	log.Printf("user at review: %+v", su)
 
 	if err := a.renewSessionUser(r, &su); err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
@@ -560,4 +572,44 @@ func (a *App) updateReview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Write([]byte("Successfully updated your review!"))
+}
+
+func (a *App) renderOverlord(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	a.renderPage(w, "overlord.html", BaseData{
+		User: u,
+	})
+}
+
+type reviewListData struct {
+	BaseData
+	Reviews []user.UserReview
+}
+
+func (a *App) renderReviewList(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	urs, err := a.user.ListReviews()
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	a.renderPage(w, "review/list.html", reviewListData{
+		BaseData: BaseData{
+			User: u,
+		},
+		Reviews: urs,
+	})
+}
+
+func (a *App) approveReview(w http.ResponseWriter, r *http.Request) {
+	err := a.user.ApproveReview(r.FormValue("user_id"))
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+    http.Redirect(w, r, "/review/list", http.StatusSeeOther)
 }

@@ -9,8 +9,8 @@
             </li>
         </ul>
         <ul>
-            {{if .User.CanModifyGroup}}
-            <li><a href="/group/list">Groups</a></li>
+            {{if .User.CanDoEverything}}
+            <li><a href="/overlord">Overlord Panel</a></li>
             {{end}}
             {{if .User.IsAuthenticated}}
             <li><a href="/auth/logout" hx-boost="false">Logout</a></li>

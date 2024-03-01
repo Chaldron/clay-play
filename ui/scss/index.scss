@@ -121,26 +121,31 @@ article {
     }
 }
 
-.item {
-    display: flex;
-    align-items: center;
+.card-list {
+    & > * {
+        padding: var(#{$css-var-prefix}block-spacing-vertical) var(#{$css-var-prefix}block-spacing-horizontal);
+        border: 1px solid $border-color; 
+        margin-bottom: -1px;
 
-    padding: var(#{$css-var-prefix}block-spacing-vertical) var(#{$css-var-prefix}block-spacing-horizontal);
-    border: 1px solid $border-color; 
-    margin-bottom: -1px;
+        &:only-of-type {
+            border-radius: var(#{$css-var-prefix}border-radius);
+        }
 
-    &:only-of-type {
-        border-radius: var(#{$css-var-prefix}border-radius);
+        &:first-of-type {
+            border-top-left-radius: var(#{$css-var-prefix}border-radius);
+            border-top-right-radius: var(#{$css-var-prefix}border-radius);
+        }
+
+        &:last-of-type {
+            border-bottom-left-radius: var(#{$css-var-prefix}border-radius);
+            border-bottom-right-radius: var(#{$css-var-prefix}border-radius);
+        }
     }
 
-    &:first-of-type {
-        border-top-left-radius: var(#{$css-var-prefix}border-radius);
-        border-top-right-radius: var(#{$css-var-prefix}border-radius);
-    }
-
-    &:last-of-type {
-        border-bottom-left-radius: var(#{$css-var-prefix}border-radius);
-        border-bottom-right-radius: var(#{$css-var-prefix}border-radius);
+    & > .center {
+        display: flex;
+        align-items: center;
+        gap: 20px;
     }
 }
 

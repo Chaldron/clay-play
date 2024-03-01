@@ -12,23 +12,23 @@
         </div>
     </div>
 
-    <section>
-        {{if gt (len .Groups) (0)}}
-            {{range .Groups}}
-            <div class="item">
-                <div class="flex-1">
-                    <div><strong>{{.Name}}</strong></div>
-                    <div>
-                        <small>{{.TotalMemberCount}} members</small>
-                    </div>
+    {{if gt (len .Groups) (0)}}
+    <section class="card-list">
+        {{range .Groups}}
+        <div class="center">
+            <div class="flex-1">
+                <div><strong>{{.Name}}</strong></div>
+                <div>
+                    <small>{{.TotalMemberCount}} members</small>
                 </div>
-                <a href="/group/{{.Id}}">View</a>
             </div>
-            {{end}}
-        {{else}}
-        <div>No Groups</div>
+            <a href="/group/{{.Id}}">View</a>
+        </div>
         {{end}}
     </section>
+    {{else}}
+    <div>No Groups</div>
+    {{end}}
 </main>
 
 {{end}}

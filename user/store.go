@@ -19,6 +19,8 @@ type Store interface {
 	CreateFromExternal(ExternalUser) (User, error)
 	GetReview(string) (UserReview, error)
 	UpdateReview(UpdateReviewParams) error
+	ListReviews() ([]UserReview, error)
+	ApproveReview(string) error
 }
 
 type store struct {
@@ -63,11 +65,12 @@ func (u *User) ToSessionUser() SessionUser {
 }
 
 type UserReview struct {
-	UserId     string         `db:"user_id"`
-	CreatedAt  time.Time      `db:"created_at"`
-	ReviewedAt sql.NullTime      `db:"reviewed_at"`
-	Comment    sql.NullString `db:"comment"`
-	IsApproved string         `db:"is_approved"`
+	UserId       string         `db:"user_id"`
+	UserFullName string         `db:"user_full_name"`
+	CreatedAt    time.Time      `db:"created_at"`
+	ReviewedAt   sql.NullTime   `db:"reviewed_at"`
+	Comment      sql.NullString `db:"comment"`
+	IsApproved   string         `db:"is_approved"`
 }
 
 type ExternalUser struct {
@@ -107,6 +110,17 @@ func (u SessionUser) CanModifyEvent() bool {
 
 func (u SessionUser) CanModifyGroup() bool {
 	return u.hasPermission("modify:group")
+}
+
+func (u SessionUser) CanReviewUser() bool {
+	return u.hasPermission("review:user")
+}
+
+func (u SessionUser) CanDoEverything() bool {
+	return u.CanModifyGroup() &&
+		u.CanModifyEvent() &&
+		u.CanReviewUser()
+
 }
 
 func (s *store) GetByExternal(externalId string) (User, error) {
@@ -222,4 +236,60 @@ func (s *store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 	}
 
 	return newUser, nil
+}
+
+func (s *store) ListReviews() ([]UserReview, error) {
+	stmt := `
+        SELECT 
+            ur.user_id, ur.created_at, ur.comment 
+            , u.full_name AS user_full_name
+        FROM user_review ur
+        INNER JOIN user u ON ur.user_id = u.id
+        WHERE is_approved = 0
+        ORDER BY ur.created_at
+    `
+
+	var u []UserReview
+	err := s.db.Select(&u, stmt)
+	return u, err
+}
+
+func (s *store) ApproveReview(userId string) error {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt := `
+        UPDATE user_review
+        SET is_approved = 1, reviewed_at = ?
+        WHERE user_id = ?
+    `
+	args := []any{time.Now().UTC(), userId}
+
+	_, err = tx.Exec(stmt, args...)
+	if err != nil {
+		return err
+	}
+	storeLog("ApproveReview: approved %s", userId)
+
+	stmt = `
+        UPDATE user
+        SET status = ?
+        WHERE id = ?
+    `
+	args = []any{UserStatusActive, userId}
+
+	_, err = tx.Exec(stmt, args...)
+	if err != nil {
+		return err
+	}
+	storeLog("ApproveReview: set %s to active status", userId)
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -8,10 +8,12 @@ import (
 )
 
 type Service interface {
-    Get(string) (User, error)
-	HandleFromExternal(ExternalUser) (User, error) 
+	Get(string) (User, error)
+	HandleFromExternal(ExternalUser) (User, error)
 	GetReview(string) (UserReview, error)
 	UpdateReview(UpdateReviewRequest) error
+	ListReviews() ([]UserReview, error)
+	ApproveReview(string) error
 }
 
 type service struct {
@@ -29,7 +31,7 @@ func userLog(format string, s ...any) {
 }
 
 func (s *service) Get(id string) (User, error) {
-    return s.store.Get(id)
+	return s.store.Get(id)
 }
 
 func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
@@ -59,7 +61,7 @@ type UpdateReviewRequest struct {
 
 func (s *service) UpdateReview(req UpdateReviewRequest) error {
 	userLog("UpdateReview req %+v", req)
-	if len(req.Comment) > 500 {
+	if len(req.Comment) > 100 {
 		return errors.New("comment too long")
 	}
 
@@ -71,4 +73,16 @@ func (s *service) UpdateReview(req UpdateReviewRequest) error {
 		},
 	})
 	return err
+}
+
+func (s *service) ListReviews() ([]UserReview, error) {
+	return s.store.ListReviews()
+}
+
+func (s *service) ApproveReview(userId string) error {
+	userLog("ApproveReview %s", userId)
+    if userId == "" {
+        return errors.New("invalid user")
+    }
+	return s.store.ApproveReview(userId)
 }

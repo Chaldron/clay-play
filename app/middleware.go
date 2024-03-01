@@ -58,6 +58,30 @@ func (a *App) canModifyEvent(next http.Handler) http.Handler {
 	})
 }
 
+func (a *App) canReviewUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, _ := a.sessionUser(r); u.CanReviewUser() {
+			next.ServeHTTP(w, r)
+		} else {
+			status := http.StatusUnauthorized
+			a.renderErrorPage(w, errors.New(http.StatusText(status)), status)
+			return
+		}
+	})
+}
+
+func (a *App) canDoEverything(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, _ := a.sessionUser(r); u.CanDoEverything() {
+			next.ServeHTTP(w, r)
+		} else {
+			status := http.StatusUnauthorized
+			a.renderErrorPage(w, errors.New(http.StatusText(status)), status)
+			return
+		}
+	})
+}
+
 func (a *App) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
