@@ -13,12 +13,18 @@ import (
 	"github.com/matoous/go-nanoid/v2"
 )
 
-type Store struct {
+type Store interface {
+	GetByExternal(string) (User, error)
+	Get(string) (User, error)
+	CreateFromExternal(ExternalUser) (User, error)
+}
+
+type store struct {
 	db *sqlx.DB
 }
 
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{
+func NewStore(db *sqlx.DB) *store {
+	return &store{
 		db: db,
 	}
 }
@@ -83,7 +89,7 @@ func (u SessionUser) CanModifyGroup() bool {
 	return u.hasPermission("modify:group")
 }
 
-func (s *Store) GetByExternal(externalId string) (User, error) {
+func (s *store) GetByExternal(externalId string) (User, error) {
 	stmt := `
         SELECT id, full_name, external_id, created_at FROM user
         WHERE external_id = ?
@@ -101,7 +107,7 @@ func (s *Store) GetByExternal(externalId string) (User, error) {
 	return user, nil
 }
 
-func (s *Store) Get(id string) (User, error) {
+func (s *store) Get(id string) (User, error) {
 	stmt := `
         SELECT id, full_name, external_id, created_at FROM user
         WHERE id = ?
@@ -119,7 +125,7 @@ func (s *Store) Get(id string) (User, error) {
 	return user, nil
 }
 
-func (s *Store) CreateFromExternal(externalUser ExternalUser) (User, error) {
+func (s *store) CreateFromExternal(externalUser ExternalUser) (User, error) {
 	newId, err := gonanoid.New()
 	if err != nil {
 		return User{}, err

@@ -10,12 +10,26 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type Store struct {
+type Store interface {
+	Create(CreateParams) error
+	Get(string) (Group, error)
+	ListMembers(string) ([]GroupMember, error)
+	List() ([]Group, error)
+	GetByInvite(string) (Group, error)
+	HasMember(string, string) (bool, error)
+	AddMember(string, string) error
+	Update(UpdateParams) error
+	Delete(string) error
+	RemoveMember(string, string) error
+	RefreshInviteId(string, string) error
+}
+
+type store struct {
 	db *sqlx.DB
 }
 
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{
+func NewStore(db *sqlx.DB) *store {
+	return &store{
 		db: db,
 	}
 }
@@ -54,7 +68,7 @@ type CreateParams struct {
 	InviteId  string
 }
 
-func (s *Store) Create(p CreateParams) error {
+func (s *store) Create(p CreateParams) error {
 	stmt := `
         INSERT INTO user_group (id, created_at, creator_id, name, invite_id)
         VALUES (?, ?, ?, ?, ?)
@@ -76,7 +90,7 @@ func (s *Store) Create(p CreateParams) error {
 	return nil
 }
 
-func (s *Store) Get(id string) (Group, error) {
+func (s *store) Get(id string) (Group, error) {
 	stmt := `
         SELECT ug.id, ug.name, ug.invite_id, ug.creator_id
             , u.full_name AS creator_full_name 
@@ -91,7 +105,7 @@ func (s *Store) Get(id string) (Group, error) {
 	return g, err
 }
 
-func (s *Store) ListMembers(id string) ([]GroupMember, error) {
+func (s *store) ListMembers(id string) ([]GroupMember, error) {
 	stmt := `
         SELECT ugm.group_id, ugm.user_id, u.full_name AS user_full_name FROM user_group_member ugm
         INNER JOIN user u ON u.id = ugm.user_id
@@ -105,7 +119,7 @@ func (s *Store) ListMembers(id string) ([]GroupMember, error) {
 	return m, err
 }
 
-func (s *Store) List() ([]Group, error) {
+func (s *store) List() ([]Group, error) {
 	stmt := `
         SELECT 
             ug.id, ug.name
@@ -124,7 +138,7 @@ func (s *Store) List() ([]Group, error) {
 	return g, err
 }
 
-func (s *Store) GetByInvite(inviteId string) (Group, error) {
+func (s *store) GetByInvite(inviteId string) (Group, error) {
 	stmt := `
         SELECT id, name FROM user_group
         WHERE invite_id = ? AND is_deleted = FALSE
@@ -136,7 +150,7 @@ func (s *Store) GetByInvite(inviteId string) (Group, error) {
 	return g, err
 }
 
-func (s *Store) HasMember(groupId, userId string) (bool, error) {
+func (s *store) HasMember(groupId string, userId string) (bool, error) {
 	stmt := `
         SELECT 1 FROM user_group_member
         WHERE group_id = ? AND user_id = ?
@@ -154,7 +168,7 @@ func (s *Store) HasMember(groupId, userId string) (bool, error) {
 	return true, nil
 }
 
-func (s *Store) AddMember(groupId string, userId string) error {
+func (s *store) AddMember(groupId string, userId string) error {
 	stmt := `
         INSERT INTO user_group_member (group_id, user_id, created_at)
         VALUES (?, ?, ?)
@@ -175,7 +189,7 @@ type UpdateParams struct {
 	Name string
 }
 
-func (s *Store) Update(p UpdateParams) error {
+func (s *store) Update(p UpdateParams) error {
 	stmt := `
         UPDATE user_group
         SET name = ?
@@ -188,7 +202,7 @@ func (s *Store) Update(p UpdateParams) error {
 	return err
 }
 
-func (s *Store) Delete(id string) error {
+func (s *store) Delete(id string) error {
 	stmt := `
         UPDATE user_group
         SET is_deleted = TRUE
@@ -201,7 +215,7 @@ func (s *Store) Delete(id string) error {
 	return err
 }
 
-func (s *Store) RemoveMember(groupId string, userId string) error {
+func (s *store) RemoveMember(groupId string, userId string) error {
 	stmt := `
         DELETE FROM user_group_member
         WHERE group_id = ? AND user_id = ?
@@ -213,7 +227,7 @@ func (s *Store) RemoveMember(groupId string, userId string) error {
 	return err
 }
 
-func (s *Store) RefreshInviteId(groupId string, newInviteId string) error {
+func (s *store) RefreshInviteId(groupId string, newInviteId string) error {
 	stmt := `
         UPDATE user_group
         SET invite_id = ?

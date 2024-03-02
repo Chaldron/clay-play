@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"flag"
-	"github/mattfan00/jvbe/config"
+	"github.com/mattfan00/jvbe/config"
 	"log"
 	"os"
 

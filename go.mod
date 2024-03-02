@@ -1,4 +1,4 @@
-module github/mattfan00/jvbe
+module github.com/mattfan00/jvbe
 
 go 1.21.5
 
@@ -14,16 +14,20 @@ require (
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/pressly/goose/v3 v3.18.0
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/sethvargo/go-retry v0.2.4 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect

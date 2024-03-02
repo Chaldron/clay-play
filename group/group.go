@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github/mattfan00/jvbe/config"
-	"github/mattfan00/jvbe/user"
+	"github.com/mattfan00/jvbe/config"
+	"github.com/mattfan00/jvbe/user"
 	"log"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
@@ -15,13 +15,29 @@ var (
 	ErrNoAccess = errors.New("you do not have access")
 )
 
-type Service struct {
-	store *Store
+type Service interface {
+	Create(CreateRequest) (string, error)
+	Get(string) (Group, error)
+	GetDetailed(string, user.SessionUser) (GroupDetailed, error)
+	List() ([]Group, error)
+	AddMember(string, string) error
+	AddMemberFromInvite(string, string) (Group, error)
+	Update(UpdateRequest) error
+	Delete(string) error
+	RemoveMember(string, string) error
+	CreateAndAddMember(CreateRequest) error
+	CanAccess(sql.NullString, string) (bool, error)
+	CanAccessError(sql.NullString, string) error
+	RefreshInviteId(string) error
+}
+
+type service struct {
+	store Store
 	conf  *config.Config
 }
 
-func NewService(store *Store, conf *config.Config) *Service {
-	return &Service{
+func NewService(store Store, conf *config.Config) *service {
+	return &service{
 		store: store,
 		conf:  conf,
 	}
@@ -36,7 +52,7 @@ type CreateRequest struct {
 	Name      string `schema:"name"`
 }
 
-func (s *Service) Create(req CreateRequest) (string, error) {
+func (s *service) Create(req CreateRequest) (string, error) {
 	groupLog("Create req %+v", req)
 	id, err := gonanoid.New()
 	if err != nil {
@@ -61,12 +77,12 @@ func (s *Service) Create(req CreateRequest) (string, error) {
 	return id, nil
 }
 
-func (s *Service) Get(id string) (Group, error) {
+func (s *service) Get(id string) (Group, error) {
 	g, err := s.store.Get(id)
 	return g, err
 }
 
-func (s *Service) GetDetailed(id string, user user.SessionUser) (GroupDetailed, error) {
+func (s *service) GetDetailed(id string, user user.SessionUser) (GroupDetailed, error) {
 	if !user.CanModifyGroup() {
 		if err := s.CanAccessError(sql.NullString{
 			String: id,
@@ -92,12 +108,12 @@ func (s *Service) GetDetailed(id string, user user.SessionUser) (GroupDetailed, 
 	}, err
 }
 
-func (s *Service) List() ([]Group, error) {
+func (s *service) List() ([]Group, error) {
 	g, err := s.store.List()
 	return g, err
 }
 
-func (s *Service) AddMember(groupId string, userId string) error {
+func (s *service) AddMember(groupId string, userId string) error {
 	groupLog("AddMember groupId:%s userId:%s", groupId, userId)
 	exists, err := s.store.HasMember(groupId, userId)
 	if err != nil {
@@ -113,7 +129,7 @@ func (s *Service) AddMember(groupId string, userId string) error {
 	return err
 }
 
-func (s *Service) AddMemberFromInvite(inviteId string, userId string) (Group, error) {
+func (s *service) AddMemberFromInvite(inviteId string, userId string) (Group, error) {
 	groupLog("AddMemberFromInvite inviteId:%s userId:%s", inviteId, userId)
 	g, err := s.store.GetByInvite(inviteId)
 	if err != nil {
@@ -133,7 +149,7 @@ type UpdateRequest struct {
 	Name string `schema:"name"`
 }
 
-func (s *Service) Update(req UpdateRequest) error {
+func (s *service) Update(req UpdateRequest) error {
 	groupLog("Update req %+v", req)
 	err := s.store.Update(UpdateParams{
 		Id:   req.Id,
@@ -142,13 +158,13 @@ func (s *Service) Update(req UpdateRequest) error {
 	return err
 }
 
-func (s *Service) Delete(id string) error {
+func (s *service) Delete(id string) error {
 	groupLog("Delete id:%s", id)
 	err := s.store.Delete(id)
 	return err
 }
 
-func (s *Service) RemoveMember(groupId string, userId string) error {
+func (s *service) RemoveMember(groupId string, userId string) error {
 	groupLog("RemoveMember groupId:%s userId:%s", groupId, userId)
 	g, err := s.store.Get(groupId)
 	if g.CreatorId == userId {
@@ -159,7 +175,7 @@ func (s *Service) RemoveMember(groupId string, userId string) error {
 	return err
 }
 
-func (s *Service) CreateAndAddMember(req CreateRequest) error {
+func (s *service) CreateAndAddMember(req CreateRequest) error {
 	groupLog("CreateAndAddMember req %+v", req)
 	groupId, err := s.Create(req)
 	if err != nil {
@@ -174,7 +190,7 @@ func (s *Service) CreateAndAddMember(req CreateRequest) error {
 	return nil
 }
 
-func (s *Service) CanAccess(groupId sql.NullString, userId string) (bool, error) {
+func (s *service) CanAccess(groupId sql.NullString, userId string) (bool, error) {
 	if !groupId.Valid { // if NULL, then public group
 		return true, nil
 	}
@@ -183,7 +199,7 @@ func (s *Service) CanAccess(groupId sql.NullString, userId string) (bool, error)
 	return exists, err
 }
 
-func (s *Service) CanAccessError(groupId sql.NullString, userId string) error {
+func (s *service) CanAccessError(groupId sql.NullString, userId string) error {
 	ok, err := s.CanAccess(groupId, userId)
 	if err != nil {
 		return err
@@ -195,11 +211,11 @@ func (s *Service) CanAccessError(groupId sql.NullString, userId string) error {
 	return nil
 }
 
-func (s *Service) RefreshInviteId(groupId string) error {
+func (s *service) RefreshInviteId(groupId string) error {
 	inviteId, err := gonanoid.New()
 	if err != nil {
 		return err
 	}
 
-    return s.store.RefreshInviteId(groupId, inviteId)
+	return s.store.RefreshInviteId(groupId, inviteId)
 }

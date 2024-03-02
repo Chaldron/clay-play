@@ -11,12 +11,26 @@ import (
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
-type Store struct {
+type Store interface {
+	Create(Event) error
+	Update(UpdateParams) error
+	ListCurrent() ([]Event, error)
+	Get(string) (Event, error)
+	UpdateResponse(EventResponse) error
+	DeleteResponse(string, string) error
+	ListResponses(string) ([]EventResponse, error)
+	ListWaitlist(string, int) ([]EventResponse, error)
+	UpdateWaitlist([]EventResponse) error
+	GetUserResponse(string, string) (*EventResponse, error)
+	Delete(string) error
+}
+
+type store struct {
 	db *sqlx.DB
 }
 
-func NewStore(db *sqlx.DB) *Store {
-	return &Store{
+func NewStore(db *sqlx.DB) *store {
+	return &store{
 		db: db,
 	}
 }
@@ -63,7 +77,7 @@ type EventDetailed struct {
 	Responses    []EventResponse
 }
 
-func (s *Store) Create(e Event) error {
+func (s *store) Create(e Event) error {
 	newId, err := gonanoid.New()
 	if err != nil {
 		return err
@@ -97,7 +111,7 @@ type UpdateParams struct {
 	Location string
 }
 
-func (s *Store) Update(p UpdateParams) error {
+func (s *store) Update(p UpdateParams) error {
 	stmt := `
         UPDATE event
         SET name = ?, capacity = ?, start = ?, location = ?
@@ -116,7 +130,7 @@ func (s *Store) Update(p UpdateParams) error {
 	return err
 }
 
-func (s *Store) ListCurrent() ([]Event, error) {
+func (s *store) ListCurrent() ([]Event, error) {
 	stmt := `
         SELECT 
             e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
@@ -141,7 +155,7 @@ func (s *Store) ListCurrent() ([]Event, error) {
 	return events, nil
 }
 
-func (s *Store) Get(eventId string) (Event, error) {
+func (s *store) Get(eventId string) (Event, error) {
 	stmt := `
         SELECT
             e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
@@ -167,7 +181,7 @@ func (s *Store) Get(eventId string) (Event, error) {
 	return event, nil
 }
 
-func (s *Store) UpdateResponse(e EventResponse) error {
+func (s *store) UpdateResponse(e EventResponse) error {
 	stmt := `
         INSERT INTO event_response (event_id, user_id, created_at, updated_at, attendee_count, on_waitlist)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -194,7 +208,7 @@ func (s *Store) UpdateResponse(e EventResponse) error {
 	return nil
 }
 
-func (s *Store) DeleteResponse(eventId string, userId string) error {
+func (s *store) DeleteResponse(eventId string, userId string) error {
 	stmt := `
         DELETE FROM event_response
         WHERE event_id = ? AND user_id = ?
@@ -210,7 +224,7 @@ func (s *Store) DeleteResponse(eventId string, userId string) error {
 	return nil
 }
 
-func (s *Store) ListResponses(eventId string) ([]EventResponse, error) {
+func (s *store) ListResponses(eventId string) ([]EventResponse, error) {
 	stmt := `
         SELECT er.event_id, er.user_id, er.attendee_count, u.full_name AS user_full_name, er.created_at, er.on_waitlist
         FROM event_response AS er
@@ -240,7 +254,7 @@ func (s *Store) ListResponses(eventId string) ([]EventResponse, error) {
 	return responses, nil
 }
 
-func (s *Store) ListWaitlist(eventId string, limit int) ([]EventResponse, error) {
+func (s *store) ListWaitlist(eventId string, limit int) ([]EventResponse, error) {
 	stmt := `
         SELECT er.event_id, er.user_id, er.on_waitlist
         FROM event_response AS er
@@ -260,7 +274,7 @@ func (s *Store) ListWaitlist(eventId string, limit int) ([]EventResponse, error)
 	return waitlist, nil
 }
 
-func (s *Store) UpdateWaitlist(reqs []EventResponse) error {
+func (s *store) UpdateWaitlist(reqs []EventResponse) error {
 	t, err := s.db.Beginx()
 	if err != nil {
 		return err
@@ -291,7 +305,7 @@ func (s *Store) UpdateWaitlist(reqs []EventResponse) error {
 	return nil
 }
 
-func (s *Store) GetUserResponse(eventId string, userId string) (*EventResponse, error) {
+func (s *store) GetUserResponse(eventId string, userId string) (*EventResponse, error) {
 	stmt := `
         SELECT event_id, attendee_count, on_waitlist
         FROM event_response
@@ -310,7 +324,7 @@ func (s *Store) GetUserResponse(eventId string, userId string) (*EventResponse, 
 	return &response, nil
 }
 
-func (s *Store) Delete(id string) error {
+func (s *store) Delete(id string) error {
 	stmt := `
         UPDATE event
         SET is_deleted = TRUE

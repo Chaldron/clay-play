@@ -6,12 +6,16 @@ import (
 	"log"
 )
 
-type Service struct {
-	store *Store
+type Service interface {
+	HandleFromExternal(ExternalUser) (User, error)
 }
 
-func NewService(store *Store) *Service {
-	return &Service{
+type service struct {
+	store Store
+}
+
+func NewService(store Store) *service {
+	return &service{
 		store: store,
 	}
 }
@@ -20,8 +24,8 @@ func userLog(format string, s ...any) {
 	log.Printf("user/user.go: %s", fmt.Sprintf(format, s...))
 }
 
-func (s *Service) HandleFromExternal(externalUser ExternalUser) (User, error) {
-    userLog("HandleFromExternal externalUser %+v", externalUser)
+func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
+	userLog("HandleFromExternal externalUser %+v", externalUser)
 	user, err := s.store.GetByExternal(externalUser.Id)
 	// if cant retrieve user, then need to create
 	if errors.Is(err, ErrNoUser) {

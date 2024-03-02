@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github/mattfan00/jvbe/config"
-	userPkg "github/mattfan00/jvbe/user"
+	"github.com/mattfan00/jvbe/config"
+	userPkg "github.com/mattfan00/jvbe/user"
 	"log"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -13,19 +13,25 @@ import (
 	"golang.org/x/oauth2"
 )
 
-type Service struct {
-	oidcProvider *oidc.Provider
-	oauthConf    *oauth2.Config
-	user         *userPkg.Service
+type Service interface {
+    AuthCodeUrl(string) string
+    InfoFromProvider(code string) (userPkg.ExternalUser, string, error)
+    HandleLogin(code string) (userPkg.SessionUser, error)
 }
 
-func NewService(conf *config.Config, user *userPkg.Service) (*Service, error) {
+type service struct {
+	oidcProvider *oidc.Provider
+	oauthConf    *oauth2.Config
+	user         userPkg.Service
+}
+
+func NewService(conf *config.Config, user userPkg.Service) (*service, error) {
 	provider, err := oidc.NewProvider(
 		context.Background(),
 		"https://"+conf.Oauth.Domain,
 	)
 	if err != nil {
-		return &Service{}, err
+		return &service{}, err
 	}
 
 	oauthConf := &oauth2.Config{
@@ -36,7 +42,7 @@ func NewService(conf *config.Config, user *userPkg.Service) (*Service, error) {
 		Endpoint:     provider.Endpoint(),
 	}
 
-	return &Service{
+	return &service{
 		oidcProvider: provider,
 		oauthConf:    oauthConf,
 		user:         user,
@@ -47,11 +53,11 @@ func authLog(format string, s ...any) {
 	log.Printf("auth/auth.go: %s", fmt.Sprintf(format, s...))
 }
 
-func (s *Service) AuthCodeUrl(state string) string {
+func (s *service) AuthCodeUrl(state string) string {
 	return s.oauthConf.AuthCodeURL(state)
 }
 
-func (s *Service) InfoFromProvider(code string) (userPkg.ExternalUser, string, error) {
+func (s *service) InfoFromProvider(code string) (userPkg.ExternalUser, string, error) {
 	token, err := s.oauthConf.Exchange(context.Background(), code)
 	if err != nil {
 		return userPkg.ExternalUser{}, "", err
@@ -88,7 +94,7 @@ type customClaims struct {
 	jwt.RegisteredClaims
 }
 
-func (s *Service) HandleLogin(code string) (userPkg.SessionUser, error) {
+func (s *service) HandleLogin(code string) (userPkg.SessionUser, error) {
 	externalUser, accessToken, err := s.InfoFromProvider(code)
 	if err != nil {
 		return userPkg.SessionUser{}, err
