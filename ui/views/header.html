@@ -10,7 +10,7 @@
         </ul>
         <ul>
             {{if .User.CanDoEverything}}
-            <li><a href="/overlord">Overlord Panel</a></li>
+            <li><a href="/admin">Admin</a></li>
             {{end}}
             {{if .User.IsAuthenticated}}
             <li><a href="/auth/logout" hx-boost="false">Logout</a></li>

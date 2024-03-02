@@ -96,7 +96,7 @@ func (a *App) Routes() http.Handler {
 			})
 		})
 
-		r.With(a.canDoEverything).Get("/overlord", a.renderOverlord)
+		r.With(a.canDoEverything).Get("/admin", a.renderAdmin)
 	})
 
 	return r
@@ -574,10 +574,10 @@ func (a *App) updateReview(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Successfully updated your review!"))
 }
 
-func (a *App) renderOverlord(w http.ResponseWriter, r *http.Request) {
+func (a *App) renderAdmin(w http.ResponseWriter, r *http.Request) {
 	u, _ := a.sessionUser(r)
 
-	a.renderPage(w, "overlord.html", BaseData{
+	a.renderPage(w, "admin.html", BaseData{
 		User: u,
 	})
 }
@@ -611,5 +611,5 @@ func (a *App) approveReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    http.Redirect(w, r, "/review/list", http.StatusSeeOther)
+	http.Redirect(w, r, "/review/list", http.StatusSeeOther)
 }
