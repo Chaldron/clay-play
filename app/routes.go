@@ -86,8 +86,6 @@ func (a *App) Routes() http.Handler {
 		})
 
 		r.Route("/review", func(r chi.Router) {
-			r.Use(a.requireAuth)
-
 			r.Get("/request", a.renderReviewRequest)
 			r.Post("/request", a.updateReview)
 
