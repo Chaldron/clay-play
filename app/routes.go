@@ -2,11 +2,14 @@ package app
 
 import (
 	"fmt"
-	eventPkg "github.com/mattfan00/jvbe/event"
-	groupPkg "github.com/mattfan00/jvbe/group"
 	"log"
 	"net/http"
 	"time"
+
+	eventPkg "github.com/mattfan00/jvbe/event"
+	groupPkg "github.com/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/user"
+	userPkg "github.com/mattfan00/jvbe/user"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -41,6 +44,7 @@ func (a *App) Routes() http.Handler {
 			r.Use(a.requireAuth)
 
 			r.Get("/home", a.renderHome)
+			r.With(a.canDoEverything).Get("/admin", a.renderAdmin)
 
 			r.Route("/event", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
@@ -80,6 +84,21 @@ func (a *App) Routes() http.Handler {
 				r.Get("/{id}", a.renderGroupDetails)
 			})
 		})
+
+		r.Route("/review", func(r chi.Router) {
+			r.Use(a.requireAuth)
+
+			r.Get("/request", a.renderReviewRequest)
+			r.Post("/request", a.updateReview)
+
+			r.Group(func(r chi.Router) {
+				r.Use(a.canReviewUser)
+
+				r.Get("/list", a.renderReviewList)
+				r.Post("/approve", a.approveReview)
+			})
+		})
+
 	})
 
 	return r
@@ -90,11 +109,6 @@ func (a *App) renderPrivacy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) renderIndex(w http.ResponseWriter, r *http.Request) {
-	if _, ok := a.sessionUser(r); ok {
-		http.Redirect(w, r, "/home", http.StatusSeeOther)
-		return
-	}
-
 	a.renderPage(w, "index.html", nil)
 }
 
@@ -299,13 +313,10 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = a.session.RenewToken(r.Context())
-	if err != nil {
+	if err := a.renewSessionUser(r, &u); err != nil {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
-
-	a.session.Put(r.Context(), "user", &u)
 
 	redirect := a.session.PopString(r.Context(), "redirect")
 	if redirect != "" {
@@ -495,4 +506,106 @@ func (a *App) refreshInviteLinkGroup(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("HX-Location", "/group/"+id)
 	w.Write(nil)
+}
+
+type reviewRequestData struct {
+	BaseData
+	UserReview userPkg.UserReview
+}
+
+func (a *App) renderReviewRequest(w http.ResponseWriter, r *http.Request) {
+	su, _ := a.sessionUser(r)
+
+	// recheck if the user is active so that user is redirected to application once they are
+	u, err := a.user.Get(su.Id)
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+	t := u.ToSessionUser()
+	t.Permissions = su.Permissions
+	su = t
+	log.Printf("user at review: %+v", su)
+
+	if err := a.renewSessionUser(r, &su); err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	if su.Status == user.UserStatusActive {
+		http.Redirect(w, r, "/home", http.StatusSeeOther)
+		return
+	}
+
+	userReview, err := a.user.GetReview(su.Id)
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	a.renderPage(w, "review/request.html", reviewRequestData{
+		BaseData: BaseData{
+			User: su,
+		},
+		UserReview: userReview,
+	})
+}
+
+func (a *App) updateReview(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	req, err := schemaDecode[userPkg.UpdateReviewRequest](r)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+	req.UserId = u.Id
+
+	err = a.user.UpdateReview(req)
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	w.Write([]byte("Successfully updated your review!"))
+}
+
+func (a *App) renderAdmin(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	a.renderPage(w, "admin.html", BaseData{
+		User: u,
+	})
+}
+
+type reviewListData struct {
+	BaseData
+	Reviews []user.UserReview
+}
+
+func (a *App) renderReviewList(w http.ResponseWriter, r *http.Request) {
+	u, _ := a.sessionUser(r)
+
+	urs, err := a.user.ListReviews()
+	if err != nil {
+		a.renderErrorPage(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	a.renderPage(w, "review/list.html", reviewListData{
+		BaseData: BaseData{
+			User: u,
+		},
+		Reviews: urs,
+	})
+}
+
+func (a *App) approveReview(w http.ResponseWriter, r *http.Request) {
+	err := a.user.ApproveReview(r.FormValue("user_id"))
+	if err != nil {
+		a.renderErrorNotif(w, err, http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/review/list", http.StatusSeeOther)
 }

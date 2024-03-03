@@ -1,18 +1,20 @@
-package event
+package event_test
 
 import (
-	"github.com/mattfan00/jvbe/group"
 	"testing"
+
+	"github.com/mattfan00/jvbe/event"
+	"github.com/mattfan00/jvbe/tests"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandleResponseNegativeAttendees(t *testing.T) {
-	eventStore := new(MockStore)
-	groupService := new(group.MockService)
-	s := NewService(eventStore, groupService)
+	eventStore := new(tests.MockEventStore)
+	groupService := new(tests.MockGroupService)
+	s := event.NewService(eventStore, groupService)
 
-	r := RespondEventRequest{
+	r := event.RespondEventRequest{
 		UserId:        "1",
 		Id:            "a",
 		AttendeeCount: -1,

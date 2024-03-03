@@ -16,13 +16,19 @@ func (a *App) sessionUser(r *http.Request) (user.SessionUser, bool) {
 // TODO: clear sessions if auth fails
 func (a *App) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, ok := a.sessionUser(r)
+		u, ok := a.sessionUser(r)
 
 		if ok {
-			next.ServeHTTP(w, r)
+			if u.Status != user.UserStatusActive {
+				http.Redirect(w, r, "/review/request", http.StatusSeeOther)
+				return
+			} else {
+				next.ServeHTTP(w, r)
+				return
+			}
 		} else {
 			status := http.StatusForbidden
-			a.renderErrorPage(w, errors.New(http.StatusText(status) + ". User is not authenticated!"), status)
+			a.renderErrorPage(w, errors.New(http.StatusText(status)+". User is not authenticated!"), status)
 			return
 		}
 	})
@@ -43,6 +49,30 @@ func (a *App) canModifyGroup(next http.Handler) http.Handler {
 func (a *App) canModifyEvent(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if u, _ := a.sessionUser(r); u.CanModifyEvent() {
+			next.ServeHTTP(w, r)
+		} else {
+			status := http.StatusUnauthorized
+			a.renderErrorPage(w, errors.New(http.StatusText(status)), status)
+			return
+		}
+	})
+}
+
+func (a *App) canReviewUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, _ := a.sessionUser(r); u.CanReviewUser() {
+			next.ServeHTTP(w, r)
+		} else {
+			status := http.StatusUnauthorized
+			a.renderErrorPage(w, errors.New(http.StatusText(status)), status)
+			return
+		}
+	})
+}
+
+func (a *App) canDoEverything(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if u, _ := a.sessionUser(r); u.CanDoEverything() {
 			next.ServeHTTP(w, r)
 		} else {
 			status := http.StatusUnauthorized

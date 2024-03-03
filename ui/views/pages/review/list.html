@@ -1,0 +1,35 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div class="page_header">
+        <h3>Review New Users</h3>
+    </div>
+
+    {{if gt (len .Reviews) (0)}}
+    <section class="card-list">
+        {{range .Reviews}}
+        <div class="center">
+            <div class="flex-1">
+                <div><strong>{{.UserFullName}}</strong></div>
+                {{if ne .Comment.String ""}}
+                <small><strong>Comment:</strong> {{.Comment.String}}</small>
+                {{end}}
+            </div>
+            <input type="hidden" name="user_id" value="{{.UserId}}" />
+            <button
+                hx-post="/review/approve"
+                hx-target="body"
+                hx-include="previous input"
+            >
+                Approve
+            </button>
+        </div>
+        {{end}}
+    </section>
+    {{else}}
+    <div>No pending reviews</div>
+    {{end}}
+</main>
+{{end}}

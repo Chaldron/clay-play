@@ -4,9 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"flag"
-	"github.com/mattfan00/jvbe/config"
 	"log"
 	"os"
+	"strconv"
+
+	"github.com/mattfan00/jvbe/config"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pressly/goose/v3"
@@ -50,7 +52,7 @@ func (p *migrationProgram) run() error {
 		return err
 	}
 
-    db := sqlx.MustConnect("sqlite3", conf.DbConn)
+	db := sqlx.MustConnect("sqlite3", conf.DbConn)
 	log.Printf("connected to DB: %s\n", conf.DbConn)
 
 	p.migration, err = newMigration(db.DB)
@@ -61,6 +63,8 @@ func (p *migrationProgram) run() error {
 	switch action {
 	case "create":
 		return p.create(p.fs.Arg(1))
+	case "down-to":
+		return p.downTo(p.fs.Arg(1))
 	}
 
 	return nil
@@ -68,6 +72,14 @@ func (p *migrationProgram) run() error {
 
 func (p *migrationProgram) create(name string) error {
 	return p.migration.Create(name)
+}
+
+func (p *migrationProgram) downTo(version string) error {
+	v, err := strconv.ParseInt(version, 10, 64)
+	if err != nil {
+		return err
+	}
+	return p.migration.DownTo(v)
 }
 
 type migration struct {
@@ -97,4 +109,8 @@ func (m *migration) Create(name string) error {
 
 func (m *migration) Up() error {
 	return goose.Up(m.db, ".")
+}
+
+func (m *migration) DownTo(version int64) error {
+	return goose.DownTo(m.db, ".", version)
 }

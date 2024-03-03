@@ -14,27 +14,27 @@
         </div>
     </div>
 
-    <section>
-        {{if gt (len .CurrEvents) (0)}}
-            {{range .CurrEvents}}
-            <div
-                class="item" 
-                x-data="{ start: formatTime('{{jsTime .Start}}') }"
-            >
-                <div class="flex-1">
-                    <div><strong>{{.Name}}</strong></div>
-                    <div>
-                        <small>
-                            <span x-text="start"></span> · {{.SpotsLeft}} spots left
-                        </small>
-                    </div>
+    {{if gt (len .CurrEvents) (0)}}
+    <section class="card-list">
+        {{range .CurrEvents}}
+        <div
+            class="center"
+            x-data="{ start: formatTime('{{jsTime .Start}}') }"
+        >
+            <div class="flex-1">
+                <div><strong>{{.Name}}</strong></div>
+                <div>
+                    <small>
+                        <span x-text="start"></span> · {{.SpotsLeft}} spots left
+                    </small>
                 </div>
-                <a href="/event/{{.Id}}">View</a>
             </div>
-            {{end}}
-        {{else}}
-        <div>No events</div>
+            <a href="/event/{{.Id}}">View</a>
+        </div>
         {{end}}
     </section>
+    {{else}}
+    <div>No events</div>
+    {{end}}
 </main>
 {{end}}

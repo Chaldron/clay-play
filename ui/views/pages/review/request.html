@@ -1,0 +1,27 @@
+{{define "body"}}
+<main class="container-fluid only">
+    <div id="error"></div>
+
+    <hgroup>
+        <h3>Welcome {{.User.FullName}}!</h3>
+        <p>Your request to join <strong>jvbe</strong> is being reviewed.</p>
+        <p>Please provide a comment below including who referred you to expedite this process.</p>
+    </hgroup>
+
+    <section>
+        <form 
+            hx-post="/review/request"
+            hx-target="#notif"
+        >
+            <textarea 
+                name="comment"
+                maxlength="100"
+            >{{.UserReview.Comment.String}}</textarea>
+            <button type="submit">Submit</button>
+        </form>
+        <div id="notif"></div>
+    </section>
+
+    <a href="/">Go home</a>
+</main>
+{{end}}
