@@ -122,7 +122,7 @@ article {
 }
 
 .card-list {
-    & > * {
+    & > div {
         padding: var(#{$css-var-prefix}block-spacing-vertical) var(#{$css-var-prefix}block-spacing-horizontal);
         border: 1px solid $border-color; 
         margin-bottom: -1px;
