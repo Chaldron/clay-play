@@ -44,6 +44,7 @@ func (a *App) Routes() http.Handler {
 			r.Use(a.requireAuth)
 
 			r.Get("/home", a.renderHome)
+			r.With(a.canDoEverything).Get("/admin", a.renderAdmin)
 
 			r.Route("/event", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
@@ -85,6 +86,8 @@ func (a *App) Routes() http.Handler {
 		})
 
 		r.Route("/review", func(r chi.Router) {
+			r.Use(a.requireAuth)
+
 			r.Get("/request", a.renderReviewRequest)
 			r.Post("/request", a.updateReview)
 
@@ -96,7 +99,6 @@ func (a *App) Routes() http.Handler {
 			})
 		})
 
-		r.With(a.canDoEverything).Get("/admin", a.renderAdmin)
 	})
 
 	return r
@@ -315,12 +317,6 @@ func (a *App) handleLoginCallback(w http.ResponseWriter, r *http.Request) {
 		a.renderErrorPage(w, err, http.StatusInternalServerError)
 		return
 	}
-	/*
-		if u.Status != user.UserStatusActive {
-			w.Write([]byte("not active"))
-			return
-		}
-	*/
 
 	redirect := a.session.PopString(r.Context(), "redirect")
 	if redirect != "" {
