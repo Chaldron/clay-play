@@ -18,7 +18,7 @@
     <section class="card-list">
         {{range .CurrEvents}}
         <div
-            class="center"
+            class="card-list-item center"
             x-data="{ start: formatTime('{{jsTime .Start}}') }"
         >
             <div class="flex-1">

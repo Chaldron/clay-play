@@ -10,7 +10,7 @@
     {{if gt (len .Reviews) (0)}}
     <section class="card-list">
         {{range .Reviews}}
-        <div class="center">
+        <div class="card-list-item">
             <div class="flex-1">
                 <div><strong>{{.UserFullName}}</strong></div>
                 {{if ne .Comment.String ""}}
