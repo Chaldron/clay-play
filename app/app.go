@@ -18,7 +18,7 @@ import (
 type App struct {
 	eventService event.Service
 	userService  user.Service
-	auth         auth.Service
+	authService  auth.Service
 	group        group.Service
 
 	conf      *config.Config
@@ -29,7 +29,7 @@ type App struct {
 func New(
 	eventService event.Service,
 	userService user.Service,
-	auth auth.Service,
+	authService auth.Service,
 	group group.Service,
 
 	conf *config.Config,
@@ -39,7 +39,7 @@ func New(
 	return &App{
 		eventService: eventService,
 		userService:  userService,
-		auth:         auth,
+		authService:         authService,
 		group:        group,
 
 		conf:      conf,

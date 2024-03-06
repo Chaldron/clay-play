@@ -84,7 +84,7 @@ func (p *appProgram) run() error {
 	eventService := event.NewService(db)
 	userService := user.NewService(db)
 
-	authService, err := auth.NewService(conf, userService)
+	authService, err := auth.NewService(conf)
 	if err != nil {
 		return err
 	}

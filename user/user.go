@@ -57,6 +57,7 @@ type ExternalUser struct {
 	Id       string `json:"sub"`
 	FullName string `json:"name"`
 	Picture  string `json:"picture"`
+    Permissions []string
 }
 
 type SessionUser struct {
