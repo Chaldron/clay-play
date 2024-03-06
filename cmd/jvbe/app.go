@@ -81,8 +81,7 @@ func (p *appProgram) run() error {
 	groupStore := group.NewStore(db)
 	groupService := group.NewService(groupStore, conf)
 
-	eventStore := event.NewStore(db)
-	eventService := event.NewService(eventStore, groupService)
+	eventService := event.NewService(db)
 
 	userStore := user.NewStore(db)
 	userService := user.NewService(userStore)

@@ -16,7 +16,7 @@ import (
 )
 
 type App struct {
-	event event.Service
+	eventService event.Service
 	user  user.Service
 	auth  auth.Service
 	group group.Service
@@ -27,7 +27,7 @@ type App struct {
 }
 
 func New(
-	event event.Service,
+	eventService event.Service,
 	user user.Service,
 	auth auth.Service,
 	group group.Service,
@@ -37,7 +37,7 @@ func New(
 	templates template.TemplateMap,
 ) *App {
 	return &App{
-		event: event,
+		eventService: eventService,
 		user:  user,
 		auth:  auth,
 		group: group,

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	eventPkg "github.com/mattfan00/jvbe/event"
 	groupPkg "github.com/mattfan00/jvbe/group"
 	"github.com/mattfan00/jvbe/user"
 	userPkg "github.com/mattfan00/jvbe/user"
@@ -23,7 +22,7 @@ func (a *App) Routes() http.Handler {
 	publicFileServer := http.FileServer(http.Dir("./ui/public"))
 	r.Handle("/public/*", http.StripPrefix("/public/", publicFileServer))
 
-	r.Get("/privacy", a.renderPrivacy)
+	r.Get("/privacy", a.renderPrivacy())
 
 	r.Group(func(r chi.Router) {
 		r.Use(httprate.LimitAll(100, 1*time.Minute))
@@ -31,7 +30,7 @@ func (a *App) Routes() http.Handler {
 		r.Use(a.recoverPanic)
 		r.Use(a.session.LoadAndSave)
 
-		r.Get("/", a.renderIndex)
+		r.Get("/", a.renderIndex())
 
 		r.Route("/auth", func(r chi.Router) {
 			r.Get("/login", a.renderLogin)
@@ -43,22 +42,22 @@ func (a *App) Routes() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(a.requireAuth)
 
-			r.Get("/home", a.renderHome)
+			r.Get("/home", a.renderHome())
 			r.With(a.canDoEverything).Get("/admin", a.renderAdmin)
 
 			r.Route("/event", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
 					r.Use(a.canModifyEvent)
 
-					r.Get("/new", a.renderNewEvent)
-					r.Post("/new", a.createEvent)
-					r.Get("/{id}/edit", a.renderEditEvent)
-					r.Post("/{id}/edit", a.updateEvent)
-					r.Delete("/{id}/edit", a.deleteEvent)
+					r.Get("/new", a.renderNewEvent())
+					r.Post("/new", a.createEvent())
+					r.Get("/{id}/edit", a.renderEditEvent())
+					r.Post("/{id}/edit", a.updateEvent())
+					r.Delete("/{id}/edit", a.deleteEvent())
 				})
 
-				r.Get("/{id}", a.renderEventDetails)
-				r.Post("/respond", a.respondEvent)
+				r.Get("/{id}", a.renderEventDetails())
+				r.Post("/respond", a.respondEvent())
 			})
 		})
 
@@ -102,183 +101,16 @@ func (a *App) Routes() http.Handler {
 	return r
 }
 
-func (a *App) renderPrivacy(w http.ResponseWriter, r *http.Request) {
-	a.renderPage(w, "privacy.html", nil)
-}
-
-func (a *App) renderIndex(w http.ResponseWriter, r *http.Request) {
-	a.renderPage(w, "index.html", nil)
-}
-
-type homeData struct {
-	BaseData
-	CurrEvents []eventPkg.Event
-}
-
-func (a *App) renderHome(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-
-	currEvents, err := a.event.ListCurrent(u.Id)
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
+func (a *App) renderPrivacy() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		a.renderPage(w, "privacy.html", nil)
 	}
-
-	a.renderPage(w, "home.html", homeData{
-		BaseData: BaseData{
-			User: u,
-		},
-		CurrEvents: currEvents,
-	})
 }
 
-type newEventData struct {
-	BaseData
-	Groups []groupPkg.Group
-}
-
-func (a *App) renderNewEvent(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-
-	g, err := a.group.List()
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
+func (a *App) renderIndex() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		a.renderPage(w, "index.html", nil)
 	}
-
-	a.renderPage(w, "event/new.html", newEventData{
-		BaseData: BaseData{
-			User: u,
-		},
-		Groups: g,
-	})
-}
-
-func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-
-	req, err := schemaDecode[eventPkg.CreateRequest](r)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-	req.CreatorId = u.Id
-
-	err = a.event.Create(req)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/home", http.StatusSeeOther)
-}
-
-type eventDetailsData struct {
-	BaseData
-	Event            eventPkg.EventDetailed
-	MaxAttendeeCount int
-}
-
-func (a *App) renderEventDetails(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-	eventId := chi.URLParam(r, "id")
-
-	e, err := a.event.GetDetailed(eventId, u.Id)
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	a.renderPage(w, "event/details.html", eventDetailsData{
-		BaseData: BaseData{
-			User: u,
-		},
-		Event:            e,
-		MaxAttendeeCount: eventPkg.MaxAttendeeCount,
-	})
-}
-
-func (a *App) respondEvent(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-
-	req, err := schemaDecode[eventPkg.RespondEventRequest](r)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-	req.UserId = u.Id
-
-	err = a.event.HandleResponse(req)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/event/"+req.Id, http.StatusSeeOther)
-}
-
-func (a *App) deleteEvent(w http.ResponseWriter, r *http.Request) {
-	eventId := chi.URLParam(r, "id")
-
-	err := a.event.Delete(eventId)
-	if err != nil {
-		a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/home", http.StatusSeeOther)
-}
-
-type editEventData struct {
-	BaseData
-	Event eventPkg.Event
-}
-
-func (a *App) renderEditEvent(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
-	id := chi.URLParam(r, "id")
-
-	e, err := a.event.Get(id)
-	if err != nil {
-		a.renderErrorPage(w, err, http.StatusInternalServerError)
-		return
-	}
-
-	a.renderPage(w, "event/edit.html", editEventData{
-		BaseData: BaseData{
-			User: u,
-		},
-		Event: e,
-	})
-}
-
-// TODO
-func (a *App) updateEvent(w http.ResponseWriter, r *http.Request) {
-	/*
-		u, _ := a.sessionUser(r)
-		id := chi.URLParam(r, "id")
-		log.Printf("user updating event %s: %s", id, u.Id)
-
-		if err := r.ParseForm(); err != nil {
-			a.renderErrorNotif(w, err, http.StatusInternalServerError)
-			return
-		}
-
-		var req eventPkg.UpdateRequest
-		if err := schema.NewDecoder().Decode(&req, r.PostForm); err != nil {
-			a.renderErrorNotif(w, err, http.StatusInternalServerError)
-			return
-		}
-		req.Id = id
-
-		if err := a.event.Update(req); err != nil {
-			a.renderErrorNotif(w, err, http.StatusInternalServerError)
-			return
-		}
-
-		http.Redirect(w, r, "/event/"+id, http.StatusSeeOther)
-	*/
-	w.Write(nil)
 }
 
 func (a *App) renderLogin(w http.ResponseWriter, r *http.Request) {
