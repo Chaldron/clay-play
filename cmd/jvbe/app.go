@@ -82,9 +82,7 @@ func (p *appProgram) run() error {
 	groupService := group.NewService(groupStore, conf)
 
 	eventService := event.NewService(db)
-
-	userStore := user.NewStore(db)
-	userService := user.NewService(userStore)
+	userService := user.NewService(db)
 
 	authService, err := auth.NewService(conf, userService)
 	if err != nil {

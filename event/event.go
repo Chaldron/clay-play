@@ -2,8 +2,6 @@ package event
 
 import (
 	"database/sql"
-	"fmt"
-	"log"
 	"time"
 )
 
@@ -15,10 +13,6 @@ type Service interface {
 	Update(UpdateParams) error
 	Delete(string) error
 	HandleResponse(HandleResponseParams) error
-}
-
-func serviceLog(format string, s ...any) {
-	log.Printf("event/service.go: %s", fmt.Sprintf(format, s...))
 }
 
 type Event struct {

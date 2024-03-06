@@ -17,9 +17,9 @@ import (
 
 type App struct {
 	eventService event.Service
-	user  user.Service
-	auth  auth.Service
-	group group.Service
+	userService  user.Service
+	auth         auth.Service
+	group        group.Service
 
 	conf      *config.Config
 	session   *scs.SessionManager
@@ -28,7 +28,7 @@ type App struct {
 
 func New(
 	eventService event.Service,
-	user user.Service,
+	userService user.Service,
 	auth auth.Service,
 	group group.Service,
 
@@ -38,9 +38,9 @@ func New(
 ) *App {
 	return &App{
 		eventService: eventService,
-		user:  user,
-		auth:  auth,
-		group: group,
+		userService:  userService,
+		auth:         auth,
+		group:        group,
 
 		conf:      conf,
 		session:   session,

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -18,6 +19,10 @@ func NewService(db *sqlx.DB) *service {
 	return &service{
 		db: db,
 	}
+}
+
+func serviceLog(format string, s ...any) {
+	log.Printf("event/service.go: %s", fmt.Sprintf(format, s...))
 }
 
 func (s *service) Get(id string) (Event, error) {
