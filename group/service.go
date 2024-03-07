@@ -175,6 +175,10 @@ func (s *service) UserCanAccess(groupId sql.NullString, userId string) (bool, er
 	}
 	defer tx.Rollback()
 
+	if !groupId.Valid { // if NULL, then public group
+		return true, nil
+	}
+
 	exists, err := hasMember(tx, groupId.String, userId)
 	return exists, err
 }
