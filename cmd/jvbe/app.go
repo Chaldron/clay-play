@@ -78,9 +78,7 @@ func (p *appProgram) run() error {
 	session.Lifetime = 30 * 24 * time.Hour // 30 days
 	session.Store = sqlite3store.New(db.DB)
 
-	groupStore := group.NewStore(db)
-	groupService := group.NewService(groupStore, conf)
-
+	groupService := group.NewService(db)
 	eventService := event.NewService(db)
 	userService := user.NewService(db)
 

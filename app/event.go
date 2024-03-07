@@ -29,7 +29,7 @@ func (a *App) renderHome() http.HandlerFunc {
 		// filter out events you don't have access to
 		filtered := []event.Event{}
 		for _, e := range currEvents {
-			ok, err := a.group.CanAccess(e.GroupId, u.Id)
+			ok, err := a.groupService.UserCanAccess(e.GroupId, u.Id)
 			if err != nil {
 				a.renderErrorPage(w, err, http.StatusInternalServerError)
 				return
@@ -58,7 +58,7 @@ func (a *App) renderNewEvent() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		u, _ := a.sessionUser(r)
 
-		g, err := a.group.List()
+		g, err := a.groupService.List()
 		if err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
 			return
@@ -202,7 +202,7 @@ func (a *App) renderEventDetails() http.HandlerFunc {
 			return
 		}
 
-		if err = a.group.CanAccessError(e.GroupId, u.Id); err != nil {
+		if err = a.groupService.UserCanAccessError(e.GroupId, u.Id); err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
@@ -242,7 +242,7 @@ func (a *App) respondEvent() http.HandlerFunc {
 			return
 		}
 
-		if err = a.group.CanAccessError(e.GroupId, u.Id); err != nil {
+		if err = a.groupService.UserCanAccessError(e.GroupId, u.Id); err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return
 		}

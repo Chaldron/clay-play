@@ -4,8 +4,6 @@ import (
 	"net/http"
 	"time"
 
-	groupPkg "github.com/mattfan00/jvbe/group"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
