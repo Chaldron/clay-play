@@ -16,10 +16,10 @@ import (
 )
 
 type App struct {
-	event event.Service
-	user  user.Service
-	auth  auth.Service
-	group group.Service
+	eventService event.Service
+	userService  user.Service
+	authService  auth.Service
+	groupService group.Service
 
 	conf      *config.Config
 	session   *scs.SessionManager
@@ -27,20 +27,20 @@ type App struct {
 }
 
 func New(
-	event event.Service,
-	user user.Service,
-	auth auth.Service,
-	group group.Service,
+	eventService event.Service,
+	userService user.Service,
+	authService auth.Service,
+	groupService group.Service,
 
 	conf *config.Config,
 	session *scs.SessionManager,
 	templates template.TemplateMap,
 ) *App {
 	return &App{
-		event: event,
-		user:  user,
-		auth:  auth,
-		group: group,
+		eventService: eventService,
+		userService:  userService,
+		authService:  authService,
+		groupService: groupService,
 
 		conf:      conf,
 		session:   session,
