@@ -11,6 +11,7 @@ import (
 type Service interface {
 	Get(string) (User, error)
 	HandleFromExternal(ExternalUser) (User, error)
+	Create(CreateParams) (User, error)
 	GetReview(string) (UserReview, error)
 	UpdateReview(UpdateReviewParams) error
 	ListReviews() ([]UserReview, error)
@@ -54,10 +55,10 @@ type UserReview struct {
 }
 
 type ExternalUser struct {
-	Id       string `json:"sub"`
-	FullName string `json:"name"`
-	Picture  string `json:"picture"`
-    Permissions []string
+	Id          string `json:"sub"`
+	FullName    string `json:"name"`
+	Picture     string `json:"picture"`
+	Permissions []string
 }
 
 type SessionUser struct {

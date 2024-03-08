@@ -9,13 +9,14 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/mattfan00/jvbe/db"
 )
 
 type service struct {
-	db *sqlx.DB
+	db *db.DB
 }
 
-func NewService(db *sqlx.DB) *service {
+func NewService(db *db.DB) *service {
 	return &service{
 		db: db,
 	}
@@ -46,7 +47,10 @@ func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
 	user, err := getByExternal(tx, externalUser.Id)
 	// if cant retrieve user, then need to create
 	if errors.Is(err, ErrNoUser) {
-		user, err = createFromExternal(tx, externalUser)
+		user, err = create(tx, CreateParams{
+			ExternalId: externalUser.Id,
+			FullName:   externalUser.FullName,
+		})
 		if err != nil {
 			return User{}, err
 		}
@@ -68,6 +72,32 @@ func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
 	}
 
 	return user, nil
+}
+
+type CreateParams struct {
+	ExternalId string
+	FullName   string
+	Picture    string
+}
+
+func (s *service) Create(p CreateParams) (User, error) {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return User{}, err
+	}
+	defer tx.Rollback()
+
+	u, err := create(tx, p)
+	if err != nil {
+		return User{}, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return User{}, err
+	}
+
+	return u, err
 }
 
 func (s *service) GetReview(userId string) (UserReview, error) {
@@ -115,11 +145,11 @@ func (s *service) UpdateReview(p UpdateReviewParams) error {
 		UserId:  p.UserId,
 		Comment: p.Comment,
 	})
-    
-    err = tx.Commit()
-    if err != nil {
-        return err
-    }
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -206,7 +236,7 @@ func getByExternal(tx *sqlx.Tx, externalId string) (User, error) {
 	return user, nil
 }
 
-func createFromExternal(tx *sqlx.Tx, externalUser ExternalUser) (User, error) {
+func create(tx *sqlx.Tx, p CreateParams) (User, error) {
 	newId, err := gonanoid.New()
 	if err != nil {
 		return User{}, err
@@ -218,12 +248,12 @@ func createFromExternal(tx *sqlx.Tx, externalUser ExternalUser) (User, error) {
     `
 	args := []any{
 		newId,
-		externalUser.FullName,
-		externalUser.Id,
+		p.FullName,
+		p.ExternalId,
 		time.Now().UTC(),
 		UserStatusInactive,
 	}
-	serviceLog("createFromExternal args %v", args)
+	serviceLog("create args %v", args)
 
 	_, err = tx.Exec(stmt, args...)
 	if err != nil {

@@ -15,37 +15,49 @@ func (a *App) renderHome() http.HandlerFunc {
 	type data struct {
 		BaseData
 		CurrEvents []event.Event
+		PastEvents []event.Event
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		u, _ := a.sessionUser(r)
 
-		currEvents, err := a.eventService.ListCurrent()
+		currEvents, err := a.eventService.List(event.ListFilter{
+			Upcoming: true,
+		})
 		if err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
 
-		// filter out events you don't have access to
-		filtered := []event.Event{}
-		for _, e := range currEvents {
-			ok, err := a.groupService.UserCanAccess(e.GroupId, u.Id)
-			if err != nil {
-				a.renderErrorPage(w, err, http.StatusInternalServerError)
-				return
-			}
-			if ok {
-				filtered = append(filtered, e)
-			}
+		pastEvents, err := a.eventService.List(event.ListFilter{
+			Past:        true,
+			OrderByDesc: true,
+			Limit:       10,
+		})
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		currEvents, err = a.groupService.FilterEventsUserCanAccess(currEvents, u.Id)
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		pastEvents, err = a.groupService.FilterEventsUserCanAccess(pastEvents, u.Id)
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
 		}
 
 		a.renderPage(w, "home.html", data{
 			BaseData: BaseData{
 				User: u,
 			},
-			CurrEvents: filtered,
+			CurrEvents: currEvents,
+			PastEvents: pastEvents,
 		})
-
 	}
 }
 

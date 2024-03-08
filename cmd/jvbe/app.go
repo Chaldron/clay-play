@@ -4,20 +4,21 @@ import (
 	"encoding/gob"
 	"flag"
 	"fmt"
-	appPkg "github.com/mattfan00/jvbe/app"
-	"github.com/mattfan00/jvbe/auth"
-	"github.com/mattfan00/jvbe/config"
-	"github.com/mattfan00/jvbe/event"
-	"github.com/mattfan00/jvbe/group"
-	"github.com/mattfan00/jvbe/template"
-	"github.com/mattfan00/jvbe/user"
 	"log"
 	"net/http"
 	"time"
 
+	appPkg "github.com/mattfan00/jvbe/app"
+	"github.com/mattfan00/jvbe/auth"
+	"github.com/mattfan00/jvbe/config"
+	"github.com/mattfan00/jvbe/db"
+	"github.com/mattfan00/jvbe/event"
+	"github.com/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/template"
+	"github.com/mattfan00/jvbe/user"
+
 	"github.com/alexedwards/scs/sqlite3store"
 	"github.com/alexedwards/scs/v2"
-	"github.com/jmoiron/sqlx"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -53,18 +54,8 @@ func (p *appProgram) run() error {
 		return err
 	}
 
-	db, err := sqlx.Connect("sqlite3", conf.DbConn)
+	db, err := db.Connect(conf.DbConn)
 	if err != nil {
-		return err
-	}
-	log.Print("connected to db: ", conf.DbConn)
-
-	log.Print("beginning migration")
-	migration, err := newMigration(db.DB)
-	if err != nil {
-		return err
-	}
-	if err := migration.Up(); err != nil {
 		return err
 	}
 
@@ -76,7 +67,7 @@ func (p *appProgram) run() error {
 	gob.Register(user.SessionUser{}) // needed for scs library
 	session := scs.New()
 	session.Lifetime = 30 * 24 * time.Hour // 30 days
-	session.Store = sqlite3store.New(db.DB)
+	session.Store = sqlite3store.New(db.DB.DB)
 
 	groupService := group.NewService(db)
 	eventService := event.NewService(db)

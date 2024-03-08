@@ -32,7 +32,7 @@ func (a *App) createGroup() http.HandlerFunc {
 			return
 		}
 
-		err = a.groupService.CreateAndAddMember(group.CreateParams{
+		_, err = a.groupService.CreateAndAddMember(group.CreateParams{
 			CreatorId: u.Id,
 			Name:      req.Name,
 		})

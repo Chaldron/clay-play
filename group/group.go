@@ -4,19 +4,22 @@ import (
 	"database/sql"
 	"errors"
 	"time"
+
+	"github.com/mattfan00/jvbe/event"
 )
 
 type Service interface {
 	Get(string) (Group, error)
 	GetDetailed(string) (GroupDetailed, error)
 	List() ([]Group, error)
-	CreateAndAddMember(CreateParams) error
+	CreateAndAddMember(CreateParams) (string, error)
 	Update(UpdateParams) error
 	Delete(string) error
 	AddMemberFromInvite(string, string) (Group, error)
 	RemoveMember(string, string) error
 	UserCanAccess(sql.NullString, string) (bool, error)
 	UserCanAccessError(sql.NullString, string) error
+	FilterEventsUserCanAccess([]event.Event, string) ([]event.Event, error)
 	RefreshInviteId(string) error
 }
 

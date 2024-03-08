@@ -8,7 +8,7 @@ import (
 type Service interface {
 	Get(string) (Event, error)
 	GetDetailed(string, string) (EventDetailed, error)
-	ListCurrent() ([]Event, error)
+	List(ListFilter) ([]Event, error)
 	Create(CreateParams) error
 	Update(UpdateParams) error
 	Delete(string) error

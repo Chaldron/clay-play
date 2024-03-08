@@ -5,17 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/mattfan00/jvbe/db"
 )
 
 type service struct {
-	db *sqlx.DB
+	db *db.DB
 }
 
-func NewService(db *sqlx.DB) *service {
+func NewService(db *db.DB) *service {
 	return &service{
 		db: db,
 	}
@@ -67,7 +69,30 @@ func (s *service) GetDetailed(id string, userId string) (EventDetailed, error) {
 	return ed, nil
 }
 
-func (s *service) ListCurrent() ([]Event, error) {
+type ListFilter struct {
+	Upcoming    bool
+	Past        bool
+	Limit       int
+	Offset      int
+	OrderByDesc bool
+}
+
+func (s *service) List(f ListFilter) ([]Event, error) {
+	where, wargs := []string{}, []any{}
+
+	where = append(where, "is_deleted = FALSE")
+	if f.Upcoming {
+		where = append(where, "datetime() <= datetime(start)")
+	}
+	if f.Past {
+		where = append(where, "datetime() > datetime(start)")
+	}
+
+	orderByDir := "ASC"
+	if f.OrderByDesc == true {
+		orderByDir = "DESC"
+	}
+
 	stmt := `
         SELECT 
             e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
@@ -79,9 +104,11 @@ func (s *service) ListCurrent() ([]Event, error) {
             WHERE on_waitlist = FALSE
             GROUP BY event_id
         ) AS ec ON e.id = ec.event_id
-        WHERE datetime() <= datetime(start) AND is_deleted = FALSE
-        ORDER BY start ASC
-    `
+        WHERE ` + strings.Join(where, " AND ") + `
+        ORDER BY start ` + orderByDir + `
+        ` + db.FormatLimitOffset(f.Limit, f.Offset)
+	args := []any{}
+	args = append(args, wargs...)
 
 	var events []Event
 	err := s.db.Select(&events, stmt)
