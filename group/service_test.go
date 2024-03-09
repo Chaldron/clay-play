@@ -35,7 +35,7 @@ func TestFilterEventsUserCanAccess(t *testing.T) {
 		t.Fatal(t)
 	}
 
-	err = eventService.Create(event.CreateParams{GroupId: groupId})
+	_, err = eventService.Create(event.CreateParams{GroupId: groupId})
 	if err != nil {
 		t.Fatal(t)
 	}

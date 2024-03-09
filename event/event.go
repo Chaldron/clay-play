@@ -9,7 +9,7 @@ type Service interface {
 	Get(string) (Event, error)
 	GetDetailed(string, string) (EventDetailed, error)
 	List(ListFilter) ([]Event, error)
-	Create(CreateParams) error
+	Create(CreateParams) (string, error)
 	Update(UpdateParams) error
 	Delete(string) error
 	HandleResponse(HandleResponseParams) error
@@ -27,6 +27,7 @@ type Event struct {
 	CreatorId          string         `db:"creator_id"`
 	CreatorFullName    string         `db:"creator_full_name"`
 	TotalAttendeeCount int            `db:"total_attendee_count"`
+	IsPast             bool           `db:"is_past"`
 }
 
 func (e Event) SpotsLeft() int {

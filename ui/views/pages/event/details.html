@@ -29,6 +29,9 @@
         >
             <img class="feather" src="/public/icons/calendar.svg" />
             <span x-text="start"></span>
+            {{if .Event.IsPast}}
+            <strong>(Past)</strong>
+            {{end}}
         </div>
         <div class="field">
             <img class="feather" src="/public/icons/map-pin.svg" />
@@ -39,68 +42,8 @@
             <span>{{.Event.Capacity}} spots · {{.Event.SpotsLeft}} left</span>
         </div>
 
-        <div class="register">
-            <form>
-                <input type="hidden" name="id" value="{{.Event.Id}}" />
-                {{if and (.Event.UserResponse) (gt .Event.UserResponse.AttendeeCount 0)}}
-                <input type="hidden" name="attendeeCount" value="0" />
-                <div role="group">
-                    <button 
-                        class="outline"
-                        hx-post="/event/respond"
-                        hx-target="body"
-                        hx-confirm="Are you sure you aren't going?"
-                    >
-                        Nope
-                    </button>
-                    <button class="no">Going</button>
-                </div>
-                {{else}}
-                <input type="hidden" name="attendeeCount" value="1" />
-                <div role="group">
-                    <button class="no">Nope</button>
-                    <button 
-                        class="outline"
-                        hx-post="/event/respond"
-                        hx-target="body"
-                    >
-                        Going
-                    </button>
-                </div>
-                {{end}}
-            </form>
-
-            {{/* PLUS ONE LOGIC */}}
-            <form>
-                <input type="hidden" name="id" value="{{.Event.Id}}" />
-                {{if .Event.UserResponse}}
-                    {{if eq .Event.UserResponse.AttendeeCount 1}}
-                    <input type="hidden" name="attendeeCount" value="2" />
-                    <button 
-                        class="outline"
-                        hx-post="/event/respond"
-                        hx-target="body"
-                        {{if le .Event.SpotsLeft 0}}disabled{{end}}
-                    >
-                        +1
-                    </button>
-                    {{else if eq .Event.UserResponse.AttendeeCount 2}}
-                    <input type="hidden" name="attendeeCount" value="1" />
-                    <button
-                        hx-post="/event/respond"
-                        hx-target="body"
-                        hx-confirm="Are you sure you want to remove your plus one?"
-                    >
-                        +1
-                    </button>
-                    {{else}}
-                        {{/* dont show */}}
-                    {{end}}
-                {{end}}
-            </form>
-        </div>
-        {{if and (not .Event.UserResponse) (le .Event.SpotsLeft 0)}}
-        <small>You will be added to the waitlist if you mark going when capacity is full. You cannot add plus ones while you are on the waitlist.</small>
+        {{if not .Event.IsPast}}
+            {{template "event-details-register" .}}
         {{end}}
     </section>
     <section class="event_attendees">
@@ -145,4 +88,70 @@
         {{end}}
     </section>
 </main>
+{{end}}
+
+{{define "event-details-register"}}
+<div class="register">
+    <form>
+        <input type="hidden" name="id" value="{{.Event.Id}}" />
+        {{if and (.Event.UserResponse) (gt .Event.UserResponse.AttendeeCount 0)}}
+        <input type="hidden" name="attendeeCount" value="0" />
+        <div role="group">
+            <button 
+                class="outline"
+                hx-post="/event/respond"
+                hx-target="body"
+                hx-confirm="Are you sure you aren't going?"
+            >
+                Nope
+            </button>
+            <button class="no">Going</button>
+        </div>
+        {{else}}
+        <input type="hidden" name="attendeeCount" value="1" />
+        <div role="group">
+            <button class="no">Nope</button>
+            <button 
+                class="outline"
+                hx-post="/event/respond"
+                hx-target="body"
+            >
+                Going
+            </button>
+        </div>
+        {{end}}
+    </form>
+
+    {{/* PLUS ONE LOGIC */}}
+    <form>
+        <input type="hidden" name="id" value="{{.Event.Id}}" />
+        {{if .Event.UserResponse}}
+            {{if eq .Event.UserResponse.AttendeeCount 1}}
+            <input type="hidden" name="attendeeCount" value="2" />
+            <button 
+                class="outline"
+                hx-post="/event/respond"
+                hx-target="body"
+                {{if le .Event.SpotsLeft 0}}disabled{{end}}
+            >
+                +1
+            </button>
+            {{else if eq .Event.UserResponse.AttendeeCount 2}}
+            <input type="hidden" name="attendeeCount" value="1" />
+            <button
+                hx-post="/event/respond"
+                hx-target="body"
+                hx-confirm="Are you sure you want to remove your plus one?"
+            >
+                +1
+            </button>
+            {{else}}
+                {{/* dont show */}}
+            {{end}}
+        {{end}}
+    </form>
+</div>
+{{if and (not .Event.UserResponse) (le .Event.SpotsLeft 0)}}
+<small>You will be added to the waitlist if you mark going when capacity is full. You cannot add plus ones while you are on the waitlist.</small>
+{{end}}
 {{end}}

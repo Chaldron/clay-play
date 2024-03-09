@@ -18,20 +18,7 @@
         {{if gt (len .CurrEvents) (0)}}
         <div class="card-list">
             {{range .CurrEvents}}
-            <div
-                class="card-list-item center"
-                x-data="{ start: formatTime('{{jsTime .Start}}') }"
-            >
-                <div class="flex-1">
-                    <div><strong>{{.Name}}</strong></div>
-                    <div>
-                        <small>
-                            <span x-text="start"></span> · {{.SpotsLeft}} spots left
-                        </small>
-                    </div>
-                </div>
-                <a href="/event/{{.Id}}">View</a>
-            </div>
+                {{template "event-item" .}}
             {{end}}
         </div>
         {{else}}
@@ -46,23 +33,27 @@
 
         <div class="card-list">
             {{range .PastEvents}}
-            <div
-                class="card-list-item center"
-                x-data="{ start: formatTime('{{jsTime .Start}}') }"
-            >
-                <div class="flex-1">
-                    <div><strong>{{.Name}}</strong></div>
-                    <div>
-                        <small>
-                            <span x-text="start"></span> · {{.SpotsLeft}} spots left
-                        </small>
-                    </div>
-                </div>
-                <a href="/event/{{.Id}}">View</a>
-            </div>
+                {{template "event-item" .}}
             {{end}}
         </div>
     </section>
     {{end}}
 </main>
+{{end}}
+
+{{define "event-item"}}
+<div
+    class="card-list-item center"
+    x-data="{ start: formatTime('{{jsTime .Start}}') }"
+>
+    <div class="flex-1">
+        <div><strong>{{.Name}}</strong></div>
+        <div>
+            <small>
+                <span x-text="start"></span> · {{.SpotsLeft}} spots left
+            </small>
+        </div>
+    </div>
+    <a href="/event/{{.Id}}">View</a>
+</div>
 {{end}}

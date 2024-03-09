@@ -32,7 +32,6 @@ func (a *App) renderHome() http.HandlerFunc {
 		pastEvents, err := a.eventService.List(event.ListFilter{
 			Past:        true,
 			OrderByDesc: true,
-			Limit:       10,
 		})
 		if err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
@@ -110,7 +109,7 @@ func (a *App) createEvent() http.HandlerFunc {
 			return
 		}
 
-		err = a.eventService.Create(event.CreateParams{
+		_, err = a.eventService.Create(event.CreateParams{
 			Name:      req.Name,
 			GroupId:   req.GroupId,
 			Capacity:  req.Capacity,

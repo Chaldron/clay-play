@@ -128,10 +128,10 @@ type CreateParams struct {
 	CreatorId string
 }
 
-func (s *service) Create(p CreateParams) error {
+func (s *service) Create(p CreateParams) (string, error) {
 	newId, err := gonanoid.New()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	stmt := `
@@ -154,7 +154,7 @@ func (s *service) Create(p CreateParams) error {
 	serviceLog("Create args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
-	return err
+	return newId, err
 }
 
 type UpdateParams struct {
@@ -227,6 +227,10 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 		return err
 	}
 
+	if e.IsPast {
+		return errors.New("cannot respond to past events")
+	}
+
 	existingResponse, err := getUserResponse(tx, p.Id, p.UserId)
 	if err != nil {
 		return err
@@ -295,6 +299,10 @@ func get(tx *sqlx.Tx, id string) (Event, error) {
                 WHERE event_id = ? AND on_waitlist = FALSE
             ), 0) AS total_attendee_count
             , e.group_id, ug.name AS group_name
+            , CASE
+                WHEN datetime() > datetime(start) THEN TRUE
+                ELSE FALSE
+            END AS is_past
         FROM event AS e
         LEFT JOIN user_group AS ug ON e.group_id = ug.id
         INNER JOIN user AS u ON e.creator_id = u.id
