@@ -5,36 +5,55 @@
 <main class="container-fluid">
     <div id="error"></div>
 
-    <div class="page_header">
-        <h3>Upcoming Events</h3>
-        <div class="buttons">
-            {{if .User.CanModifyEvent}}
-            <a href="/event/new" role="button">New Event</a>
+    <section>
+        <div class="page_header">
+            <h3>Upcoming Events</h3>
+            <div class="buttons">
+                {{if .User.CanModifyEvent}}
+                <a href="/event/new" role="button">New Event</a>
+                {{end}}
+            </div>
+        </div>
+
+        {{if gt (len .CurrEvents) (0)}}
+        <div class="card-list">
+            {{range .CurrEvents}}
+                {{template "event-item" .}}
             {{end}}
         </div>
-    </div>
-
-    {{if gt (len .CurrEvents) (0)}}
-    <section class="card-list">
-        {{range .CurrEvents}}
-        <div
-            class="card-list-item center"
-            x-data="{ start: formatTime('{{jsTime .Start}}') }"
-        >
-            <div class="flex-1">
-                <div><strong>{{.Name}}</strong></div>
-                <div>
-                    <small>
-                        <span x-text="start"></span> · {{.SpotsLeft}} spots left
-                    </small>
-                </div>
-            </div>
-            <a href="/event/{{.Id}}">View</a>
-        </div>
+        {{else}}
+        <div>No events</div>
         {{end}}
     </section>
-    {{else}}
-    <div>No events</div>
+
+    {{if gt (len .PastEvents) (0)}}
+    <br>
+    <section>
+        <h3>Past Events</h3>
+
+        <div class="card-list">
+            {{range .PastEvents}}
+                {{template "event-item" .}}
+            {{end}}
+        </div>
+    </section>
     {{end}}
 </main>
+{{end}}
+
+{{define "event-item"}}
+<div
+    class="card-list-item center"
+    x-data="{ start: formatTime('{{jsTime .Start}}') }"
+>
+    <div class="flex-1">
+        <div><strong>{{.Name}}</strong></div>
+        <div>
+            <small>
+                <span x-text="start"></span> · {{.SpotsLeft}} spots left
+            </small>
+        </div>
+    </div>
+    <a href="/event/{{.Id}}">View</a>
+</div>
 {{end}}

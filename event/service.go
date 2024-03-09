@@ -5,17 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
+	"github.com/mattfan00/jvbe/db"
 )
 
 type service struct {
-	db *sqlx.DB
+	db *db.DB
 }
 
-func NewService(db *sqlx.DB) *service {
+func NewService(db *db.DB) *service {
 	return &service{
 		db: db,
 	}
@@ -67,7 +69,30 @@ func (s *service) GetDetailed(id string, userId string) (EventDetailed, error) {
 	return ed, nil
 }
 
-func (s *service) ListCurrent() ([]Event, error) {
+type ListFilter struct {
+	Upcoming    bool
+	Past        bool
+	Limit       int
+	Offset      int
+	OrderByDesc bool
+}
+
+func (s *service) List(f ListFilter) ([]Event, error) {
+	where, wargs := []string{}, []any{}
+
+	where = append(where, "is_deleted = FALSE")
+	if f.Upcoming {
+		where = append(where, "datetime() <= datetime(start)")
+	}
+	if f.Past {
+		where = append(where, "datetime() > datetime(start)")
+	}
+
+	orderByDir := "ASC"
+	if f.OrderByDesc == true {
+		orderByDir = "DESC"
+	}
+
 	stmt := `
         SELECT 
             e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
@@ -79,9 +104,11 @@ func (s *service) ListCurrent() ([]Event, error) {
             WHERE on_waitlist = FALSE
             GROUP BY event_id
         ) AS ec ON e.id = ec.event_id
-        WHERE datetime() <= datetime(start) AND is_deleted = FALSE
-        ORDER BY start ASC
-    `
+        WHERE ` + strings.Join(where, " AND ") + `
+        ORDER BY start ` + orderByDir + `
+        ` + db.FormatLimitOffset(f.Limit, f.Offset)
+	args := []any{}
+	args = append(args, wargs...)
 
 	var events []Event
 	err := s.db.Select(&events, stmt)
@@ -101,10 +128,10 @@ type CreateParams struct {
 	CreatorId string
 }
 
-func (s *service) Create(p CreateParams) error {
+func (s *service) Create(p CreateParams) (string, error) {
 	newId, err := gonanoid.New()
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	stmt := `
@@ -127,7 +154,7 @@ func (s *service) Create(p CreateParams) error {
 	serviceLog("Create args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
-	return err
+	return newId, err
 }
 
 type UpdateParams struct {
@@ -200,6 +227,10 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 		return err
 	}
 
+	if e.IsPast {
+		return errors.New("cannot respond to past events")
+	}
+
 	existingResponse, err := getUserResponse(tx, p.Id, p.UserId)
 	if err != nil {
 		return err
@@ -268,6 +299,10 @@ func get(tx *sqlx.Tx, id string) (Event, error) {
                 WHERE event_id = ? AND on_waitlist = FALSE
             ), 0) AS total_attendee_count
             , e.group_id, ug.name AS group_name
+            , CASE
+                WHEN datetime() > datetime(start) THEN TRUE
+                ELSE FALSE
+            END AS is_past
         FROM event AS e
         LEFT JOIN user_group AS ug ON e.group_id = ug.id
         INNER JOIN user AS u ON e.creator_id = u.id

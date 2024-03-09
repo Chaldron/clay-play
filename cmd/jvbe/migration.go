@@ -1,24 +1,19 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
 	"flag"
 	"log"
-	"os"
 	"strconv"
 
 	"github.com/mattfan00/jvbe/config"
-
-	"github.com/jmoiron/sqlx"
-	"github.com/pressly/goose/v3"
+	"github.com/mattfan00/jvbe/db"
 )
 
 type migrationProgram struct {
 	fs         *flag.FlagSet
 	args       []string
 	configPath string
-	migration  *migration
 }
 
 func newMigrationProgram(args []string) *migrationProgram {
@@ -52,65 +47,22 @@ func (p *migrationProgram) run() error {
 		return err
 	}
 
-	db := sqlx.MustConnect("sqlite3", conf.DbConn)
-	log.Printf("connected to DB: %s\n", conf.DbConn)
-
-	p.migration, err = newMigration(db.DB)
+	db, err := db.Connect(conf.DbConn)
 	if err != nil {
 		return err
 	}
+	log.Printf("connected to DB: %s\n", conf.DbConn)
 
 	switch action {
 	case "create":
-		return p.create(p.fs.Arg(1))
+		return db.MigrationCreate(p.fs.Arg(1))
 	case "down-to":
-		return p.downTo(p.fs.Arg(1))
+		v, err := strconv.ParseInt(p.fs.Arg(1), 10, 64)
+		if err != nil {
+			return err
+		}
+		return db.MigrationDownTo(v)
 	}
 
 	return nil
-}
-
-func (p *migrationProgram) create(name string) error {
-	return p.migration.Create(name)
-}
-
-func (p *migrationProgram) downTo(version string) error {
-	v, err := strconv.ParseInt(version, 10, 64)
-	if err != nil {
-		return err
-	}
-	return p.migration.DownTo(v)
-}
-
-type migration struct {
-	db  *sql.DB
-	dir string
-}
-
-func newMigration(db *sql.DB) (*migration, error) {
-	dir := "./migrations"
-	goose.SetBaseFS(os.DirFS(dir))
-	if err := goose.SetDialect("sqlite3"); err != nil {
-		return nil, err
-	}
-
-	return &migration{
-		db:  db,
-		dir: dir,
-	}, nil
-}
-
-func (m *migration) Create(name string) error {
-	if name == "" {
-		return errors.New("provide a name for the migration")
-	}
-	return goose.Create(m.db, m.dir, name, "sql")
-}
-
-func (m *migration) Up() error {
-	return goose.Up(m.db, ".")
-}
-
-func (m *migration) DownTo(version int64) error {
-	return goose.DownTo(m.db, ".", version)
 }

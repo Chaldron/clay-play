@@ -8,15 +8,17 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mattfan00/jvbe/db"
+	"github.com/mattfan00/jvbe/event"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type service struct {
-	db *sqlx.DB
+	db *db.DB
 }
 
-func NewService(db *sqlx.DB) *service {
+func NewService(db *db.DB) *service {
 	return &service{
 		db: db,
 	}
@@ -76,21 +78,26 @@ type CreateParams struct {
 	Name      string
 }
 
-func (s *service) CreateAndAddMember(p CreateParams) error {
+func (s *service) CreateAndAddMember(p CreateParams) (string, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer tx.Rollback()
 
 	id, err := create(tx, p)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	err = addMember(tx, id, p.CreatorId)
 
-	return tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return "", err
+	}
+
+	return id, err
 }
 
 type UpdateParams struct {
@@ -193,6 +200,21 @@ func (s *service) UserCanAccessError(groupId sql.NullString, userId string) erro
 	}
 
 	return nil
+}
+
+func (s *service) FilterEventsUserCanAccess(events []event.Event, userId string) ([]event.Event, error) {
+	filtered := []event.Event{}
+	for _, e := range events {
+		ok, err := s.UserCanAccess(e.GroupId, userId)
+		if err != nil {
+			return []event.Event{}, err
+		}
+		if ok {
+			filtered = append(filtered, e)
+		}
+	}
+
+	return filtered, nil
 }
 
 func (s *service) RefreshInviteId(groupId string) error {
