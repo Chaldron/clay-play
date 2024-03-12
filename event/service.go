@@ -70,6 +70,7 @@ func (s *service) GetDetailed(id string, userId string) (EventDetailed, error) {
 }
 
 type ListFilter struct {
+	UserId      string
 	Upcoming    bool
 	Past        bool
 	Limit       int
@@ -77,7 +78,7 @@ type ListFilter struct {
 	OrderByDesc bool
 }
 
-func (s *service) List(f ListFilter) ([]Event, error) {
+func (s *service) List(f ListFilter) (EventList, error) {
 	where, wargs := []string{}, []any{}
 
 	where = append(where, "is_deleted = FALSE")
@@ -86,6 +87,12 @@ func (s *service) List(f ListFilter) ([]Event, error) {
 	}
 	if f.Past {
 		where = append(where, "datetime() > datetime(start)")
+	}
+
+	// move the logic for determining if user can access event based off group from group service over to here
+	if f.UserId != "" {
+		where = append(where, "(e.group_id IS NULL OR e.group_id IN (SELECT group_id FROM user_group_member WHERE user_id = ?))")
+		wargs = append(wargs, f.UserId)
 	}
 
 	orderByDir := "ASC"
@@ -111,12 +118,14 @@ func (s *service) List(f ListFilter) ([]Event, error) {
 	args = append(args, wargs...)
 
 	var events []Event
-	err := s.db.Select(&events, stmt)
+	err := s.db.Select(&events, stmt, args...)
 	if err != nil {
-		return []Event{}, err
+		return EventList{}, err
 	}
 
-	return events, nil
+	return EventList{
+		Events: events,
+	}, nil
 }
 
 type CreateParams struct {

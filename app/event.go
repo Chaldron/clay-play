@@ -23,6 +23,7 @@ func (a *App) renderHome() http.HandlerFunc {
 
 		currEvents, err := a.eventService.List(event.ListFilter{
 			Upcoming: true,
+			UserId:   u.Id,
 		})
 		if err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
@@ -32,19 +33,9 @@ func (a *App) renderHome() http.HandlerFunc {
 		pastEvents, err := a.eventService.List(event.ListFilter{
 			Past:        true,
 			OrderByDesc: true,
+			Limit:       10,
+			UserId:      u.Id,
 		})
-		if err != nil {
-			a.renderErrorPage(w, err, http.StatusInternalServerError)
-			return
-		}
-
-		currEvents, err = a.groupService.FilterEventsUserCanAccess(currEvents, u.Id)
-		if err != nil {
-			a.renderErrorPage(w, err, http.StatusInternalServerError)
-			return
-		}
-
-		pastEvents, err = a.groupService.FilterEventsUserCanAccess(pastEvents, u.Id)
 		if err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
 			return
@@ -54,8 +45,8 @@ func (a *App) renderHome() http.HandlerFunc {
 			BaseData: BaseData{
 				User: u,
 			},
-			CurrEvents: currEvents,
-			PastEvents: pastEvents,
+			CurrEvents: currEvents.Events,
+			PastEvents: pastEvents.Events,
 		})
 	}
 }

@@ -414,7 +414,7 @@ func refreshInviteId(tx *sqlx.Tx, groupId string) error {
         WHERE id = ?
     `
 	args := []any{inviteId, groupId}
-	serviceLog("RefreshInviteId args %v", args)
+	serviceLog("refreshInviteId args %v", args)
 
 	_, err = tx.Exec(stmt, args...)
 	return err

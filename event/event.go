@@ -8,7 +8,7 @@ import (
 type Service interface {
 	Get(string) (Event, error)
 	GetDetailed(string, string) (EventDetailed, error)
-	List(ListFilter) ([]Event, error)
+	List(ListFilter) (EventList, error)
 	Create(CreateParams) (string, error)
 	Update(UpdateParams) error
 	Delete(string) error
@@ -52,6 +52,10 @@ type EventDetailed struct {
 	Event
 	UserResponse *EventResponse
 	Responses    []EventResponse
+}
+
+type EventList struct {
+	Events []Event
 }
 
 var MaxAttendeeCount = 2
