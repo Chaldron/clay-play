@@ -54,6 +54,7 @@ type EventDetailed struct {
 	Responses    []EventResponse
 }
 
+// containing this in a struct in case need to include more fields for pagination
 type EventList struct {
 	Events []Event
 }

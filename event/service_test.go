@@ -79,7 +79,7 @@ func TestList(t *testing.T) {
 		eventService := event.NewService(db)
 
 		MustCreate(t, db, event.CreateParams{Name: "one", Start: time.Now()})
-		MustCreate(t, db, event.CreateParams{Name: "two", Start: time.Now().Add(day)})
+		MustCreate(t, db, event.CreateParams{Name: "two", GroupId: "1", Start: time.Now().Add(day)})
 
 		events, err := eventService.List(event.ListFilter{})
 		assert.NoError(t, err)
@@ -116,7 +116,7 @@ func TestList(t *testing.T) {
 		assert.Equal(t, "past", events.Events[0].Name)
 	})
 
-	t.Run("FilterUserId", func(t *testing.T) {
+	t.Run("FilterUserIdCanAccess", func(t *testing.T) {
 		db := db.TestingConnect(t)
 		defer db.Close()
 		eventService := event.NewService(db)

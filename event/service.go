@@ -79,53 +79,14 @@ type ListFilter struct {
 }
 
 func (s *service) List(f ListFilter) (EventList, error) {
-	where, wargs := []string{}, []any{}
-
-	where = append(where, "is_deleted = FALSE")
-	if f.Upcoming {
-		where = append(where, "datetime() <= datetime(start)")
-	}
-	if f.Past {
-		where = append(where, "datetime() > datetime(start)")
-	}
-
-	// move the logic for determining if user can access event based off group from group service over to here
-	if f.UserId != "" {
-		where = append(where, "(e.group_id IS NULL OR e.group_id IN (SELECT group_id FROM user_group_member WHERE user_id = ?))")
-		wargs = append(wargs, f.UserId)
-	}
-
-	orderByDir := "ASC"
-	if f.OrderByDesc == true {
-		orderByDir = "DESC"
-	}
-
-	stmt := `
-        SELECT 
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
-		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
-            , e.group_id
-        FROM event AS e
-        LEFT JOIN (
-            SELECT event_id, SUM(attendee_count) AS total_attendee_count FROM event_response
-            WHERE on_waitlist = FALSE
-            GROUP BY event_id
-        ) AS ec ON e.id = ec.event_id
-        WHERE ` + strings.Join(where, " AND ") + `
-        ORDER BY start ` + orderByDir + `
-        ` + db.FormatLimitOffset(f.Limit, f.Offset)
-	args := []any{}
-	args = append(args, wargs...)
-
-	var events []Event
-	err := s.db.Select(&events, stmt, args...)
+	tx, err := s.db.Beginx()
 	if err != nil {
 		return EventList{}, err
 	}
+	defer tx.Rollback()
 
-	return EventList{
-		Events: events,
-	}, nil
+	el, err := list(tx, f)
+	return el, err
 }
 
 type CreateParams struct {
@@ -375,6 +336,58 @@ func getUserResponse(tx *sqlx.Tx, eventId string, userId string) (*EventResponse
 	}
 
 	return &response, nil
+}
+
+func list(tx *sqlx.Tx, f ListFilter) (EventList, error) {
+	where, wargs := []string{}, []any{}
+
+	where = append(where, "is_deleted = FALSE")
+	if f.Upcoming {
+		where = append(where, "datetime() <= datetime(start)")
+	}
+	if f.Past {
+		where = append(where, "datetime() > datetime(start)")
+	}
+
+	// move the logic for determining if user can access event based off group from group service over to here
+	if f.UserId != "" {
+		where = append(where, "(e.group_id IS NULL OR e.group_id IN (SELECT group_id FROM user_group_member WHERE user_id = ?))")
+		wargs = append(wargs, f.UserId)
+	}
+
+	orderByDir := "ASC"
+	if f.OrderByDesc == true {
+		orderByDir = "DESC"
+	}
+
+	stmt := `
+        SELECT 
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
+		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
+            , e.group_id
+        FROM event AS e
+        LEFT JOIN (
+            SELECT event_id, SUM(attendee_count) AS total_attendee_count FROM event_response
+            WHERE on_waitlist = FALSE
+            GROUP BY event_id
+        ) AS ec ON e.id = ec.event_id
+        WHERE ` + strings.Join(where, " AND ") + `
+        ORDER BY start ` + orderByDir + `
+        ` + db.FormatLimitOffset(f.Limit, f.Offset)
+	args := []any{}
+	args = append(args, wargs...)
+
+	var events []Event
+	err := tx.Select(&events, stmt, args...)
+	if err != nil {
+		return EventList{
+			Events: []Event{},
+		}, err
+	}
+
+	return EventList{
+		Events: events,
+	}, nil
 }
 
 func deleteResponse(tx *sqlx.Tx, eventId string, userId string) error {
