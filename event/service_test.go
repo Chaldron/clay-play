@@ -6,6 +6,7 @@ import (
 
 	"github.com/mattfan00/jvbe/db"
 	"github.com/mattfan00/jvbe/event"
+	"github.com/mattfan00/jvbe/group"
 	"github.com/mattfan00/jvbe/user"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -78,11 +79,11 @@ func TestList(t *testing.T) {
 		eventService := event.NewService(db)
 
 		MustCreate(t, db, event.CreateParams{Name: "one", Start: time.Now()})
-		MustCreate(t, db, event.CreateParams{Name: "two", Start: time.Now().Add(day)})
+		MustCreate(t, db, event.CreateParams{Name: "two", GroupId: "1", Start: time.Now().Add(day)})
 
 		events, err := eventService.List(event.ListFilter{})
 		assert.NoError(t, err)
-		assert.Equal(t, 2, len(events))
+		assert.Equal(t, 2, len(events.Events))
 	})
 
 	t.Run("FilterUpcoming", func(t *testing.T) {
@@ -96,8 +97,8 @@ func TestList(t *testing.T) {
 
 		events, err := eventService.List(event.ListFilter{Upcoming: true})
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(events))
-		assert.Equal(t, "upcoming", events[0].Name)
+		assert.Equal(t, 1, len(events.Events))
+		assert.Equal(t, "upcoming", events.Events[0].Name)
 	})
 
 	t.Run("FilterPast", func(t *testing.T) {
@@ -111,8 +112,43 @@ func TestList(t *testing.T) {
 
 		events, err := eventService.List(event.ListFilter{Past: true})
 		assert.NoError(t, err)
-		assert.Equal(t, 1, len(events))
-		assert.Equal(t, "past", events[0].Name)
+		assert.Equal(t, 1, len(events.Events))
+		assert.Equal(t, "past", events.Events[0].Name)
+	})
+
+	t.Run("FilterUserIdCanAccess", func(t *testing.T) {
+		db := db.TestingConnect(t)
+		defer db.Close()
+		eventService := event.NewService(db)
+		groupService := group.NewService(db)
+		userService := user.NewService(db)
+
+		u, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		g1, err := groupService.CreateAndAddMember(group.CreateParams{CreatorId: u.Id})
+		if err != nil {
+			t.Fatal(err)
+		}
+		g2, err := groupService.CreateAndAddMember(group.CreateParams{CreatorId: u.Id})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		MustCreate(t, db, event.CreateParams{GroupId: ""})
+		MustCreate(t, db, event.CreateParams{GroupId: g1})
+		MustCreate(t, db, event.CreateParams{GroupId: g2})
+		// cannot include this one since user does not belong to this group
+		MustCreate(t, db, event.CreateParams{GroupId: "1"})
+
+		events, err := eventService.List(event.ListFilter{UserId: u.Id})
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(events.Events))
+		for _, e := range events.Events {
+			assert.NotEqual(t, "1", e.GroupId)
+		}
 	})
 }
 

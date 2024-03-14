@@ -4,27 +4,29 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/mattfan00/jvbe/db"
+	"github.com/mattfan00/jvbe/logger"
 )
 
 type service struct {
-	db *db.DB
+	db  *db.DB
+	log logger.Logger
 }
 
 func NewService(db *db.DB) *service {
 	return &service{
-		db: db,
+		db:  db,
+		log: logger.NewNoopLogger(),
 	}
 }
 
-func serviceLog(format string, s ...any) {
-	log.Printf("event/service.go: %s", fmt.Sprintf(format, s...))
+func (s *service) SetLogger(l logger.Logger) {
+	s.log = l
 }
 
 func (s *service) Get(id string) (Event, error) {
@@ -70,6 +72,7 @@ func (s *service) GetDetailed(id string, userId string) (EventDetailed, error) {
 }
 
 type ListFilter struct {
+	UserId      string
 	Upcoming    bool
 	Past        bool
 	Limit       int
@@ -77,46 +80,15 @@ type ListFilter struct {
 	OrderByDesc bool
 }
 
-func (s *service) List(f ListFilter) ([]Event, error) {
-	where, wargs := []string{}, []any{}
-
-	where = append(where, "is_deleted = FALSE")
-	if f.Upcoming {
-		where = append(where, "datetime() <= datetime(start)")
-	}
-	if f.Past {
-		where = append(where, "datetime() > datetime(start)")
-	}
-
-	orderByDir := "ASC"
-	if f.OrderByDesc == true {
-		orderByDir = "DESC"
-	}
-
-	stmt := `
-        SELECT 
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
-		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
-            , e.group_id
-        FROM event AS e
-        LEFT JOIN (
-            SELECT event_id, SUM(attendee_count) AS total_attendee_count FROM event_response
-            WHERE on_waitlist = FALSE
-            GROUP BY event_id
-        ) AS ec ON e.id = ec.event_id
-        WHERE ` + strings.Join(where, " AND ") + `
-        ORDER BY start ` + orderByDir + `
-        ` + db.FormatLimitOffset(f.Limit, f.Offset)
-	args := []any{}
-	args = append(args, wargs...)
-
-	var events []Event
-	err := s.db.Select(&events, stmt)
+func (s *service) List(f ListFilter) (EventList, error) {
+	tx, err := s.db.Beginx()
 	if err != nil {
-		return []Event{}, err
+		return EventList{}, err
 	}
+	defer tx.Rollback()
 
-	return events, nil
+	el, err := list(tx, f)
+	return el, err
 }
 
 type CreateParams struct {
@@ -129,6 +101,7 @@ type CreateParams struct {
 }
 
 func (s *service) Create(p CreateParams) (string, error) {
+	s.log.Printf("group Create params %+v", p)
 	newId, err := gonanoid.New()
 	if err != nil {
 		return "", err
@@ -151,10 +124,14 @@ func (s *service) Create(p CreateParams) (string, error) {
 		time.Now().UTC(),
 		p.CreatorId,
 	}
-	serviceLog("Create args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
-	return newId, err
+	if err != nil {
+		return "", nil
+	}
+	s.log.Printf("created event %s", newId)
+
+	return newId, nil
 }
 
 type UpdateParams struct {
@@ -166,6 +143,7 @@ type UpdateParams struct {
 }
 
 func (s *service) Update(p UpdateParams) error {
+	s.log.Printf("group Update params %+v", p)
 	stmt := `
         UPDATE event
         SET name = ?, capacity = ?, start = ?, location = ?
@@ -178,20 +156,19 @@ func (s *service) Update(p UpdateParams) error {
 		p.Location,
 		p.Id,
 	}
-	serviceLog("Update args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
 }
 
 func (s *service) Delete(id string) error {
+	s.log.Printf("group Delete id %s", id)
 	stmt := `
         UPDATE event
         SET is_deleted = TRUE
         WHERE id = ?
     `
 	args := []any{id}
-	serviceLog("Delete args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -208,6 +185,8 @@ type HandleResponseParams struct {
 }
 
 func (s *service) HandleResponse(p HandleResponseParams) error {
+	s.log.Printf("group HandleResponse params %+v", p)
+
 	if p.AttendeeCount < 0 {
 		return errors.New("cannot have less than 0 attendees")
 	}
@@ -246,6 +225,7 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 		if err != nil {
 			return err
 		}
+		s.log.Printf("deleted response")
 	} else {
 		// if theres no space for the response coming in, add the response to the waitlist
 		// waitlist responses should ALWAYS be 1 attendee (no plus ones)
@@ -266,7 +246,7 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 	}
 
 	fromAttendee := !(existingResponse != nil && existingResponse.OnWaitlist)
-	serviceLog("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
+	s.log.Printf("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
 	// manage waitlist ugh
 	// only need to manage it if the event had no spots left and spots freed up from main attendee list
 	if e.SpotsLeft() == 0 && attendeeCountDelta < 0 && fromAttendee {
@@ -368,13 +348,64 @@ func getUserResponse(tx *sqlx.Tx, eventId string, userId string) (*EventResponse
 	return &response, nil
 }
 
+func list(tx *sqlx.Tx, f ListFilter) (EventList, error) {
+	where, wargs := []string{}, []any{}
+
+	where = append(where, "is_deleted = FALSE")
+	if f.Upcoming {
+		where = append(where, "datetime() <= datetime(start)")
+	}
+	if f.Past {
+		where = append(where, "datetime() > datetime(start)")
+	}
+
+	// move the logic for determining if user can access event based off group from group service over to here
+	if f.UserId != "" {
+		where = append(where, "(e.group_id IS NULL OR e.group_id IN (SELECT group_id FROM user_group_member WHERE user_id = ?))")
+		wargs = append(wargs, f.UserId)
+	}
+
+	orderByDir := "ASC"
+	if f.OrderByDesc == true {
+		orderByDir = "DESC"
+	}
+
+	stmt := `
+        SELECT 
+            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
+		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
+            , e.group_id
+        FROM event AS e
+        LEFT JOIN (
+            SELECT event_id, SUM(attendee_count) AS total_attendee_count FROM event_response
+            WHERE on_waitlist = FALSE
+            GROUP BY event_id
+        ) AS ec ON e.id = ec.event_id
+        WHERE ` + strings.Join(where, " AND ") + `
+        ORDER BY start ` + orderByDir + `
+        ` + db.FormatLimitOffset(f.Limit, f.Offset)
+	args := []any{}
+	args = append(args, wargs...)
+
+	var events []Event
+	err := tx.Select(&events, stmt, args...)
+	if err != nil {
+		return EventList{
+			Events: []Event{},
+		}, err
+	}
+
+	return EventList{
+		Events: events,
+	}, nil
+}
+
 func deleteResponse(tx *sqlx.Tx, eventId string, userId string) error {
 	stmt := `
         DELETE FROM event_response
         WHERE event_id = ? AND user_id = ?
     `
 	args := []any{eventId, userId}
-	serviceLog("deleteResponse args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	if err != nil {
@@ -409,7 +440,6 @@ func updateResponse(tx *sqlx.Tx, p updateResponseParams) error {
 		p.AttendeeCount,
 		p.OnWaitlist,
 	}
-	serviceLog("updateResponse args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	if err != nil {
@@ -447,7 +477,6 @@ func updateWaitlist(tx *sqlx.Tx, reqs []EventResponse) error {
 
 	for _, req := range reqs {
 		args := []any{req.EventId, req.UserId}
-		serviceLog("updateWaitlist args %v", args)
 
 		_, err := tx.Exec(stmt, args...)
 		if err != nil {

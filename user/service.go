@@ -3,27 +3,28 @@ package user
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/mattfan00/jvbe/db"
+	"github.com/mattfan00/jvbe/logger"
 )
 
 type service struct {
-	db *db.DB
+	db  *db.DB
+	log logger.Logger
 }
 
 func NewService(db *db.DB) *service {
 	return &service{
-		db: db,
+		db:  db,
+		log: logger.NewNoopLogger(),
 	}
 }
 
-func serviceLog(format string, s ...any) {
-	log.Printf("user/service.go: %s", fmt.Sprintf(format, s...))
+func (s *service) SetLogger(l logger.Logger) {
+	s.log = l
 }
 
 func (s *service) Get(id string) (User, error) {
@@ -54,6 +55,7 @@ func (s *service) HandleFromExternal(externalUser ExternalUser) (User, error) {
 		if err != nil {
 			return User{}, err
 		}
+		s.log.Printf("created new user %s", user.Id)
 
 		err = updateReview(tx, UpdateReviewParams{
 			UserId: user.Id,
@@ -176,7 +178,7 @@ func (s *service) ApproveReview(userId string) error {
 	if err != nil {
 		return err
 	}
-	serviceLog("ApproveReview: approved %s", userId)
+	s.log.Printf("approved user review for %s", userId)
 
 	stmt = `
         UPDATE user
@@ -189,7 +191,7 @@ func (s *service) ApproveReview(userId string) error {
 	if err != nil {
 		return err
 	}
-	serviceLog("ApproveReview: set %s to active status", userId)
+	s.log.Printf("set user %s to active status", userId)
 
 	if err = tx.Commit(); err != nil {
 		return err
@@ -253,7 +255,6 @@ func create(tx *sqlx.Tx, p CreateParams) (User, error) {
 		time.Now().UTC(),
 		UserStatusInactive,
 	}
-	serviceLog("create args %v", args)
 
 	_, err = tx.Exec(stmt, args...)
 	if err != nil {
@@ -287,7 +288,6 @@ func updateReview(tx *sqlx.Tx, p UpdateReviewParams) error {
 			Valid:  p.Comment != "",
 		},
 	}
-	serviceLog("updateReview args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	return err

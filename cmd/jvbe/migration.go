@@ -3,11 +3,11 @@ package main
 import (
 	"errors"
 	"flag"
-	"log"
 	"strconv"
 
 	"github.com/mattfan00/jvbe/config"
 	"github.com/mattfan00/jvbe/db"
+	"github.com/mattfan00/jvbe/logger"
 )
 
 type migrationProgram struct {
@@ -47,11 +47,12 @@ func (p *migrationProgram) run() error {
 		return err
 	}
 
-	db, err := db.Connect(conf.DbConn)
+	log := logger.NewStdLogger()
+	db, err := db.Connect(conf.DbConn, log)
 	if err != nil {
 		return err
 	}
-	log.Printf("connected to DB: %s\n", conf.DbConn)
+	log.Printf("connected to DB: %s", conf.DbConn)
 
 	switch action {
 	case "create":

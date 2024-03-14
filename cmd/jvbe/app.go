@@ -4,7 +4,6 @@ import (
 	"encoding/gob"
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/mattfan00/jvbe/db"
 	"github.com/mattfan00/jvbe/event"
 	"github.com/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/logger"
 	"github.com/mattfan00/jvbe/template"
 	"github.com/mattfan00/jvbe/user"
 
@@ -49,12 +49,14 @@ func (p *appProgram) name() string {
 }
 
 func (p *appProgram) run() error {
+	log := logger.NewStdLogger()
+
 	conf, err := config.ReadFile(p.configPath)
 	if err != nil {
 		return err
 	}
 
-	db, err := db.Connect(conf.DbConn)
+	db, err := db.Connect(conf.DbConn, log)
 	if err != nil {
 		return err
 	}
@@ -70,13 +72,19 @@ func (p *appProgram) run() error {
 	session.Store = sqlite3store.New(db.DB.DB)
 
 	groupService := group.NewService(db)
+	groupService.SetLogger(log)
+
 	eventService := event.NewService(db)
+	eventService.SetLogger(log)
+
 	userService := user.NewService(db)
+	eventService.SetLogger(log)
 
 	authService, err := auth.NewService(conf)
 	if err != nil {
 		return err
 	}
+	authService.SetLogger(log)
 
 	app := appPkg.New(
 		eventService,
@@ -87,6 +95,7 @@ func (p *appProgram) run() error {
 		conf,
 		session,
 		templates,
+		log,
 	)
 
 	log.Printf("listening on port %d", conf.Port)

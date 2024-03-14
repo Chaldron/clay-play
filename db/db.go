@@ -4,27 +4,29 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"log"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mattfan00/jvbe/logger"
 	"github.com/pressly/goose/v3"
 )
 
 type DB struct {
 	*sqlx.DB
+	log logger.Logger
 }
 
 //go:embed migrations/*.sql
 var migrationsFs embed.FS
 
-func Connect(dsn string) (*DB, error) {
+func Connect(dsn string, log logger.Logger) (*DB, error) {
 	db, err := sqlx.Connect("sqlite3", dsn)
 	if err != nil {
 		return &DB{}, err
 	}
-	log.Print("connected to db: ", dsn)
+	log.Printf("connected to db: %s", dsn)
 
+	goose.SetLogger(log)
 	goose.SetBaseFS(migrationsFs)
 	if err := goose.SetDialect("sqlite3"); err != nil {
 		return nil, err
@@ -34,7 +36,7 @@ func Connect(dsn string) (*DB, error) {
 		DB: db,
 	}
 
-	log.Print("beginning migration")
+	log.Printf("beginning migration")
 	if err := newDB.MigrationUp(); err != nil {
 		return &DB{}, err
 	}
@@ -44,7 +46,7 @@ func Connect(dsn string) (*DB, error) {
 
 func TestingConnect(t testing.TB) *DB {
 	t.Helper()
-	db, err := Connect(":memory:")
+	db, err := Connect(":memory:", logger.NewNoopLogger())
 	if err != nil {
 		panic(err)
 	}

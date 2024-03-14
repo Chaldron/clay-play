@@ -46,12 +46,12 @@ func TestFilterEventsUserCanAccess(t *testing.T) {
 
 	// at this point, u1 is part of the group and u2 is not
 	// so u1 should be able to see the event
-	u1Events, err := groupService.FilterEventsUserCanAccess(events, u1.Id)
+	u1Events, err := groupService.FilterEventsUserCanAccess(events.Events, u1.Id)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(u1Events))
 
 	// and u2 should not
-	u2Events, err := groupService.FilterEventsUserCanAccess(events, u2.Id)
+	u2Events, err := groupService.FilterEventsUserCanAccess(events.Events, u2.Id)
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(u2Events))
 }

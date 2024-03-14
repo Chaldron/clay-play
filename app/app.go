@@ -2,14 +2,15 @@ package app
 
 import (
 	"bytes"
+	"net/http"
+
 	"github.com/mattfan00/jvbe/auth"
 	"github.com/mattfan00/jvbe/config"
 	"github.com/mattfan00/jvbe/event"
 	"github.com/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/logger"
 	"github.com/mattfan00/jvbe/template"
 	"github.com/mattfan00/jvbe/user"
-	"log"
-	"net/http"
 
 	"github.com/alexedwards/scs/v2"
 	"github.com/gorilla/schema"
@@ -24,6 +25,7 @@ type App struct {
 	conf      *config.Config
 	session   *scs.SessionManager
 	templates template.TemplateMap
+	log       logger.Logger
 }
 
 func New(
@@ -35,6 +37,7 @@ func New(
 	conf *config.Config,
 	session *scs.SessionManager,
 	templates template.TemplateMap,
+	log logger.Logger,
 ) *App {
 	return &App{
 		eventService: eventService,
@@ -45,6 +48,7 @@ func New(
 		conf:      conf,
 		session:   session,
 		templates: templates,
+		log:       log,
 	}
 }
 
@@ -83,16 +87,12 @@ func (a *App) renderPage(
 	a.renderTemplate(w, template, "base", data)
 }
 
-func errorLog(err error) {
-	log.Printf("ERROR: %s", err.Error())
-}
-
 func (a *App) renderErrorNotif(
 	w http.ResponseWriter,
 	err error,
 	status int,
 ) {
-	errorLog(err)
+	a.log.Errorf(err.Error())
 	w.Header().Add("HX-Reswap", "none") // so that UI does not swap rest of the blank template
 	w.WriteHeader(status)
 	a.renderTemplate(w, "error-notif.html", "error", map[string]any{
@@ -105,7 +105,7 @@ func (a *App) renderErrorPage(
 	err error,
 	status int,
 ) {
-	errorLog(err)
+	a.log.Errorf(err.Error())
 	w.Header().Add("HX-Retarget", "body")
 	w.Header().Add("HX-Reswap", "innerHTML")
 	w.WriteHeader(status)
