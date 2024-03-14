@@ -4,27 +4,29 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/mattfan00/jvbe/db"
+	"github.com/mattfan00/jvbe/logger"
 )
 
 type service struct {
-	db *db.DB
+	db  *db.DB
+	log logger.Logger
 }
 
 func NewService(db *db.DB) *service {
 	return &service{
-		db: db,
+		db:  db,
+		log: logger.NewNoopLogger(),
 	}
 }
 
-func serviceLog(format string, s ...any) {
-	log.Printf("event/service.go: %s", fmt.Sprintf(format, s...))
+func (s *service) SetLogger(l logger.Logger) {
+	s.log = l
 }
 
 func (s *service) Get(id string) (Event, error) {
@@ -99,6 +101,7 @@ type CreateParams struct {
 }
 
 func (s *service) Create(p CreateParams) (string, error) {
+	s.log.Printf("group Create params %+v", p)
 	newId, err := gonanoid.New()
 	if err != nil {
 		return "", err
@@ -121,10 +124,14 @@ func (s *service) Create(p CreateParams) (string, error) {
 		time.Now().UTC(),
 		p.CreatorId,
 	}
-	serviceLog("Create args %v", args)
 
 	_, err = s.db.Exec(stmt, args...)
-	return newId, err
+	if err != nil {
+		return "", nil
+	}
+	s.log.Printf("created event %s", newId)
+
+	return newId, nil
 }
 
 type UpdateParams struct {
@@ -136,6 +143,7 @@ type UpdateParams struct {
 }
 
 func (s *service) Update(p UpdateParams) error {
+	s.log.Printf("group Update params %+v", p)
 	stmt := `
         UPDATE event
         SET name = ?, capacity = ?, start = ?, location = ?
@@ -148,20 +156,19 @@ func (s *service) Update(p UpdateParams) error {
 		p.Location,
 		p.Id,
 	}
-	serviceLog("Update args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	return err
 }
 
 func (s *service) Delete(id string) error {
+	s.log.Printf("group Delete id %s", id)
 	stmt := `
         UPDATE event
         SET is_deleted = TRUE
         WHERE id = ?
     `
 	args := []any{id}
-	serviceLog("Delete args %v", args)
 
 	_, err := s.db.Exec(stmt, args...)
 	if err != nil {
@@ -178,6 +185,8 @@ type HandleResponseParams struct {
 }
 
 func (s *service) HandleResponse(p HandleResponseParams) error {
+	s.log.Printf("group HandleResponse params %+v", p)
+
 	if p.AttendeeCount < 0 {
 		return errors.New("cannot have less than 0 attendees")
 	}
@@ -216,6 +225,7 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 		if err != nil {
 			return err
 		}
+		s.log.Printf("deleted response")
 	} else {
 		// if theres no space for the response coming in, add the response to the waitlist
 		// waitlist responses should ALWAYS be 1 attendee (no plus ones)
@@ -236,7 +246,7 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 	}
 
 	fromAttendee := !(existingResponse != nil && existingResponse.OnWaitlist)
-	serviceLog("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
+	s.log.Printf("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
 	// manage waitlist ugh
 	// only need to manage it if the event had no spots left and spots freed up from main attendee list
 	if e.SpotsLeft() == 0 && attendeeCountDelta < 0 && fromAttendee {
@@ -396,7 +406,6 @@ func deleteResponse(tx *sqlx.Tx, eventId string, userId string) error {
         WHERE event_id = ? AND user_id = ?
     `
 	args := []any{eventId, userId}
-	serviceLog("deleteResponse args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	if err != nil {
@@ -431,7 +440,6 @@ func updateResponse(tx *sqlx.Tx, p updateResponseParams) error {
 		p.AttendeeCount,
 		p.OnWaitlist,
 	}
-	serviceLog("updateResponse args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	if err != nil {
@@ -469,7 +477,6 @@ func updateWaitlist(tx *sqlx.Tx, reqs []EventResponse) error {
 
 	for _, req := range reqs {
 		args := []any{req.EventId, req.UserId}
-		serviceLog("updateWaitlist args %v", args)
 
 		_, err := tx.Exec(stmt, args...)
 		if err != nil {

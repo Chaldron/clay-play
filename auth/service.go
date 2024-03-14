@@ -3,18 +3,20 @@ package auth
 import (
 	"context"
 	"errors"
-	"log"
 
 	"github.com/mattfan00/jvbe/config"
+	"github.com/mattfan00/jvbe/logger"
 	"github.com/mattfan00/jvbe/user"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/oauth2"
 )
+
 type service struct {
 	oidcProvider *oidc.Provider
 	oauthConf    *oauth2.Config
+	log          logger.Logger
 }
 
 func NewService(conf *config.Config) (*service, error) {
@@ -37,7 +39,12 @@ func NewService(conf *config.Config) (*service, error) {
 	return &service{
 		oidcProvider: provider,
 		oauthConf:    oauthConf,
+		log:          logger.NewNoopLogger(),
 	}, nil
+}
+
+func (s *service) SetLogger(l logger.Logger) {
+	s.log = l
 }
 
 func (s *service) AuthCodeUrl(state string) string {
@@ -90,7 +97,7 @@ func (s *service) GetExternalUser(code string) (user.ExternalUser, error) {
 	}
 	externalUser.Permissions = claims.Permissions
 
-	log.Printf("externalUser:%+v accessToken:%s", externalUser, accessToken)
+	s.log.Printf("externalUser:%+v accessToken:%s", externalUser, accessToken)
 
 	return externalUser, nil
 }

@@ -3,29 +3,30 @@ package group
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mattfan00/jvbe/db"
 	"github.com/mattfan00/jvbe/event"
+	"github.com/mattfan00/jvbe/logger"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
 
 type service struct {
-	db *db.DB
+	db  *db.DB
+	log logger.Logger
 }
 
 func NewService(db *db.DB) *service {
 	return &service{
-		db: db,
+		db:  db,
+		log: logger.NewNoopLogger(),
 	}
 }
 
-func serviceLog(format string, s ...any) {
-	log.Printf("group/service.go: %s", fmt.Sprintf(format, s...))
+func (s *service) SetLogger(l logger.Logger) {
+	s.log = l
 }
 
 func (s *service) Get(id string) (Group, error) {
@@ -79,6 +80,7 @@ type CreateParams struct {
 }
 
 func (s *service) CreateAndAddMember(p CreateParams) (string, error) {
+	s.log.Printf("group CreateAndAddMember params %+v", p)
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return "", err
@@ -89,8 +91,10 @@ func (s *service) CreateAndAddMember(p CreateParams) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	s.log.Printf("created group %s", id)
 
 	err = addMember(tx, id, p.CreatorId)
+	s.log.Printf("added user %s to group %s", p.CreatorId, id)
 
 	err = tx.Commit()
 	if err != nil {
@@ -106,6 +110,7 @@ type UpdateParams struct {
 }
 
 func (s *service) Update(p UpdateParams) error {
+	s.log.Printf("group Update params %+v", p)
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return err
@@ -121,6 +126,7 @@ func (s *service) Update(p UpdateParams) error {
 }
 
 func (s *service) Delete(id string) error {
+	s.log.Printf("group Delete id %s", id)
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return err
@@ -136,6 +142,7 @@ func (s *service) Delete(id string) error {
 }
 
 func (s *service) AddMemberFromInvite(inviteId string, userId string) (Group, error) {
+	s.log.Printf("group AddMemberFromInvite inviteId:%s userId:%s", inviteId, userId)
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return Group{}, err
@@ -151,6 +158,7 @@ func (s *service) AddMemberFromInvite(inviteId string, userId string) (Group, er
 	if err != nil {
 		return Group{}, err
 	}
+	s.log.Printf("added user %s to group %s", userId, g.Id)
 
 	err = tx.Commit()
 	if err != nil {
@@ -161,6 +169,7 @@ func (s *service) AddMemberFromInvite(inviteId string, userId string) (Group, er
 }
 
 func (s *service) RemoveMember(groupId string, userId string) error {
+	s.log.Printf("group RemoveMember groupId:%s userId:%s", groupId, userId)
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return err
@@ -218,6 +227,7 @@ func (s *service) FilterEventsUserCanAccess(events []event.Event, userId string)
 }
 
 func (s *service) RefreshInviteId(groupId string) error {
+	s.log.Printf("group RefreshInviteId groupId %s", groupId)
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return err
@@ -314,7 +324,6 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 		p.Name,
 		inviteId,
 	}
-	serviceLog("create args %v", args)
 
 	_, err = tx.Exec(stmt, args...)
 	if err != nil {
@@ -335,7 +344,6 @@ func addMember(tx *sqlx.Tx, groupId string, userId string) error {
 		userId,
 		time.Now().UTC(),
 	}
-	serviceLog("addMember args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	return err
@@ -348,7 +356,6 @@ func update(tx *sqlx.Tx, p UpdateParams) error {
         WHERE id = ?
     `
 	args := []any{p.Name, p.Id}
-	serviceLog("update args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	return err
@@ -361,7 +368,6 @@ func delete(tx *sqlx.Tx, id string) error {
         WHERE id = ?
     `
 	args := []any{id}
-	serviceLog("delete args %v", args)
 
 	_, err := tx.Exec(stmt, args...)
 	return err
@@ -378,7 +384,6 @@ func removeMember(tx *sqlx.Tx, groupId string, userId string) error {
         WHERE group_id = ? AND user_id = ?
     `
 	args := []any{groupId, userId}
-	serviceLog("removeMember args %v", args)
 
 	_, err = tx.Exec(stmt, args...)
 	return err
@@ -414,7 +419,6 @@ func refreshInviteId(tx *sqlx.Tx, groupId string) error {
         WHERE id = ?
     `
 	args := []any{inviteId, groupId}
-	serviceLog("refreshInviteId args %v", args)
 
 	_, err = tx.Exec(stmt, args...)
 	return err
