@@ -27,8 +27,7 @@ func (a *App) requireAuth(next http.Handler) http.Handler {
 				return
 			}
 		} else {
-			status := http.StatusForbidden
-			a.renderErrorPage(w, errors.New(http.StatusText(status)+". User is not authenticated!"), status)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 	})

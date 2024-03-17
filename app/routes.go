@@ -36,7 +36,7 @@ func (a *App) Routes() http.Handler {
 			r.Use(a.requireAuth)
 
 			r.Get("/home", a.renderHome())
-			r.With(a.canDoEverything).Get("/admin", a.renderAdmin)
+			r.With(a.canDoEverything).Get("/admin", a.renderAdmin())
 
 			r.Route("/event", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
@@ -102,14 +102,22 @@ func (a *App) renderPrivacy() http.HandlerFunc {
 
 func (a *App) renderIndex() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		_, ok := a.sessionUser(r)
+		if ok {
+			http.Redirect(w, r, "/home", http.StatusSeeOther)
+			return
+		}
+
 		a.renderPage(w, "index.html", nil)
 	}
 }
 
-func (a *App) renderAdmin(w http.ResponseWriter, r *http.Request) {
-	u, _ := a.sessionUser(r)
+func (a *App) renderAdmin() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u, _ := a.sessionUser(r)
 
-	a.renderPage(w, "admin.html", BaseData{
-		User: u,
-	})
+		a.renderPage(w, "admin.html", BaseData{
+			User: u,
+		})
+	}
 }
