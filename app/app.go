@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 
+	"github.com/mattfan00/jvbe/auditlog"
 	"github.com/mattfan00/jvbe/auth"
 	"github.com/mattfan00/jvbe/config"
 	"github.com/mattfan00/jvbe/event"
@@ -17,10 +18,11 @@ import (
 )
 
 type App struct {
-	eventService event.Service
-	userService  user.Service
-	authService  auth.Service
-	groupService group.Service
+	eventService    event.Service
+	userService     user.Service
+	authService     auth.Service
+	groupService    group.Service
+	auditlogService auditlog.Service
 
 	conf      *config.Config
 	session   *scs.SessionManager
@@ -33,6 +35,7 @@ func New(
 	userService user.Service,
 	authService auth.Service,
 	groupService group.Service,
+	auditlogService auditlog.Service,
 
 	conf *config.Config,
 	session *scs.SessionManager,
@@ -40,10 +43,11 @@ func New(
 	log logger.Logger,
 ) *App {
 	return &App{
-		eventService: eventService,
-		userService:  userService,
-		authService:  authService,
-		groupService: groupService,
+		eventService:    eventService,
+		userService:     userService,
+		authService:     authService,
+		groupService:    groupService,
+		auditlogService: auditlogService,
 
 		conf:      conf,
 		session:   session,

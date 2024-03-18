@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
+	"github.com/mattfan00/jvbe/auditlog"
 )
 
 func (a *App) Routes() http.Handler {
@@ -37,6 +38,7 @@ func (a *App) Routes() http.Handler {
 
 			r.Get("/home", a.renderHome())
 			r.With(a.canDoEverything).Get("/admin", a.renderAdmin())
+			r.With(a.canDoEverything).Get("/auditlog", a.renderAuditlog())
 
 			r.Route("/event", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
@@ -118,6 +120,30 @@ func (a *App) renderAdmin() http.HandlerFunc {
 
 		a.renderPage(w, "admin.html", BaseData{
 			User: u,
+		})
+	}
+}
+
+func (a *App) renderAuditlog() http.HandlerFunc {
+	type data struct {
+		BaseData
+		AuditLogs []auditlog.AuditLog
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		u, _ := a.sessionUser(r)
+
+		al, err := a.auditlogService.List()
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		a.renderPage(w, "auditlog.html", data{
+			BaseData: BaseData{
+				User: u,
+			},
+			AuditLogs: al,
 		})
 	}
 }

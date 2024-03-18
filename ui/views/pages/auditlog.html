@@ -1,0 +1,33 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div class="page_header">
+        <h3>Audit Log</h3>
+    </div>
+
+    <section style="overflow-x: auto;">
+        <table style="white-space: nowrap;">
+            <thead>
+                <tr>
+                    <th>Recorded At</th>
+                    <th>User</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{range .AuditLogs}}
+                <tr
+                    x-data="{ start: formatTime('{{jsTime .RecordedAt}}') }"
+                >
+                    <td x-text="start"></td>
+                    <td>{{.UserFullName}}</td>
+                    <td>{{.Description | unescape}}</td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+    </section>
+</main>
+{{end}}

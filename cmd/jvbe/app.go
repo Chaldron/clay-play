@@ -8,6 +8,7 @@ import (
 	"time"
 
 	appPkg "github.com/mattfan00/jvbe/app"
+	"github.com/mattfan00/jvbe/auditlog"
 	"github.com/mattfan00/jvbe/auth"
 	"github.com/mattfan00/jvbe/config"
 	"github.com/mattfan00/jvbe/db"
@@ -80,6 +81,8 @@ func (p *appProgram) run() error {
 	userService := user.NewService(db)
 	eventService.SetLogger(log)
 
+	auditlogService := auditlog.NewService(db)
+
 	authService, err := auth.NewService(conf)
 	if err != nil {
 		return err
@@ -91,6 +94,7 @@ func (p *appProgram) run() error {
 		userService,
 		authService,
 		groupService,
+        auditlogService,
 
 		conf,
 		session,
