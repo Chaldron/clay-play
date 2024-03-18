@@ -8,8 +8,8 @@ type Service interface {
 }
 
 type AuditLog struct {
-	UserId      string    `db:"user_id"`
-    UserFullName string `db:"user_full_name`
-	RecordedAt  time.Time `db:"recorded_at"`
-	Description string    `db:"description"`
+	UserId       string    `db:"user_id"`
+	UserFullName string    `db:"user_full_name"`
+	RecordedAt   time.Time `db:"recorded_at"`
+	Description  string    `db:"description"`
 }

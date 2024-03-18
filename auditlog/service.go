@@ -44,41 +44,33 @@ func (s *service) List() ([]AuditLog, error) {
 var al = []AuditLog{}
 
 func create(tx *sqlx.Tx, userId string, description string) error {
-	/*
-			stmt := `
-		        INSERT INTO audit_log (user_id, recorded_at, description)
-		        VALUES (?, ?, ?)
-		    `
-			args := []any{
-				userId,
-				time.Now().UTC(),
-				description,
-			}
+	stmt := `
+        INSERT INTO audit_log (user_id, recorded_at, description)
+        VALUES (?, ?, ?)
+    `
+	args := []any{
+		userId,
+		db.Now(),
+		description,
+	}
 
-			_, err := tx.Exec(stmt, args...)
-			return err
-	*/
-	al = append(al, AuditLog{
-		UserId:       userId,
-		UserFullName: "test",
-		Description:  description,
-		RecordedAt:   db.Now(),
-	})
-
-	return nil
+	_, err := tx.Exec(stmt, args...)
+	return err
 }
 
 func list(tx *sqlx.Tx) ([]AuditLog, error) {
-	/*
-			stmt := `
-		        SELECT user_id, recorded_at, description FROM audit_log
-		        ORDER BY recorded_at DESC
-		    `
+	stmt := `
+        SELECT 
+            user_id
+            ,u.full_name AS user_full_name
+            ,recorded_at
+            ,description 
+        FROM audit_log al
+        INNER JOIN user u ON al.user_id = u.id
+        ORDER BY recorded_at DESC
+    `
 
-			var al []AuditLog
-			err := tx.Select(&al, stmt)
-			return al, err
-	*/
-
-	return al, nil
+	var al []AuditLog
+	err := tx.Select(&al, stmt)
+	return al, err
 }
