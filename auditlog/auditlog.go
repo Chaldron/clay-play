@@ -4,7 +4,7 @@ import "time"
 
 type Service interface {
 	Create(string, string) error
-	List() ([]AuditLog, error)
+	List(ListFilter) ([]AuditLog, int, error)
 }
 
 type AuditLog struct {
@@ -12,4 +12,5 @@ type AuditLog struct {
 	UserFullName string    `db:"user_full_name"`
 	RecordedAt   time.Time `db:"recorded_at"`
 	Description  string    `db:"description"`
+	Count        int       `db:"count"`
 }

@@ -28,6 +28,13 @@
             {{end}}
             </tbody>
         </table>
+        <div class="pagination">
+            <div>{{.CurrPage}} / {{.MaxPage}}</div>
+            <div class="arrows">
+                <a href="/auditlog?page={{.PrevPage}}"><img class="feather" src="/public/icons/chevron-left.svg" /></a>
+                <a href="/auditlog?page={{.NextPage}}"><img class="feather" src="/public/icons/chevron-right.svg" /></a>
+            </div>
+        </div>
     </section>
 </main>
 {{end}}

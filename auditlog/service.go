@@ -30,15 +30,20 @@ func (s *service) Create(userId string, description string) error {
 	return tx.Commit()
 }
 
-func (s *service) List() ([]AuditLog, error) {
+type ListFilter struct {
+	Limit  int
+	Offset int
+}
+
+func (s *service) List(f ListFilter) ([]AuditLog, int, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
-		return []AuditLog{}, err
+		return []AuditLog{}, 0, err
 	}
 	defer tx.Rollback()
 
-	al, err := list(tx)
-	return al, err
+	al, count, err := list(tx, f)
+	return al, count, err
 }
 
 var al = []AuditLog{}
@@ -58,19 +63,29 @@ func create(tx *sqlx.Tx, userId string, description string) error {
 	return err
 }
 
-func list(tx *sqlx.Tx) ([]AuditLog, error) {
+func list(tx *sqlx.Tx, f ListFilter) ([]AuditLog, int, error) {
 	stmt := `
         SELECT 
             user_id
             ,u.full_name AS user_full_name
             ,recorded_at
             ,description 
+            ,COUNT(*) OVER () AS count
         FROM audit_log al
         INNER JOIN user u ON al.user_id = u.id
         ORDER BY recorded_at DESC
-    `
+        ` + db.FormatLimitOffset(f.Limit, f.Offset)
 
 	var al []AuditLog
+	var count = 0
 	err := tx.Select(&al, stmt)
-	return al, err
+	if err != nil {
+		return []AuditLog{}, count, err
+	}
+
+	if len(al) > 0 {
+		count = al[0].Count
+	}
+
+	return al, count, err
 }
