@@ -251,3 +251,19 @@ a.nostyle {
         cursor: pointer;
     }
 }
+
+.pagination {
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    gap: 10px;
+
+    .arrows {
+        display: flex;
+
+        a {
+            display: flex;
+            align-items: center;
+        }
+    }
+}

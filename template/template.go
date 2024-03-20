@@ -36,9 +36,10 @@ func Generate() (TemplateMap, error) {
 		t := template.New(name)
 
 		t.Funcs(template.FuncMap{
-			"jsTime":   jsTime,
-			"l":        l,
-			"add":      add,
+			"jsTime": jsTime,
+			"l":      l,
+			"add":    add,
+            "unescape": unescape,
 		})
 
 		t, err = t.ParseFiles(
@@ -81,4 +82,8 @@ func l(i int) []int {
 
 func add(x int, y int) int {
 	return x + y
+}
+
+func unescape(s string) template.HTML {
+	return template.HTML(s)
 }

@@ -1,0 +1,40 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div class="page_header">
+        <h3>Audit Log</h3>
+    </div>
+
+    <section style="overflow-x: auto;">
+        <table style="white-space: nowrap;">
+            <thead>
+                <tr>
+                    <th>Recorded At</th>
+                    <th>User</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+            {{range .AuditLogs}}
+                <tr
+                    x-data="{ start: formatTime('{{jsTime .RecordedAt}}') }"
+                >
+                    <td x-text="start"></td>
+                    <td>{{.UserFullName}}</td>
+                    <td>{{.Description | unescape}}</td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+        <div class="pagination">
+            <div>{{.CurrPage}} / {{.MaxPage}}</div>
+            <div class="arrows">
+                <a href="/auditlog?page={{.PrevPage}}"><img class="feather" src="/public/icons/chevron-left.svg" /></a>
+                <a href="/auditlog?page={{.NextPage}}"><img class="feather" src="/public/icons/chevron-right.svg" /></a>
+            </div>
+        </div>
+    </section>
+</main>
+{{end}}

@@ -1,12 +1,15 @@
 package app
 
 import (
+	"math"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
+	"github.com/mattfan00/jvbe/auditlog"
 )
 
 func (a *App) Routes() http.Handler {
@@ -37,6 +40,7 @@ func (a *App) Routes() http.Handler {
 
 			r.Get("/home", a.renderHome())
 			r.With(a.canDoEverything).Get("/admin", a.renderAdmin())
+			r.With(a.canDoEverything).Get("/auditlog", a.renderAuditlog())
 
 			r.Route("/event", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
@@ -118,6 +122,59 @@ func (a *App) renderAdmin() http.HandlerFunc {
 
 		a.renderPage(w, "admin.html", BaseData{
 			User: u,
+		})
+	}
+}
+
+func (a *App) renderAuditlog() http.HandlerFunc {
+	type data struct {
+		BaseData
+		AuditLogs []auditlog.AuditLog
+		CurrPage  int
+		MaxPage   int
+		PrevPage  int
+		NextPage  int
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		u, _ := a.sessionUser(r)
+
+		pageQuery := r.URL.Query().Get("page")
+		var page = 1
+		if pageQuery != "" {
+			page, _ = strconv.Atoi(pageQuery)
+		}
+		pageSize := 10
+
+		al, count, err := a.auditlogService.List(auditlog.ListFilter{
+			Limit:  pageSize,
+			Offset: pageSize * (page - 1),
+		})
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		prevPage := page - 1
+		if prevPage < 1 {
+			prevPage = 1
+		}
+
+		maxPage := int(math.Ceil(float64(count) / float64(pageSize)))
+		nextPage := page + 1
+		if nextPage > maxPage {
+			nextPage = maxPage
+		}
+
+		a.renderPage(w, "auditlog.html", data{
+			BaseData: BaseData{
+				User: u,
+			},
+			AuditLogs: al,
+			CurrPage:  page,
+			MaxPage:   maxPage,
+			PrevPage:  prevPage,
+			NextPage:  nextPage,
 		})
 	}
 }

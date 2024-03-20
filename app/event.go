@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -257,6 +258,14 @@ func (a *App) respondEvent() http.HandlerFunc {
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return
+		}
+
+		err = a.auditlogService.Create(
+			u.Id,
+			fmt.Sprintf("Responded to <a href=\"/event/%s\">%s</a> with %d attendee(s)", e.Id, e.Name, req.AttendeeCount),
+		)
+		if err != nil {
+			a.log.Errorf(err.Error())
 		}
 
 		http.Redirect(w, r, "/event/"+req.Id, http.StatusSeeOther)

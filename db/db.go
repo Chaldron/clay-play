@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mattfan00/jvbe/logger"
@@ -79,4 +80,9 @@ func FormatLimitOffset(limit, offset int) string {
 		return fmt.Sprintf(`OFFSET %d`, offset)
 	}
 	return ""
+}
+
+// Always use when using current time in SQL query
+func Now() time.Time {
+	return time.Now().UTC()
 }
