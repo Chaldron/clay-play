@@ -144,7 +144,7 @@ func (a *App) renderAuditlog() http.HandlerFunc {
 		if pageQuery != "" {
 			page, _ = strconv.Atoi(pageQuery)
 		}
-		pageSize := 10
+		pageSize := 20
 
 		al, count, err := a.auditlogService.List(auditlog.ListFilter{
 			Limit:  pageSize,
