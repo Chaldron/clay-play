@@ -132,6 +132,92 @@ func TestHandleResponse(t *testing.T) {
 		assert.Equal(t, false, responses[1].OnWaitlist)
 		assert.Equal(t, u3.Id, responses[1].UserId)
 	})
+
+	t.Run("OnWaitlistEvenIfSpotsLeft", func(t *testing.T) {
+		db := db.TestingConnect(t)
+		defer db.Close()
+		eventService := event.NewService(db)
+		userService := user.NewService(db)
+
+		u1, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		u2, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		u3, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := MustCreate(t, db, event.CreateParams{
+			CreatorId: u1.Id,
+			Start:     time.Now().Add(day),
+			Capacity:  2,
+		})
+
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u1.Id,
+			Id:            id,
+			AttendeeCount: 1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u2.Id,
+			Id:            id,
+			AttendeeCount: 2,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		responses, err := eventService.ListResponses(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, 2, len(responses))
+
+		assert.Equal(t, false, responses[0].OnWaitlist)
+		assert.Equal(t, u1.Id, responses[0].UserId)
+
+		assert.Equal(t, true, responses[1].OnWaitlist)
+		assert.Equal(t, u2.Id, responses[1].UserId)
+
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u3.Id,
+			Id:            id,
+			AttendeeCount: 1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		responses, err = eventService.ListResponses(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		e, err := eventService.Get(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, 3, len(responses))
+		assert.Equal(t, 1, e.SpotsLeft())
+
+		assert.Equal(t, false, responses[0].OnWaitlist)
+		assert.Equal(t, u1.Id, responses[0].UserId)
+
+		assert.Equal(t, true, responses[1].OnWaitlist)
+		assert.Equal(t, u2.Id, responses[1].UserId)
+
+		assert.Equal(t, true, responses[2].OnWaitlist)
+		assert.Equal(t, u3.Id, responses[2].UserId)
+	})
 }
 
 func TestGet(t *testing.T) {

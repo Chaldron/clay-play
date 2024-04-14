@@ -228,18 +228,10 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 		}
 		s.log.Printf("deleted response")
 	} else {
-		// if theres no space for the response coming in, add the response to the waitlist
-		// waitlist responses should ALWAYS be 1 attendee (no plus ones)
-		addToWaitlist := e.SpotsLeft()-attendeeCountDelta < 0
-		if addToWaitlist && p.AttendeeCount > 1 {
-			return errors.New("no plus ones when adding to waitlist")
-		}
-
 		err = updateResponse(tx, updateResponseParams{
 			EventId:       p.Id,
 			UserId:        p.UserId,
 			AttendeeCount: p.AttendeeCount,
-			OnWaitlist:    addToWaitlist,
 		})
 		if err != nil {
 			return err
