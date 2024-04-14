@@ -71,6 +71,17 @@ func (s *service) GetDetailed(id string, userId string) (EventDetailed, error) {
 	return ed, nil
 }
 
+func (s *service) ListResponses(eventId string) ([]EventResponse, error) {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return []EventResponse{}, err
+	}
+	defer tx.Rollback()
+
+	el, err := listResponses(tx, eventId)
+	return el, err
+}
+
 type ListFilter struct {
 	UserId      string
 	Upcoming    bool
@@ -102,36 +113,24 @@ type CreateParams struct {
 
 func (s *service) Create(p CreateParams) (string, error) {
 	s.log.Printf("group Create params %+v", p)
-	newId, err := gonanoid.New()
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return "", err
+	}
+	defer tx.Rollback()
+
+	id, err := create(tx, p)
 	if err != nil {
 		return "", err
 	}
 
-	stmt := `
-        INSERT INTO event (id, name, group_id, capacity, start, location, created_at, creator_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `
-	args := []any{
-		newId,
-		p.Name,
-		sql.NullString{
-			String: p.GroupId,
-			Valid:  p.GroupId != "",
-		},
-		p.Capacity,
-		p.Start,
-		p.Location,
-		time.Now().UTC(),
-		p.CreatorId,
-	}
-
-	_, err = s.db.Exec(stmt, args...)
+	err = tx.Commit()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
-	s.log.Printf("created event %s", newId)
 
-	return newId, nil
+	s.log.Printf("created event %s", id)
+	return id, nil
 }
 
 type UpdateParams struct {
@@ -144,21 +143,23 @@ type UpdateParams struct {
 
 func (s *service) Update(p UpdateParams) error {
 	s.log.Printf("group Update params %+v", p)
-	stmt := `
-        UPDATE event
-        SET name = ?, capacity = ?, start = ?, location = ?
-        WHERE id = ?
-    `
-	args := []any{
-		p.Name,
-		p.Capacity,
-		p.Start,
-		p.Location,
-		p.Id,
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	err = update(tx, p)
+	if err != nil {
+		return err
 	}
 
-	_, err := s.db.Exec(stmt, args...)
-	return err
+	_, err = manageWaitlist(tx, p.Id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (s *service) Delete(id string) error {
@@ -227,38 +228,19 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 		}
 		s.log.Printf("deleted response")
 	} else {
-		// if theres no space for the response coming in, add the response to the waitlist
-		// waitlist responses should ALWAYS be 1 attendee (no plus ones)
-		addToWaitlist := e.SpotsLeft()-attendeeCountDelta < 0
-		if addToWaitlist && p.AttendeeCount > 1 {
-			return errors.New("no plus ones when adding to waitlist")
-		}
-
 		err = updateResponse(tx, updateResponseParams{
 			EventId:       p.Id,
 			UserId:        p.UserId,
 			AttendeeCount: p.AttendeeCount,
-			OnWaitlist:    addToWaitlist,
 		})
 		if err != nil {
 			return err
 		}
 	}
 
-	fromAttendee := !(existingResponse != nil && existingResponse.OnWaitlist)
-	s.log.Printf("spots left:%d delta:%d attendee:%t", e.SpotsLeft(), attendeeCountDelta, fromAttendee)
-	// manage waitlist ugh
-	// only need to manage it if the event had no spots left and spots freed up from main attendee list
-	if e.SpotsLeft() == 0 && attendeeCountDelta < 0 && fromAttendee {
-		waitlist, err := listWaitlist(tx, p.Id, attendeeCountDelta*-1)
-		if err != nil {
-			return err
-		}
-
-		err = updateWaitlist(tx, waitlist)
-		if err != nil {
-			return err
-		}
+	_, err = manageWaitlist(tx, p.Id)
+	if err != nil {
+		return err
 	}
 
 	err = tx.Commit()
@@ -400,6 +382,56 @@ func list(tx *sqlx.Tx, f ListFilter) (EventList, error) {
 	}, nil
 }
 
+func create(tx *sqlx.Tx, p CreateParams) (string, error) {
+	newId, err := gonanoid.New()
+	if err != nil {
+		return "", err
+	}
+
+	stmt := `
+        INSERT INTO event (id, name, group_id, capacity, start, location, created_at, creator_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `
+	args := []any{
+		newId,
+		p.Name,
+		sql.NullString{
+			String: p.GroupId,
+			Valid:  p.GroupId != "",
+		},
+		p.Capacity,
+		p.Start,
+		p.Location,
+		time.Now().UTC(),
+		p.CreatorId,
+	}
+
+	_, err = tx.Exec(stmt, args...)
+	if err != nil {
+		return "", err
+	}
+
+	return newId, nil
+}
+
+func update(tx *sqlx.Tx, p UpdateParams) error {
+	stmt := `
+		        UPDATE event
+		        SET name = ?, capacity = ?, start = ?, location = ?
+		        WHERE id = ?
+		    `
+	args := []any{
+		p.Name,
+		p.Capacity,
+		p.Start,
+		p.Location,
+		p.Id,
+	}
+
+	_, err := tx.Exec(stmt, args...)
+	return err
+}
+
 func deleteResponse(tx *sqlx.Tx, eventId string, userId string) error {
 	stmt := `
         DELETE FROM event_response
@@ -448,41 +480,40 @@ func updateResponse(tx *sqlx.Tx, p updateResponseParams) error {
 	return nil
 }
 
-func listWaitlist(tx *sqlx.Tx, eventId string, limit int) ([]EventResponse, error) {
-	stmt := `
-        SELECT er.event_id, er.user_id, er.on_waitlist
-        FROM event_response AS er
-        INNER JOIN user AS u ON er.user_id = u.id
-        WHERE er.event_id = ? AND er.on_waitlist = TRUE
-        ORDER BY er.created_at
-        LIMIT ?
-    `
-	args := []any{eventId, limit}
-
-	var waitlist []EventResponse
-	err := tx.Select(&waitlist, stmt, args...)
+// Manages the waitlist status of all attendees in an event.
+// Based on the event's capacity, will convert all regular attendees to waitlist and all waitlist attendees to regular as necessary.
+//
+// Returns list of responses that had their waitlist status updated.
+func manageWaitlist(tx *sqlx.Tx, eventId string) ([]EventResponse, error) {
+	e, err := get(tx, eventId)
 	if err != nil {
 		return []EventResponse{}, err
 	}
 
-	return waitlist, nil
-}
-
-func updateWaitlist(tx *sqlx.Tx, reqs []EventResponse) error {
 	stmt := `
-        UPDATE event_response
-        SET on_waitlist = 0
-        WHERE event_id = ? AND user_id = ?
-    `
-
-	for _, req := range reqs {
-		args := []any{req.EventId, req.UserId}
-
-		_, err := tx.Exec(stmt, args...)
-		if err != nil {
-			return err
-		}
+			UPDATE event_response AS er
+			SET on_waitlist = r.on_waitlist
+			FROM (
+				SELECT
+					event_id
+					,user_id
+					,CASE
+						WHEN SUM(attendee_count) OVER (ORDER BY created_at) <= ? THEN FALSE
+						ELSE TRUE
+					END AS on_waitlist
+				FROM event_response
+				WHERE event_id = ?
+			) AS r
+			WHERE er.event_id = r.event_id
+				AND er.user_id = r.user_id
+				AND er.on_waitlist <> r.on_waitlist
+			RETURNING event_id, user_id, on_waitlist
+		`
+	var er []EventResponse
+	err = tx.Select(&er, stmt, e.Capacity, e.Id)
+	if err != nil {
+		return []EventResponse{}, err
 	}
 
-	return nil
+	return er, nil
 }

@@ -132,7 +132,6 @@
                 class="outline"
                 hx-post="/event/respond"
                 hx-target="body"
-                {{if le .Event.SpotsLeft 0}}disabled{{end}}
             >
                 +1
             </button>
@@ -152,6 +151,6 @@
     </form>
 </div>
 {{if and (not .Event.UserResponse) (le .Event.SpotsLeft 0)}}
-<small>You will be added to the waitlist if you mark going when capacity is full. You cannot add plus ones while you are on the waitlist.</small>
+<small>You will be added to the waitlist if you mark going when capacity is full.</small>
 {{end}}
 {{end}}

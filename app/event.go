@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 	"github.com/mattfan00/jvbe/event"
 	"github.com/mattfan00/jvbe/group"
 	"github.com/mattfan00/jvbe/template"
@@ -143,33 +144,49 @@ func (a *App) renderEditEvent() http.HandlerFunc {
 	}
 }
 
-// TODO
 func (a *App) updateEvent() http.HandlerFunc {
+	type request struct {
+		Name           string `schema:"name"`
+		Capacity       int    `schema:"capacity"`
+		Start          string `schema:"start"`
+		TimezoneOffset int    `schema:"timezoneOffset"`
+		Location       string `schema:"location"`
+	}
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		/*
-		   u, _ := a.sessionUser(r)
-		   id := chi.URLParam(r, "id")
-		   log.Printf("user updating event %s: %s", id, u.Id)
+		u, _ := a.sessionUser(r)
+		id := chi.URLParam(r, "id")
+		a.log.Printf("user updating event %s: %s", id, u.Id)
 
-		   if err := r.ParseForm(); err != nil {
-		       a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		       return
-		   }
+		if err := r.ParseForm(); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
 
-		   var req eventPkg.UpdateRequest
-		   if err := schema.NewDecoder().Decode(&req, r.PostForm); err != nil {
-		       a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		       return
-		   }
-		   req.Id = id
+		var req request
+		if err := schema.NewDecoder().Decode(&req, r.PostForm); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
 
-		   if err := a.event.Update(req); err != nil {
-		       a.renderErrorNotif(w, err, http.StatusInternalServerError)
-		       return
-		   }
+		start, err := timeFromForm(req.Start, req.TimezoneOffset)
+		if err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
 
-		   http.Redirect(w, r, "/event/"+id, http.StatusSeeOther)
-		*/
+		if err := a.eventService.Update(event.UpdateParams{
+			Id:   id,
+			Name: req.Name,
+			Capacity: req.Capacity,
+			Start:    start,
+			Location: req.Location,
+		}); err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, "/event/"+id, http.StatusSeeOther)
 		w.Write(nil)
 	}
 }

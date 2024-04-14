@@ -44,6 +44,180 @@ func TestHandleResponse(t *testing.T) {
 		})
 		assert.Error(t, err)
 	})
+
+	t.Run("ManageWaitlist", func(t *testing.T) {
+		db := db.TestingConnect(t)
+		defer db.Close()
+		eventService := event.NewService(db)
+		userService := user.NewService(db)
+
+		u1, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		u2, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		u3, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := MustCreate(t, db, event.CreateParams{
+			CreatorId: u1.Id,
+			Start:     time.Now().Add(day),
+			Capacity:  2,
+		})
+
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u1.Id,
+			Id:            id,
+			AttendeeCount: 1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u2.Id,
+			Id:            id,
+			AttendeeCount: 1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u3.Id,
+			Id:            id,
+			AttendeeCount: 1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		responses, err := eventService.ListResponses(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, 3, len(responses))
+
+		assert.Equal(t, false, responses[0].OnWaitlist)
+		assert.Equal(t, u1.Id, responses[0].UserId)
+
+		assert.Equal(t, false, responses[1].OnWaitlist)
+		assert.Equal(t, u2.Id, responses[1].UserId)
+
+		assert.Equal(t, true, responses[2].OnWaitlist)
+		assert.Equal(t, u3.Id, responses[2].UserId)
+
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u2.Id,
+			Id:            id,
+			AttendeeCount: 0,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		responses, err = eventService.ListResponses(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, 2, len(responses))
+
+		assert.Equal(t, false, responses[0].OnWaitlist)
+		assert.Equal(t, u1.Id, responses[0].UserId)
+
+		assert.Equal(t, false, responses[1].OnWaitlist)
+		assert.Equal(t, u3.Id, responses[1].UserId)
+	})
+
+	t.Run("OnWaitlistEvenIfSpotsLeft", func(t *testing.T) {
+		db := db.TestingConnect(t)
+		defer db.Close()
+		eventService := event.NewService(db)
+		userService := user.NewService(db)
+
+		u1, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		u2, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		u3, err := userService.Create(user.CreateParams{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := MustCreate(t, db, event.CreateParams{
+			CreatorId: u1.Id,
+			Start:     time.Now().Add(day),
+			Capacity:  2,
+		})
+
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u1.Id,
+			Id:            id,
+			AttendeeCount: 1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u2.Id,
+			Id:            id,
+			AttendeeCount: 2,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		responses, err := eventService.ListResponses(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, 2, len(responses))
+
+		assert.Equal(t, false, responses[0].OnWaitlist)
+		assert.Equal(t, u1.Id, responses[0].UserId)
+
+		assert.Equal(t, true, responses[1].OnWaitlist)
+		assert.Equal(t, u2.Id, responses[1].UserId)
+
+		err = eventService.HandleResponse(event.HandleResponseParams{
+			UserId:        u3.Id,
+			Id:            id,
+			AttendeeCount: 1,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		responses, err = eventService.ListResponses(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		e, err := eventService.Get(id)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assert.Equal(t, 3, len(responses))
+		assert.Equal(t, 1, e.SpotsLeft())
+
+		assert.Equal(t, false, responses[0].OnWaitlist)
+		assert.Equal(t, u1.Id, responses[0].UserId)
+
+		assert.Equal(t, true, responses[1].OnWaitlist)
+		assert.Equal(t, u2.Id, responses[1].UserId)
+
+		assert.Equal(t, true, responses[2].OnWaitlist)
+		assert.Equal(t, u3.Id, responses[2].UserId)
+	})
 }
 
 func TestGet(t *testing.T) {
@@ -152,6 +326,184 @@ func TestList(t *testing.T) {
 	})
 }
 
+func TestUpdate(t *testing.T) {
+	t.Run("ManageWaitlist", func(t *testing.T) {
+		t.Run("ReduceCapacity", func(t *testing.T) {
+			db := db.TestingConnect(t)
+			defer db.Close()
+			eventService := event.NewService(db)
+			userService := user.NewService(db)
+
+			u1, err := userService.Create(user.CreateParams{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			u2, err := userService.Create(user.CreateParams{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			eventId := MustCreate(t, db, event.CreateParams{
+				Start:     time.Now().Add(24 * time.Hour),
+				CreatorId: u1.Id,
+				Capacity:  2,
+			})
+
+			MustHandleResponse(t, db, event.HandleResponseParams{
+				UserId:        u1.Id,
+				Id:            eventId,
+				AttendeeCount: 1,
+			})
+			MustHandleResponse(t, db, event.HandleResponseParams{
+				UserId:        u2.Id,
+				Id:            eventId,
+				AttendeeCount: 1,
+			})
+
+			responses, err := eventService.ListResponses(eventId)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, 2, len(responses))
+			assert.Equal(t, false, responses[0].OnWaitlist)
+			assert.Equal(t, false, responses[1].OnWaitlist)
+
+			err = eventService.Update(event.UpdateParams{
+				Id:       eventId,
+				Capacity: 1,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			responses, err = eventService.ListResponses(eventId)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, 2, len(responses))
+			assert.Equal(t, false, responses[0].OnWaitlist)
+			assert.Equal(t, true, responses[1].OnWaitlist)
+		})
+
+		t.Run("ReduceCapacityUneven", func(t *testing.T) {
+			db := db.TestingConnect(t)
+			defer db.Close()
+			eventService := event.NewService(db)
+			userService := user.NewService(db)
+
+			u1, err := userService.Create(user.CreateParams{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			u2, err := userService.Create(user.CreateParams{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			eventId := MustCreate(t, db, event.CreateParams{
+				Start:     time.Now().Add(24 * time.Hour),
+				CreatorId: u1.Id,
+				Capacity:  3,
+			})
+
+			MustHandleResponse(t, db, event.HandleResponseParams{
+				UserId:        u1.Id,
+				Id:            eventId,
+				AttendeeCount: 1,
+			})
+			MustHandleResponse(t, db, event.HandleResponseParams{
+				UserId:        u2.Id,
+				Id:            eventId,
+				AttendeeCount: 2,
+			})
+
+			responses, err := eventService.ListResponses(eventId)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, 2, len(responses))
+			assert.Equal(t, false, responses[0].OnWaitlist)
+			assert.Equal(t, false, responses[1].OnWaitlist)
+
+			err = eventService.Update(event.UpdateParams{
+				Id:       eventId,
+				Capacity: 2,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			responses, err = eventService.ListResponses(eventId)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, 2, len(responses))
+			assert.Equal(t, false, responses[0].OnWaitlist)
+			assert.Equal(t, true, responses[1].OnWaitlist)
+		})
+
+		t.Run("IncreaseCapacity", func(t *testing.T) {
+			db := db.TestingConnect(t)
+			defer db.Close()
+			eventService := event.NewService(db)
+			userService := user.NewService(db)
+
+			u1, err := userService.Create(user.CreateParams{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			u2, err := userService.Create(user.CreateParams{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			eventId := MustCreate(t, db, event.CreateParams{
+				Start:     time.Now().Add(24 * time.Hour),
+				CreatorId: u1.Id,
+				Capacity:  1,
+			})
+
+			MustHandleResponse(t, db, event.HandleResponseParams{
+				UserId:        u1.Id,
+				Id:            eventId,
+				AttendeeCount: 1,
+			})
+			MustHandleResponse(t, db, event.HandleResponseParams{
+				UserId:        u2.Id,
+				Id:            eventId,
+				AttendeeCount: 1,
+			})
+
+			responses, err := eventService.ListResponses(eventId)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, 2, len(responses))
+			assert.Equal(t, false, responses[0].OnWaitlist)
+			assert.Equal(t, true, responses[1].OnWaitlist)
+
+			err = eventService.Update(event.UpdateParams{
+				Id:       eventId,
+				Capacity: 2,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			responses, err = eventService.ListResponses(eventId)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assert.Equal(t, 2, len(responses))
+			assert.Equal(t, false, responses[0].OnWaitlist)
+			assert.Equal(t, false, responses[1].OnWaitlist)
+		})
+	})
+}
+
 func MustCreate(t testing.TB, db *db.DB, p event.CreateParams) string {
 	t.Helper()
 	id, err := event.NewService(db).Create(p)
@@ -159,4 +511,12 @@ func MustCreate(t testing.TB, db *db.DB, p event.CreateParams) string {
 		t.Fatal(err)
 	}
 	return id
+}
+
+func MustHandleResponse(t testing.TB, db *db.DB, p event.HandleResponseParams) {
+	t.Helper()
+	err := event.NewService(db).HandleResponse(p)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
