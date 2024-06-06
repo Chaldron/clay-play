@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/mattfan00/jvbe/config"
 	"github.com/mattfan00/jvbe/logger"
@@ -35,6 +36,8 @@ func NewService(conf *config.Config) (*service, error) {
 		Scopes:       []string{oidc.ScopeOpenID, "profile", "email"},
 		Endpoint:     provider.Endpoint(),
 	}
+
+	fmt.Print(oauthConf)
 
 	return &service{
 		oidcProvider: provider,
@@ -84,14 +87,18 @@ func (s *service) GetExternalUser(code string) (user.ExternalUser, error) {
 		return user.ExternalUser{}, err
 	}
 
+	fmt.Println("Token = ", accessToken)
+
 	// dont verify token since this should have come from oauth and I don't want to deal with verifying right now
 	parser := jwt.NewParser(jwt.WithValidMethods([]string{"RS256"}))
 	accessTokenParsed, _, err := parser.ParseUnverified(accessToken, &customClaims{})
 	if err != nil {
+		fmt.Println("err")
 		return user.ExternalUser{}, err
 	}
 
 	claims, ok := accessTokenParsed.Claims.(*customClaims)
+	fmt.Println("Claims = ", accessTokenParsed.Claims)
 	if !ok {
 		return user.ExternalUser{}, errors.New("cannot get claims")
 	}

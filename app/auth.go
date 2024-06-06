@@ -47,6 +47,7 @@ func (a *App) handleLoginCallback() http.HandlerFunc {
 			return
 		}
 		sessionUser := u.ToSessionUser()
+		fmt.Println(eu.Permissions)
 		sessionUser.Permissions = eu.Permissions
 
 		log.Printf("sessionUser:%+v", sessionUser)
