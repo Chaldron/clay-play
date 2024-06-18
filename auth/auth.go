@@ -5,6 +5,7 @@ import (
 )
 
 type Service interface {
+	OAuthEnabled() bool
 	AuthCodeUrl(string) string
 	GetExternalUser(code string) (user.ExternalUser, error)
 }

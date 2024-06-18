@@ -17,8 +17,15 @@ func (a *App) renderLogin() http.HandlerFunc {
 
 		a.session.Put(r.Context(), "state", state)
 
-		url := a.authService.AuthCodeUrl(state)
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		if a.authService.OAuthEnabled() {
+			url := a.authService.AuthCodeUrl(state)
+			http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+		} else {
+			// handle creation of dummy user using a.userService
+			// need to update interface to have a function to support this,
+			// and will need to create a function similar to HandleFromExternal to talk to DB
+			// http.Redirect(w, r, "/home", http.StatusSeeOther)
+		}
 	}
 }
 

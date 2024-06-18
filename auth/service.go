@@ -26,7 +26,7 @@ func NewService(conf *config.Config) (*service, error) {
 		"https://"+conf.Oauth.Domain,
 	)
 	if err != nil {
-		return &service{}, err
+		return &service{}, nil
 	}
 
 	oauthConf := &oauth2.Config{
@@ -48,6 +48,10 @@ func NewService(conf *config.Config) (*service, error) {
 
 func (s *service) SetLogger(l logger.Logger) {
 	s.log = l
+}
+
+func (s *service) OAuthEnabled() bool {
+	return s.oauthConf != nil
 }
 
 func (s *service) AuthCodeUrl(state string) string {
