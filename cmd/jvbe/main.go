@@ -12,11 +12,15 @@ type program interface {
 }
 
 func run() error {
+	var programArgs []string
+	var input string
 	if len(os.Args) < 2 {
-		return fmt.Errorf("specify a program")
+		input = "app"
+	} else {
+		programArgs = os.Args[2:]
+		input = os.Args[1]
 	}
 
-	programArgs := os.Args[2:]
 	appProgram := newAppProgram(programArgs)
 	migrationProgram := newMigrationProgram(programArgs)
 
@@ -25,7 +29,6 @@ func run() error {
 		migrationProgram,
 	}
 
-	input := os.Args[1]
 	for _, prog := range programs {
 		if input == prog.name() {
 			err := prog.parse()
