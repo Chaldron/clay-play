@@ -29,18 +29,18 @@ const (
 )
 
 type User struct {
-	Id         string     `db:"id"`
-	FullName   string     `db:"full_name"`
-	ExternalId string     `db:"external_id"`
-	CreatedAt  time.Time  `db:"created_at"`
-	Status     UserStatus `db:"status"`
+	Id        string    `db:"id"`
+	FullName  string    `db:"full_name"`
+	Email     string    `db:"email"`
+	Password  string    `db:"password"`
+	CreatedAt time.Time `db:"created_at"`
+	IsAdmin   bool      `db:"isadmin"`
 }
 
 func (u *User) ToSessionUser() SessionUser {
 	return SessionUser{
 		Id:       u.Id,
 		FullName: u.FullName,
-		Status:   u.Status,
 	}
 }
 

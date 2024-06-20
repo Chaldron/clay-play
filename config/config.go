@@ -18,15 +18,6 @@ type Config struct {
 	DbConn  string `yaml:"db_conn"`
 	Port    int    `yaml:"port"`
 	BaseUrl string `yaml:"base_url"`
-	Oauth   Oauth  `yaml:"oauth"`
-}
-
-func (c Config) OauthLogoutRedirectUrl() string {
-	return c.BaseUrl + c.Oauth.LogoutRedirectUrl
-}
-
-func (c Config) OauthCallbackUrl() string {
-	return c.BaseUrl + c.Oauth.CallbackUrl
 }
 
 func ReadFile(src string) (*Config, error) {

@@ -17,15 +17,7 @@ func (a *App) renderLogin() http.HandlerFunc {
 
 		a.session.Put(r.Context(), "state", state)
 
-		if a.authService.OAuthEnabled() {
-			url := a.authService.AuthCodeUrl(state)
-			http.Redirect(w, r, url, http.StatusTemporaryRedirect)
-		} else {
-			// handle creation of dummy user using a.userService
-			// need to update interface to have a function to support this,
-			// and will need to create a function similar to HandleFromExternal to talk to DB
-			// http.Redirect(w, r, "/home", http.StatusSeeOther)
-		}
+		http.Redirect(w, r, "/callback", http.StatusSeeOther)
 	}
 }
 
@@ -81,7 +73,7 @@ func (a *App) handleLogout() http.HandlerFunc {
 			return
 		}
 
-		redirect := fmt.Sprintf("https://%s/logout?redirect=%s", a.conf.Oauth.Domain, a.conf.OauthLogoutRedirectUrl())
-		http.Redirect(w, r, redirect, http.StatusSeeOther)
+		//redirect := fmt.Sprintf("https://%s/logout?redirect=%s", a.conf.Oauth.Domain, a.conf.OauthLogoutRedirectUrl())
+		//http.Redirect(w, r, redirect, http.StatusSeeOther)
 	}
 }

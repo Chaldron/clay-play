@@ -83,7 +83,7 @@ func (p *appProgram) run() error {
 
 	auditlogService := auditlog.NewService(db)
 
-	authService, err := auth.NewService(conf)
+	authService, err := auth.NewService()
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (p *appProgram) run() error {
 		userService,
 		authService,
 		groupService,
-        auditlogService,
+		auditlogService,
 
 		conf,
 		session,
