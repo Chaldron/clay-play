@@ -15,10 +15,8 @@ CREATE TABLE IF NOT EXISTS event (
 CREATE TABLE IF NOT EXISTS user (
     id TEXT PRIMARY KEY,
     full_name TEXT NOT NULL,
-    email TEXT NOT NULL
-    password TEXT NOT NULL
+    external_id TEXT NOT NULL,
     created_at DATETIME NOT NULL,
-    isadmin BOOL NOT NULL DEFAULT 0,
     picture TEXT
 );
 
