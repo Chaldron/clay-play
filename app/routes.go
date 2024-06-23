@@ -82,14 +82,8 @@ func (a *App) Routes() http.Handler {
 		})
 
 		r.Route("/review", func(r chi.Router) {
-			r.Get("/request", a.renderReviewRequest())
-			r.Post("/request", a.updateReview())
-
 			r.Group(func(r chi.Router) {
 				r.Use(a.canReviewUser)
-
-				r.Get("/list", a.renderReviewList())
-				r.Post("/approve", a.approveReview())
 			})
 		})
 

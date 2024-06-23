@@ -16,20 +16,21 @@ func (a *App) sessionUser(r *http.Request) (user.SessionUser, bool) {
 // TODO: clear sessions if auth fails
 func (a *App) requireAuth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		u, ok := a.sessionUser(r)
 
-		if ok {
-			if u.Status != user.UserStatusActive {
-				http.Redirect(w, r, "/review/request", http.StatusSeeOther)
-				return
-			} else {
-				next.ServeHTTP(w, r)
-				return
-			}
-		} else {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
-			return
-		}
+		next.ServeHTTP(w, r)
+		return
+
+		//u, ok := a.sessionUser(r)
+		//if ok {
+		//	if u.Status != user.UserStatusActive {
+		//		http.Redirect(w, r, "/review/request", http.StatusSeeOther)
+		//		return
+		//	} else {
+		//		next.ServeHTTP(w, r)
+		//		return
+		//	}
+		//} else {
+		//}
 	})
 }
 

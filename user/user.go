@@ -9,23 +9,12 @@ import (
 
 type Service interface {
 	Get(string) (User, error)
-	HandleFromExternal(ExternalUser) (User, error)
+	HandleFromCreds(email string, password string) (User, error)
 	Create(CreateParams) (User, error)
-	GetReview(string) (UserReview, error)
-	UpdateReview(UpdateReviewParams) error
-	ListReviews() ([]UserReview, error)
-	ApproveReview(string) error
 }
 
 var (
 	ErrNoUser = errors.New("no user found")
-)
-
-type UserStatus int
-
-const (
-	UserStatusActive   UserStatus = iota // has full control of application
-	UserStatusInactive                   // has not been approved yet
 )
 
 type User struct {
@@ -64,7 +53,6 @@ type SessionUser struct {
 	Id          string
 	Permissions []string
 	FullName    string
-	Status      UserStatus
 }
 
 func (u SessionUser) IsAuthenticated() bool {

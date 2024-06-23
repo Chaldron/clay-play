@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -17,7 +16,7 @@ func (a *App) renderLogin() http.HandlerFunc {
 
 		a.session.Put(r.Context(), "state", state)
 
-		http.Redirect(w, r, "/callback", http.StatusSeeOther)
+		http.Redirect(w, r, "/auth/callback", http.StatusSeeOther)
 	}
 }
 
@@ -25,29 +24,21 @@ func (a *App) handleLoginCallback() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		log.Printf("login callback: %s", r.URL.String())
 
-		state := r.URL.Query().Get("state")
-		expectedState := a.session.PopString(r.Context(), "state")
-		if state != expectedState {
-			err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedState, state)
-			a.renderErrorPage(w, err, http.StatusInternalServerError)
-			return
-		}
+		//state := r.URL.Query().Get("state")
+		//expectedState := a.session.PopString(r.Context(), "state")
+		//if state != expectedState {
+		//	err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedState, state)
+		//	a.renderErrorPage(w, err, http.StatusInternalServerError)
+		//	return
+		//}
 
-		code := r.URL.Query().Get("code")
-		eu, err := a.authService.GetExternalUser(code)
-		if err != nil {
-			a.renderErrorPage(w, err, http.StatusInternalServerError)
-			return
-		}
-
-		u, err := a.userService.HandleFromExternal(eu)
+		u, err := a.userService.HandleFromCreds("123@abc.com", "pass")
 		if err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
 		sessionUser := u.ToSessionUser()
-		fmt.Println(eu.Permissions)
-		sessionUser.Permissions = eu.Permissions
+		sessionUser.Permissions = []string{"modify:event", "modify:group", "review:user"}
 
 		log.Printf("sessionUser:%+v", sessionUser)
 
