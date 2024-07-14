@@ -1,15 +1,28 @@
 {{define "body"}}
 <main class="container-fluid only">
     <hgroup>
-        <h3>jvbe</h3>
-        <p>Registration for John's volleyball events</p>
+        <h3>Clay Play</h3>
+        <p>Registration for Heather's studio sessions</p>
     </hgroup>
 
-    <a
+    <!--<a
         href="/auth/login"
         hx-boost="false"
     >
         Login or Signup 
-    </a>
+    </a>-->
+
+    <form hx-get="/auth/callback">
+        <input type="text" placeholder="Email" name="email" required>
+        <input type="password" placeholder="Password" name="password" required>
+        <button type="submit">Login</button>
+        
+        <div id="login-options">
+            <input type="checkbox" checked="unchecked">
+            <label>Remember me</label> 
+        </div>
+        
+        <a href="#">Forgot password?</a>
+    </div>
 </main>
 {{end}}
