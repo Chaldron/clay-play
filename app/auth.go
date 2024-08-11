@@ -20,38 +20,34 @@ func (a *App) renderLogin() http.HandlerFunc {
 	}
 }
 
-func (a *App) handleLoginCallback() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("login callback: %s", r.URL.String())
+func (app *App) handleLoginCallback() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		log.Printf("login callback: %s", request.URL.String())
 
-		//state := r.URL.Query().Get("state")
-		//expectedState := a.session.PopString(r.Context(), "state")
-		//if state != expectedState {
-		//	err := fmt.Errorf("invalid oauth state, expected '%s', got '%s'", expectedState, state)
-		//	a.renderErrorPage(w, err, http.StatusInternalServerError)
-		//	return
-		//}
+		email := request.URL.Query().Get("email")
+		password := request.URL.Query().Get("password")
 
-		u, err := a.userService.HandleFromCreds("123@abc.com", "pass")
+		user, err := app.userService.HandleFromCreds(email, password) // "123@abc.com", "pass")
 		if err != nil {
-			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			app.renderErrorPage(response, err, http.StatusInternalServerError)
 			return
 		}
-		sessionUser := u.ToSessionUser()
+
+		sessionUser := user.ToSessionUser()
 		sessionUser.Permissions = []string{"modify:event", "modify:group", "review:user"}
 
 		log.Printf("sessionUser:%+v", sessionUser)
 
-		if err := a.renewSessionUser(r, &sessionUser); err != nil {
-			a.renderErrorPage(w, err, http.StatusInternalServerError)
+		if err := app.renewSessionUser(request, &sessionUser); err != nil {
+			app.renderErrorPage(response, err, http.StatusInternalServerError)
 			return
 		}
 
-		redirect := a.session.PopString(r.Context(), "redirect")
+		redirect := app.session.PopString(request.Context(), "redirect")
 		if redirect != "" {
-			http.Redirect(w, r, redirect, http.StatusSeeOther)
+			http.Redirect(response, request, redirect, http.StatusSeeOther)
 		} else {
-			http.Redirect(w, r, "/home", http.StatusSeeOther)
+			http.Redirect(response, request, "/home", http.StatusSeeOther)
 		}
 	}
 }

@@ -46,19 +46,7 @@ func (s *service) HandleFromCreds(email string, password string) (User, error) {
 	defer tx.Rollback()
 
 	user, err := getByExternal(tx, email, password)
-	// if cant retrieve user, then need to create
-	if errors.Is(err, ErrNoUser) {
-		// don't create user here automatically, it will be done from admin panel
-		//user, err = create(tx, CreateParams{
-		//	ExternalId: externalUser.Id,
-		//	FullName:   externalUser.FullName,
-		//})
-		//if err != nil {
-		//	return User{}, err
-		//}
-		//s.log.Printf("created new user %s", user.Id)
-
-	} else if err != nil {
+	if err != nil {
 		return User{}, err
 	}
 
