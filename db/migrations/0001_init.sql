@@ -12,14 +12,15 @@ CREATE TABLE IF NOT EXISTS event (
     group_id TEXT
 );
 
-CREATE TABLE IF NOT EXISTS user (
+CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     full_name TEXT NOT NULL,
-    external_id TEXT NOT NULL,
-    created_at DATETIME NOT NULL,
-    picture TEXT
+    email TEXT NOT NULL,
+    password TEXT NOT NULL,
+    picture TEXT,
+    isadmin BOOL NOT NULL,
+    created_at DATETIME NOT NULL
 );
-
 
 CREATE TABLE IF NOT EXISTS sessions (
     token TEXT PRIMARY KEY,
@@ -54,6 +55,12 @@ CREATE TABLE IF NOT EXISTS user_group_member (
     created_at DATETIME NOT NULL,
     PRIMARY KEY (group_id, user_id)
 );
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    user_id TEXT NOT NULL,
+    recorded_at DATETIME NOT NULL,
+    description TEXT NOT NULL
+);
 -- +goose StatementEnd
 
 -- +goose Down
@@ -65,4 +72,5 @@ DROP INDEX IF EXISTS sessions_expiry_idx;
 DROP TABLE IF EXISTS event_response;
 DROP TABLE IF EXISTS user_group;
 DROP TABLE IF EXISTS user_group_member;
+DROP TABLE IF EXISTS audit_log;
 -- +goose StatementEnd

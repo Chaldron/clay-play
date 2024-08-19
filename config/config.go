@@ -6,18 +6,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Oauth struct {
-	Domain            string `yaml:"domain"`
-	ClientId          string `yaml:"client_id"`
-	ClientSecret      string `yaml:"client_secret"`
-	CallbackUrl       string `yaml:"callback_url"`
-	LogoutRedirectUrl string `yaml:"logout_redirect_url"`
-}
-
 type Config struct {
-	DbConn  string `yaml:"db_conn"`
-	Port    int    `yaml:"port"`
-	BaseUrl string `yaml:"base_url"`
+	DbConn               string `yaml:"db_conn"`
+	Port                 int    `yaml:"port"`
+	DefaultAdminPassword string `yaml:"default_admin_password"`
 }
 
 func ReadFile(src string) (*Config, error) {

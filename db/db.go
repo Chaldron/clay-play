@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mattfan00/jvbe/db/migrations"
 	"github.com/mattfan00/jvbe/logger"
 	"github.com/pressly/goose/v3"
 )
@@ -20,7 +21,9 @@ type DB struct {
 //go:embed migrations/*.sql
 var migrationsFs embed.FS
 
-func Connect(dsn string, log logger.Logger) (*DB, error) {
+func Connect(dsn string, defaultAdminPassword string, log logger.Logger) (*DB, error) {
+	migrations.DefaultAdminPassword = defaultAdminPassword
+
 	db, err := sqlx.Connect("sqlite3", dsn)
 	if err != nil {
 		return &DB{}, err
@@ -47,7 +50,7 @@ func Connect(dsn string, log logger.Logger) (*DB, error) {
 
 func TestingConnect(t testing.TB) *DB {
 	t.Helper()
-	db, err := Connect(":memory:", logger.NewNoopLogger())
+	db, err := Connect(":memory:", "admin", logger.NewNoopLogger())
 	if err != nil {
 		panic(err)
 	}

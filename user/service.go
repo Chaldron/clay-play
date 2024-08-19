@@ -88,7 +88,7 @@ func (s *service) Create(p CreateParams) (User, error) {
 
 func get(tx *sqlx.Tx, id string) (User, error) {
 	stmt := `
-        SELECT id, full_name, email, created_at FROM user
+        SELECT id, full_name, email, created_at FROM users
         WHERE id = ?
     `
 	args := []any{id}
@@ -108,7 +108,7 @@ func getByExternal(tx *sqlx.Tx, email string, password string) (User, error) {
 	stmt := `
         SELECT 
             id, full_name, created_at, email, isadmin
-        FROM user
+        FROM users
         WHERE email = ? AND password = ?
     `
 	args := []any{email, password}
@@ -131,7 +131,7 @@ func create(tx *sqlx.Tx, p CreateParams) (User, error) {
 	}
 
 	stmt := `
-        INSERT INTO user (id, full_name, email, password, created_at)
+        INSERT INTO users (id, full_name, email, password, created_at)
         VALUES (?, ?, ?, ?, ?)
     `
 	args := []any{

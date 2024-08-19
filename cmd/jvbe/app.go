@@ -57,7 +57,7 @@ func (p *appProgram) run() error {
 		return err
 	}
 
-	db, err := db.Connect(conf.DbConn, log)
+	db, err := db.Connect(conf.DbConn, conf.DefaultAdminPassword, log)
 	if err != nil {
 		return err
 	}
