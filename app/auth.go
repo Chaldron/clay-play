@@ -34,7 +34,6 @@ func (app *App) handleLoginCallback() http.HandlerFunc {
 		}
 
 		sessionUser := user.ToSessionUser()
-		sessionUser.Permissions = []string{"modify:event", "modify:group", "review:user"}
 
 		log.Printf("sessionUser:%+v", sessionUser)
 
@@ -59,8 +58,5 @@ func (a *App) handleLogout() http.HandlerFunc {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
 			return
 		}
-
-		//redirect := fmt.Sprintf("https://%s/logout?redirect=%s", a.conf.Oauth.Domain, a.conf.OauthLogoutRedirectUrl())
-		//http.Redirect(w, r, redirect, http.StatusSeeOther)
 	}
 }

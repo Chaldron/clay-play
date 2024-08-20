@@ -267,7 +267,7 @@ func get(tx *sqlx.Tx, id string) (Event, error) {
             END AS is_past
         FROM event AS e
         LEFT JOIN user_group AS ug ON e.group_id = ug.id
-        INNER JOIN user AS u ON e.creator_id = u.id
+        INNER JOIN users AS u ON e.creator_id = u.id
         WHERE e.id = ? AND e.is_deleted = FALSE 
     `
 	args := []any{id, id}
@@ -285,7 +285,7 @@ func listResponses(tx *sqlx.Tx, eventId string) ([]EventResponse, error) {
 	stmt := `
         SELECT er.event_id, er.user_id, er.attendee_count, u.full_name AS user_full_name, er.created_at, er.on_waitlist
         FROM event_response AS er
-        INNER JOIN user AS u ON er.user_id = u.id
+        INNER JOIN users AS u ON er.user_id = u.id
         WHERE er.event_id = ?
         ORDER BY er.created_at
     `

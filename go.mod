@@ -15,7 +15,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.19
 	github.com/pressly/goose/v3 v3.18.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/oauth2 v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

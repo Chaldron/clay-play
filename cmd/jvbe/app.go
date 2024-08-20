@@ -9,7 +9,6 @@ import (
 
 	appPkg "github.com/mattfan00/jvbe/app"
 	"github.com/mattfan00/jvbe/auditlog"
-	"github.com/mattfan00/jvbe/auth"
 	"github.com/mattfan00/jvbe/config"
 	"github.com/mattfan00/jvbe/db"
 	"github.com/mattfan00/jvbe/event"
@@ -83,16 +82,9 @@ func (p *appProgram) run() error {
 
 	auditlogService := auditlog.NewService(db)
 
-	authService, err := auth.NewService()
-	if err != nil {
-		return err
-	}
-	authService.SetLogger(log)
-
 	app := appPkg.New(
 		eventService,
 		userService,
-		authService,
 		groupService,
 		auditlogService,
 

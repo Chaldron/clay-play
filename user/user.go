@@ -1,7 +1,6 @@
 package user
 
 import (
-	"database/sql"
 	"errors"
 	"strings"
 	"time"
@@ -33,26 +32,9 @@ func (u *User) ToSessionUser() SessionUser {
 	}
 }
 
-type UserReview struct {
-	UserId       string         `db:"user_id"`
-	UserFullName string         `db:"user_full_name"`
-	CreatedAt    time.Time      `db:"created_at"`
-	ReviewedAt   sql.NullTime   `db:"reviewed_at"`
-	Comment      sql.NullString `db:"comment"`
-	IsApproved   string         `db:"is_approved"`
-}
-
-type ExternalUser struct {
-	Id          string `json:"sub"`
-	FullName    string `json:"name"`
-	Picture     string `json:"picture"`
-	Permissions []string
-}
-
 type SessionUser struct {
-	Id          string
-	Permissions []string
-	FullName    string
+	Id       string
+	FullName string
 }
 
 func (u SessionUser) IsAuthenticated() bool {

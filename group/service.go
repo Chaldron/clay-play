@@ -247,7 +247,7 @@ func get(tx *sqlx.Tx, id string) (Group, error) {
         SELECT ug.id, ug.name, ug.invite_id, ug.creator_id
             , u.full_name AS creator_full_name
         FROM user_group ug
-        INNER JOIN user u ON ug.creator_id = u.id
+        INNER JOIN users u ON ug.creator_id = u.id
         WHERE ug.id = ? AND is_deleted = FALSE
     `
 	args := []any{id}
@@ -260,7 +260,7 @@ func get(tx *sqlx.Tx, id string) (Group, error) {
 func listMembers(tx *sqlx.Tx, id string) ([]GroupMember, error) {
 	stmt := `
         SELECT ugm.group_id, ugm.user_id, u.full_name AS user_full_name FROM user_group_member ugm
-        INNER JOIN user u ON u.id = ugm.user_id
+        INNER JOIN users u ON u.id = ugm.user_id
         WHERE group_id = ?
         ORDER BY ugm.created_at ASC
     `

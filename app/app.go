@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/mattfan00/jvbe/auditlog"
-	"github.com/mattfan00/jvbe/auth"
 	"github.com/mattfan00/jvbe/config"
 	"github.com/mattfan00/jvbe/event"
 	"github.com/mattfan00/jvbe/group"
@@ -20,7 +19,6 @@ import (
 type App struct {
 	eventService    event.Service
 	userService     user.Service
-	authService     auth.Service
 	groupService    group.Service
 	auditlogService auditlog.Service
 
@@ -33,7 +31,6 @@ type App struct {
 func New(
 	eventService event.Service,
 	userService user.Service,
-	authService auth.Service,
 	groupService group.Service,
 	auditlogService auditlog.Service,
 
@@ -45,7 +42,6 @@ func New(
 	return &App{
 		eventService:    eventService,
 		userService:     userService,
-		authService:     authService,
 		groupService:    groupService,
 		auditlogService: auditlogService,
 

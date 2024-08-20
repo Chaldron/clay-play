@@ -72,7 +72,7 @@ func list(tx *sqlx.Tx, f ListFilter) ([]AuditLog, int, error) {
             ,description 
             ,COUNT(*) OVER () AS count
         FROM audit_log al
-        INNER JOIN user u ON al.user_id = u.id
+        INNER JOIN users u ON al.user_id = u.id
         ORDER BY recorded_at DESC
         ` + db.FormatLimitOffset(f.Limit, f.Offset)
 
