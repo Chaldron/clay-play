@@ -55,7 +55,7 @@ func (a *App) renderGroupDetails() http.HandlerFunc {
 		u, _ := a.sessionUser(r)
 		id := chi.URLParam(r, "id")
 
-		if !u.CanModifyGroup() {
+		if !u.IsAdmin {
 			if err := a.groupService.UserCanAccessError(sql.NullString{
 				String: id,
 				Valid:  true,

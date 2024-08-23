@@ -29,12 +29,14 @@ func (u *User) ToSessionUser() SessionUser {
 	return SessionUser{
 		Id:       u.Id,
 		FullName: u.FullName,
+		IsAdmin:  u.IsAdmin,
 	}
 }
 
 type SessionUser struct {
 	Id       string
 	FullName string
+	IsAdmin  bool
 }
 
 func (u SessionUser) IsAuthenticated() bool {
@@ -49,27 +51,4 @@ func (u SessionUser) FirstName() string {
 
 	firstName := nameParts[0]
 	return firstName
-}
-
-func (u SessionUser) hasPermission(p string) bool {
-	return true
-}
-
-func (u SessionUser) CanModifyEvent() bool {
-	return u.hasPermission("modify:event")
-}
-
-func (u SessionUser) CanModifyGroup() bool {
-	return u.hasPermission("modify:group")
-}
-
-func (u SessionUser) CanReviewUser() bool {
-	return u.hasPermission("review:user")
-}
-
-func (u SessionUser) CanDoEverything() bool {
-	return u.CanModifyGroup() &&
-		u.CanModifyEvent() &&
-		u.CanReviewUser()
-
 }

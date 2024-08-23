@@ -8,7 +8,7 @@
     <div class="page_header">
         <h3>{{.Event.Name}}</h3>
         <div class="buttons">
-            {{if .User.CanModifyEvent}}
+            {{if .User.IsAdmin}}
             <a href="/event/{{.Event.Id}}/edit" role="button">Edit</a>
             {{end}}
         </div>

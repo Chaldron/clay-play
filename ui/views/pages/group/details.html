@@ -19,7 +19,7 @@
             >
                 Invite
             </button>
-            {{if .User.CanModifyGroup}}
+            {{if .User.IsAdmin}}
             <a href="/group/{{.Group.Id}}/edit" role="button">Edit</a>
             {{end}}
         </div>
@@ -47,7 +47,7 @@
                             </span>
                             {{end}}
                         </div>
-                        {{if $.User.CanModifyGroup}}
+                        {{if $.User.IsAdmin}}
                             {{if ne $.Group.CreatorId $m.UserId}}
                             <div
                                 class="delete"

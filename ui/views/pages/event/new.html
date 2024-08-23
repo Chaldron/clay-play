@@ -17,7 +17,7 @@
                 Name
                 <input type="text" required name="name" />
             </label>
-            {{if .User.CanModifyGroup}}
+            {{if .User.IsAdmin}}
             <label>
                 Group
                 <select name="groupId">

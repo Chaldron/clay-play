@@ -39,12 +39,12 @@ func (a *App) Routes() http.Handler {
 			r.Use(a.requireAuth)
 
 			r.Get("/home", a.renderHome())
-			r.With(a.canDoEverything).Get("/admin", a.renderAdmin())
-			r.With(a.canDoEverything).Get("/auditlog", a.renderAuditlog())
+			r.With(a.isAdmin).Get("/admin", a.renderAdmin())
+			r.With(a.isAdmin).Get("/auditlog", a.renderAuditlog())
 
 			r.Route("/event", func(r chi.Router) {
 				r.Group(func(r chi.Router) {
-					r.Use(a.canModifyEvent)
+					r.Use(a.isAdmin)
 
 					r.Get("/new", a.renderNewEvent())
 					r.Post("/new", a.createEvent())
@@ -65,7 +65,7 @@ func (a *App) Routes() http.Handler {
 				r.Use(a.requireAuth)
 
 				r.Group(func(r chi.Router) {
-					r.Use(a.canModifyGroup)
+					r.Use(a.isAdmin)
 
 					r.Get("/list", a.renderGroupList())
 					r.Get("/new", a.renderNewGroup())
@@ -81,9 +81,26 @@ func (a *App) Routes() http.Handler {
 			})
 		})
 
-		r.Route("/review", func(r chi.Router) {
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/{id}/invite", a.inviteGroup())
+
 			r.Group(func(r chi.Router) {
-				r.Use(a.canReviewUser)
+				r.Use(a.requireAuth)
+
+				r.Group(func(r chi.Router) {
+					r.Use(a.isAdmin)
+
+					r.Get("/list", a.renderGroupList())
+					r.Get("/new", a.renderNewGroup())
+					r.Post("/new", a.createGroup())
+					r.Get("/{id}/edit", a.renderEditGroup())
+					r.Post("/{id}/edit", a.updateGroup())
+					r.Delete("/{id}/edit", a.deleteGroup())
+					r.Delete("/{id}/member/{userId}", a.removeGroupMember())
+					r.Post("/{id}/invite", a.refreshInviteLinkGroup())
+				})
+
+				r.Get("/{id}", a.renderGroupDetails())
 			})
 		})
 
