@@ -8,6 +8,7 @@ import (
 
 type Service interface {
 	Get(string) (User, error)
+	GetAll() ([]User, error)
 	HandleFromCreds(email string, password string) (User, error)
 	Create(CreateParams) (User, error)
 }

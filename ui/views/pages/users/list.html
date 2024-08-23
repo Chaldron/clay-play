@@ -1,0 +1,34 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div id="error"></div>
+
+    <div class="page_header">
+        <h3>All Users</h3>
+        <div class="buttons">
+            <a href="/group/new" role="button">New Group</a>
+        </div>
+    </div>
+
+    {{if gt (len .Users) (0)}}
+    <section class="card-list">
+        {{range .Users}}
+        <div class="card-list-item center">
+            <div class="flex-1">
+                <div><strong>{{.FullName}}</strong></div>
+                <div><small>{{.Email}}</small></div>
+            </div>
+            <div><small>{{.CreatedAt}}</small></div>
+            {{if eq .IsAdmin true}} <strong> Admin User </strong>{{end}}
+
+        </div>
+        {{end}}
+    </section>
+    {{else}}
+    <div>No Users</div>
+    {{end}}
+</main>
+
+{{end}}

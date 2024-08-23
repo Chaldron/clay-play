@@ -82,25 +82,23 @@ func (a *App) Routes() http.Handler {
 		})
 
 		r.Route("/users", func(r chi.Router) {
-			r.Get("/{id}/invite", a.inviteGroup())
-
 			r.Group(func(r chi.Router) {
 				r.Use(a.requireAuth)
 
 				r.Group(func(r chi.Router) {
 					r.Use(a.isAdmin)
 
-					r.Get("/list", a.renderGroupList())
-					r.Get("/new", a.renderNewGroup())
-					r.Post("/new", a.createGroup())
-					r.Get("/{id}/edit", a.renderEditGroup())
-					r.Post("/{id}/edit", a.updateGroup())
-					r.Delete("/{id}/edit", a.deleteGroup())
-					r.Delete("/{id}/member/{userId}", a.removeGroupMember())
-					r.Post("/{id}/invite", a.refreshInviteLinkGroup())
+					r.Get("/list", a.renderUserList())
+					//r.Get("/new", a.renderNewGroup())
+					//r.Post("/new", a.createGroup())
+					//r.Get("/{id}/edit", a.renderEditGroup())
+					//r.Post("/{id}/edit", a.updateGroup())
+					//r.Delete("/{id}/edit", a.deleteGroup())
+					//r.Delete("/{id}/member/{userId}", a.removeGroupMember())
+					//r.Post("/{id}/invite", a.refreshInviteLinkGroup())
 				})
 
-				r.Get("/{id}", a.renderGroupDetails())
+				//r.Get("/{id}", a.renderGroupDetails())
 			})
 		})
 

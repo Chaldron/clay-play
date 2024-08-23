@@ -38,6 +38,17 @@ func (s *service) Get(id string) (User, error) {
 	return u, err
 }
 
+func (s *service) GetAll() ([]User, error) {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	u, err := getAll(tx)
+	return u, err
+}
+
 func (s *service) HandleFromCreds(email string, password string) (User, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
@@ -88,7 +99,7 @@ func (s *service) Create(p CreateParams) (User, error) {
 
 func get(tx *sqlx.Tx, id string) (User, error) {
 	stmt := `
-        SELECT id, full_name, email, created_at FROM users
+        SELECT id, full_name, email, created_at, isadmin FROM users
         WHERE id = ?
     `
 	args := []any{id}
@@ -102,6 +113,22 @@ func get(tx *sqlx.Tx, id string) (User, error) {
 	}
 
 	return user, nil
+}
+
+func getAll(tx *sqlx.Tx) ([]User, error) {
+	stmt := `
+        SELECT id, full_name, email, created_at, isadmin FROM users
+    `
+
+	var users []User
+	err := tx.Select(&users, stmt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrNoUser
+	} else if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }
 
 func getByExternal(tx *sqlx.Tx, email string, password string) (User, error) {
