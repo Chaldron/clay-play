@@ -20,7 +20,7 @@ func (a *App) renderUserList() http.HandlerFunc {
 			return
 		}
 
-		a.renderPage(w, "users/list.html", data{
+		a.renderPage(w, "user/list.html", data{
 			BaseData: BaseData{
 				User: u,
 			},

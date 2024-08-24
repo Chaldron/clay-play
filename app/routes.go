@@ -81,7 +81,7 @@ func (a *App) Routes() http.Handler {
 			})
 		})
 
-		r.Route("/users", func(r chi.Router) {
+		r.Route("/user", func(r chi.Router) {
 			r.Group(func(r chi.Router) {
 				r.Use(a.requireAuth)
 
