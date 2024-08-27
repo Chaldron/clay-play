@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/mattfan00/jvbe/db"
 	"github.com/mattfan00/jvbe/logger"
 )
@@ -27,7 +26,7 @@ func (s *service) SetLogger(l logger.Logger) {
 	s.log = l
 }
 
-func (s *service) Get(id string) (User, error) {
+func (s *service) Get(id int64) (User, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return User{}, err
@@ -70,11 +69,10 @@ func (s *service) HandleFromCreds(email string, password string) (User, error) {
 }
 
 type CreateParams struct {
-	ExternalId string
-	FullName   string
-	Picture    string
-	Email      string
-	Password   string
+	FullName string
+	Email    string
+	Password string
+	IsAdmin  bool
 }
 
 func (s *service) Create(p CreateParams) (User, error) {
@@ -97,7 +95,7 @@ func (s *service) Create(p CreateParams) (User, error) {
 	return u, err
 }
 
-func get(tx *sqlx.Tx, id string) (User, error) {
+func get(tx *sqlx.Tx, id int64) (User, error) {
 	stmt := `
         SELECT id, full_name, email, created_at, isadmin FROM users
         WHERE id = ?
@@ -152,28 +150,24 @@ func getByExternal(tx *sqlx.Tx, email string, password string) (User, error) {
 }
 
 func create(tx *sqlx.Tx, p CreateParams) (User, error) {
-	newId, err := gonanoid.New()
-	if err != nil {
-		return User{}, err
-	}
-
 	stmt := `
-        INSERT INTO users (id, full_name, email, password, created_at)
+        INSERT INTO users (full_name, email, password, created_at, isadmin)
         VALUES (?, ?, ?, ?, ?)
     `
 	args := []any{
-		newId,
 		p.FullName,
 		p.Email,
 		p.Password,
 		time.Now().UTC(),
+		p.IsAdmin,
 	}
 
-	_, err = tx.Exec(stmt, args...)
+	u, err := tx.Exec(stmt, args...)
 	if err != nil {
 		return User{}, err
 	}
 
+	newId, _ := u.LastInsertId()
 	newUser, err := get(tx, newId)
 	if err != nil {
 		return User{}, err

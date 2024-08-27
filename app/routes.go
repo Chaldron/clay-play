@@ -89,8 +89,8 @@ func (a *App) Routes() http.Handler {
 					r.Use(a.isAdmin)
 
 					r.Get("/list", a.renderUserList())
-					//r.Get("/new", a.renderNewGroup())
-					//r.Post("/new", a.createGroup())
+					r.Get("/new", a.renderNewUser())
+					r.Post("/new", a.createUser())
 					//r.Get("/{id}/edit", a.renderEditGroup())
 					//r.Post("/{id}/edit", a.updateGroup())
 					//r.Delete("/{id}/edit", a.deleteGroup())
