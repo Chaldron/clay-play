@@ -1,45 +1,76 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
+	"net/http"
 	"os"
+	"time"
+
+	"github.com/alexedwards/scs/sqlite3store"
+	"github.com/alexedwards/scs/v2"
+	appPkg "github.com/mattfan00/jvbe/app"
+	"github.com/mattfan00/jvbe/auditlog"
+	"github.com/mattfan00/jvbe/config"
+	"github.com/mattfan00/jvbe/db"
+	"github.com/mattfan00/jvbe/event"
+	"github.com/mattfan00/jvbe/group"
+	"github.com/mattfan00/jvbe/logger"
+	"github.com/mattfan00/jvbe/template"
+	"github.com/mattfan00/jvbe/user"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-type program interface {
-	name() string
-	parse() error
-	run() error
-}
-
 func run() error {
-	var programArgs []string
-	var input string
-	if len(os.Args) < 2 {
-		input = "app"
-	} else {
-		programArgs = os.Args[2:]
-		input = os.Args[1]
+	log := logger.NewStdLogger()
+
+	conf, err := config.LoadFromCommandLineArgs(os.Args[1:])
+	if err != nil {
+		return err
 	}
 
-	appProgram := newAppProgram(programArgs)
-	migrationProgram := newMigrationProgram(programArgs)
-
-	programs := []program{
-		appProgram,
-		migrationProgram,
+	db, err := db.Connect(conf.DbConn, conf.DefaultAdminPassword, log)
+	if err != nil {
+		return err
 	}
 
-	for _, prog := range programs {
-		if input == prog.name() {
-			err := prog.parse()
-			if err != nil {
-				return err
-			}
-			return prog.run()
-		}
+	templates, err := template.Generate()
+	if err != nil {
+		return err
 	}
 
-	return fmt.Errorf("unknown program: %s", input)
+	gob.Register(user.SessionUser{}) // needed for scs library
+	session := scs.New()
+	session.Lifetime = 30 * 24 * time.Hour // 30 days
+	session.Store = sqlite3store.New(db.DB.DB)
+
+	groupService := group.NewService(db)
+	groupService.SetLogger(log)
+
+	eventService := event.NewService(db)
+	eventService.SetLogger(log)
+
+	userService := user.NewService(db)
+	eventService.SetLogger(log)
+
+	auditlogService := auditlog.NewService(db)
+
+	app := appPkg.New(
+		eventService,
+		userService,
+		groupService,
+		auditlogService,
+
+		conf,
+		session,
+		templates,
+		log,
+	)
+
+	log.Printf("listening on port %d", conf.Port)
+	http.ListenAndServe(fmt.Sprintf(":%d", conf.Port), app.Routes())
+
+	return nil
 }
 
 func main() {

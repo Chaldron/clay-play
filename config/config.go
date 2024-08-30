@@ -1,6 +1,7 @@
 package config
 
 import (
+	"flag"
 	"os"
 
 	"gopkg.in/yaml.v3"
@@ -13,16 +14,28 @@ type Config struct {
 }
 
 func ReadFile(src string) (*Config, error) {
-	b, err := os.ReadFile(src)
+	bytes, err := os.ReadFile(src)
 	if err != nil {
 		return nil, err
 	}
 
 	conf := &Config{}
-	err = yaml.Unmarshal(b, conf)
+	err = yaml.Unmarshal(bytes, conf)
 	if err != nil {
 		return nil, err
 	}
 
 	return conf, nil
+}
+
+func LoadFromCommandLineArgs(argv []string) (*Config, error) {
+	flagSet := flag.NewFlagSet("app", flag.ExitOnError)
+	configFilePath := flagSet.String("c", "./config.yaml", "path to config file")
+
+	err := flagSet.Parse(argv)
+	if err != nil {
+		return nil, err
+	}
+
+	return ReadFile(*configFilePath)
 }
