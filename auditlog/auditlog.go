@@ -3,7 +3,7 @@ package auditlog
 import "time"
 
 type Service interface {
-	Create(string, string) error
+	Create(int64, string) error
 	List(ListFilter) ([]AuditLog, int, error)
 }
 

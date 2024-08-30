@@ -11,6 +11,8 @@ type Service interface {
 	GetAll() ([]User, error)
 	HandleFromCreds(email string, password string) (User, error)
 	Create(CreateParams) (User, error)
+	Update(UpdateParams) (User, error)
+	Delete(int64) error
 }
 
 var (
@@ -18,7 +20,7 @@ var (
 )
 
 type User struct {
-	Id        string    `db:"id"`
+	Id        int64     `db:"id"`
 	FullName  string    `db:"full_name"`
 	Email     string    `db:"email"`
 	Password  string    `db:"password"`
@@ -35,13 +37,13 @@ func (u *User) ToSessionUser() SessionUser {
 }
 
 type SessionUser struct {
-	Id       string
+	Id       int64
 	FullName string
 	IsAdmin  bool
 }
 
 func (u SessionUser) IsAuthenticated() bool {
-	return u.Id != ""
+	return u.Id > -1
 }
 
 func (u SessionUser) FirstName() string {

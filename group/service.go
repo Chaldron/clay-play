@@ -75,7 +75,7 @@ func (s *service) List() ([]Group, error) {
 }
 
 type CreateParams struct {
-	CreatorId string
+	CreatorId int64
 	Name      string
 }
 
@@ -141,7 +141,7 @@ func (s *service) Delete(id string) error {
 	return tx.Commit()
 }
 
-func (s *service) AddMemberFromInvite(inviteId string, userId string) (Group, error) {
+func (s *service) AddMemberFromInvite(inviteId string, userId int64) (Group, error) {
 	s.log.Printf("group AddMemberFromInvite inviteId:%s userId:%s", inviteId, userId)
 	tx, err := s.db.Beginx()
 	if err != nil {
@@ -168,7 +168,7 @@ func (s *service) AddMemberFromInvite(inviteId string, userId string) (Group, er
 	return g, nil
 }
 
-func (s *service) RemoveMember(groupId string, userId string) error {
+func (s *service) RemoveMember(groupId string, userId int64) error {
 	s.log.Printf("group RemoveMember groupId:%s userId:%s", groupId, userId)
 	tx, err := s.db.Beginx()
 	if err != nil {
@@ -184,7 +184,7 @@ func (s *service) RemoveMember(groupId string, userId string) error {
 	return tx.Commit()
 }
 
-func (s *service) UserCanAccess(groupId sql.NullString, userId string) (bool, error) {
+func (s *service) UserCanAccess(groupId sql.NullString, userId int64) (bool, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return false, err
@@ -199,7 +199,7 @@ func (s *service) UserCanAccess(groupId sql.NullString, userId string) (bool, er
 	return exists, err
 }
 
-func (s *service) UserCanAccessError(groupId sql.NullString, userId string) error {
+func (s *service) UserCanAccessError(groupId sql.NullString, userId int64) error {
 	ok, err := s.UserCanAccess(groupId, userId)
 	if err != nil {
 		return err
@@ -211,7 +211,7 @@ func (s *service) UserCanAccessError(groupId sql.NullString, userId string) erro
 	return nil
 }
 
-func (s *service) FilterEventsUserCanAccess(events []event.Event, userId string) ([]event.Event, error) {
+func (s *service) FilterEventsUserCanAccess(events []event.Event, userId int64) ([]event.Event, error) {
 	filtered := []event.Event{}
 	for _, e := range events {
 		ok, err := s.UserCanAccess(e.GroupId, userId)
@@ -333,7 +333,7 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 	return id, nil
 }
 
-func addMember(tx *sqlx.Tx, groupId string, userId string) error {
+func addMember(tx *sqlx.Tx, groupId string, userId int64) error {
 	stmt := `
         INSERT INTO user_group_member (group_id, user_id, created_at)
         VALUES (?, ?, ?)
@@ -373,7 +373,7 @@ func delete(tx *sqlx.Tx, id string) error {
 	return err
 }
 
-func removeMember(tx *sqlx.Tx, groupId string, userId string) error {
+func removeMember(tx *sqlx.Tx, groupId string, userId int64) error {
 	g, err := get(tx, groupId)
 	if g.CreatorId == userId {
 		return errors.New("cannot remove the creator of a group")
@@ -389,7 +389,7 @@ func removeMember(tx *sqlx.Tx, groupId string, userId string) error {
 	return err
 }
 
-func hasMember(tx *sqlx.Tx, groupId string, userId string) (bool, error) {
+func hasMember(tx *sqlx.Tx, groupId string, userId int64) (bool, error) {
 	stmt := `
         SELECT 1 FROM user_group_member
         WHERE group_id = ? AND user_id = ?

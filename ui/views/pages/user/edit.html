@@ -1,0 +1,49 @@
+{{define "body"}}
+
+{{template "header" .}}
+
+<main class="container-fluid">
+    <div id="error"></div>
+
+    <h3>Edit User</h3>
+
+    <section>
+        <article>
+            <form 
+                action="/user/{{.UserData.Id}}/edit"
+                method="post"
+            >
+                <label>
+                    Name
+                    <input type="text" required name="name" value="{{.UserData.FullName}}"/>
+                </label>
+                <label>
+                    Email
+                    <input type="text" required name="email" value="{{.UserData.Email}}" />
+                </label>
+                <label>
+                    Password
+                    <input type="password" name="password"/>
+                </label>
+                <label>
+                    Is Admin
+                    <input type="checkbox" name="isadmin" {{if .UserData.IsAdmin}}checked{{end}} />
+                </label>
+
+                <button type="submit">Update</button>
+            </form>
+        </article>
+    </section>
+    <section class="controls">
+        <div
+            class="delete"
+            hx-push-url="true"
+            hx-target="body"
+            hx-confirm="Are you sure you want to delete this group?"
+            hx-delete="/user/{{.UserData.Id}}/edit"
+        >
+            Delete
+        </div>
+    </section>
+</main>
+{{end}}

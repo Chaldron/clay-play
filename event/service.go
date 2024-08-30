@@ -40,7 +40,7 @@ func (s *service) Get(id string) (Event, error) {
 	return e, err
 }
 
-func (s *service) GetDetailed(id string, userId string) (EventDetailed, error) {
+func (s *service) GetDetailed(id string, userId int64) (EventDetailed, error) {
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return EventDetailed{}, err
@@ -83,7 +83,7 @@ func (s *service) ListResponses(eventId string) ([]EventResponse, error) {
 }
 
 type ListFilter struct {
-	UserId      string
+	UserId      int64
 	Upcoming    bool
 	Past        bool
 	Limit       int
@@ -108,7 +108,7 @@ type CreateParams struct {
 	Capacity  int
 	Start     time.Time
 	Location  string
-	CreatorId string
+	CreatorId int64
 }
 
 func (s *service) Create(p CreateParams) (string, error) {
@@ -180,7 +180,7 @@ func (s *service) Delete(id string) error {
 }
 
 type HandleResponseParams struct {
-	UserId        string
+	UserId        int64
 	Id            string
 	AttendeeCount int
 }
@@ -311,7 +311,7 @@ func listResponses(tx *sqlx.Tx, eventId string) ([]EventResponse, error) {
 	return responses, nil
 }
 
-func getUserResponse(tx *sqlx.Tx, eventId string, userId string) (*EventResponse, error) {
+func getUserResponse(tx *sqlx.Tx, eventId string, userId int64) (*EventResponse, error) {
 	stmt := `
         SELECT event_id, attendee_count, on_waitlist
         FROM event_response
@@ -342,7 +342,7 @@ func list(tx *sqlx.Tx, f ListFilter) (EventList, error) {
 	}
 
 	// move the logic for determining if user can access event based off group from group service over to here
-	if f.UserId != "" {
+	if f.UserId > -1 {
 		where = append(where, "(e.group_id IS NULL OR e.group_id IN (SELECT group_id FROM user_group_member WHERE user_id = ?))")
 		wargs = append(wargs, f.UserId)
 	}
@@ -432,7 +432,7 @@ func update(tx *sqlx.Tx, p UpdateParams) error {
 	return err
 }
 
-func deleteResponse(tx *sqlx.Tx, eventId string, userId string) error {
+func deleteResponse(tx *sqlx.Tx, eventId string, userId int64) error {
 	stmt := `
         DELETE FROM event_response
         WHERE event_id = ? AND user_id = ?
@@ -449,7 +449,7 @@ func deleteResponse(tx *sqlx.Tx, eventId string, userId string) error {
 
 type updateResponseParams struct {
 	EventId       string
-	UserId        string
+	UserId        int64
 	AttendeeCount int
 	OnWaitlist    bool
 }

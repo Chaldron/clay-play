@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS event (
     start DATETIME NOT NULL,
     location TEXT NOT NULL,
     created_at DATETIME NOT NULL,
-    creator_id TEXT NOT NULL,
+    creator_id INTEGER NOT NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT 0,
     group_id TEXT
 );
@@ -32,7 +32,7 @@ CREATE INDEX IF NOT EXISTS sessions_expiry_idx ON sessions(expiry);
 
 CREATE TABLE IF NOT EXISTS event_response (
     event_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL,
     attendee_count INT NOT NULL DEFAULT 0,
@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS event_response (
 CREATE TABLE IF NOT EXISTS user_group (
     id TEXT PRIMARY KEY,
     created_at DATETIME NOT NULL,
-    creator_id TEXT NOT NULL,
+    creator_id INTEGER NOT NULL,
     is_deleted BOOL NOT NULL DEFAULT 0,
     name TEXT NOT NULL,
     invite_id TEXT NOT NULL UNIQUE
@@ -51,13 +51,13 @@ CREATE TABLE IF NOT EXISTS user_group (
 
 CREATE TABLE IF NOT EXISTS user_group_member (
     group_id TEXT NOT NULL,
-    user_id TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
     created_at DATETIME NOT NULL,
     PRIMARY KEY (group_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS audit_log (
-    user_id TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
     recorded_at DATETIME NOT NULL,
     description TEXT NOT NULL
 );

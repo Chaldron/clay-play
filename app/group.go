@@ -3,6 +3,7 @@ package app
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/mattfan00/jvbe/group"
@@ -194,9 +195,14 @@ func (a *App) deleteGroup() http.HandlerFunc {
 func (a *App) removeGroupMember() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := chi.URLParam(r, "id")
-		userId := chi.URLParam(r, "userId")
+		userIdStr := chi.URLParam(r, "userId")
+		userId, err := strconv.ParseInt(userIdStr, 10, 64)
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusBadRequest)
+			return
+		}
 
-		err := a.groupService.RemoveMember(id, userId)
+		err = a.groupService.RemoveMember(id, userId)
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return

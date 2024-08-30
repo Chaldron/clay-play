@@ -15,18 +15,18 @@ type Service interface {
 	CreateAndAddMember(CreateParams) (string, error)
 	Update(UpdateParams) error
 	Delete(string) error
-	AddMemberFromInvite(string, string) (Group, error)
-	RemoveMember(string, string) error
-	UserCanAccess(sql.NullString, string) (bool, error)
-	UserCanAccessError(sql.NullString, string) error
-	FilterEventsUserCanAccess([]event.Event, string) ([]event.Event, error)
+	AddMemberFromInvite(string, int64) (Group, error)
+	RemoveMember(string, int64) error
+	UserCanAccess(sql.NullString, int64) (bool, error)
+	UserCanAccessError(sql.NullString, int64) error
+	FilterEventsUserCanAccess([]event.Event, int64) ([]event.Event, error)
 	RefreshInviteId(string) error
 }
 
 type Group struct {
 	Id               string    `db:"id"`
 	CreatedAt        time.Time `db:"created_at"`
-	CreatorId        string    `db:"creator_id"`
+	CreatorId        int64     `db:"creator_id"`
 	CreatorFullName  string    `db:"creator_full_name"`
 	IsDeleted        bool      `db:"is_deleted"`
 	Name             string    `db:"name"`

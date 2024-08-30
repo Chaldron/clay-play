@@ -7,7 +7,7 @@ import (
 
 type Service interface {
 	Get(string) (Event, error)
-	GetDetailed(string, string) (EventDetailed, error)
+	GetDetailed(string, int64) (EventDetailed, error)
 	ListResponses(string) ([]EventResponse, error)
 	List(ListFilter) (EventList, error)
 	Create(CreateParams) (string, error)
@@ -37,7 +37,7 @@ func (e Event) SpotsLeft() int {
 
 type EventResponse struct {
 	EventId       string    `db:"event_id"`
-	UserId        string    `db:"user_id"`
+	UserId        int64     `db:"user_id"`
 	CreatedAt     time.Time `db:"created_at"`
 	UpdatedAt     time.Time `db:"updated_at"`
 	AttendeeCount int       `db:"attendee_count"`

@@ -91,14 +91,11 @@ func (a *App) Routes() http.Handler {
 					r.Get("/list", a.renderUserList())
 					r.Get("/new", a.renderNewUser())
 					r.Post("/new", a.createUser())
-					//r.Get("/{id}/edit", a.renderEditGroup())
-					//r.Post("/{id}/edit", a.updateGroup())
-					//r.Delete("/{id}/edit", a.deleteGroup())
-					//r.Delete("/{id}/member/{userId}", a.removeGroupMember())
-					//r.Post("/{id}/invite", a.refreshInviteLinkGroup())
+					r.Get("/{id}/edit", a.renderEditUser())
+					r.Post("/{id}/edit", a.updateUser())
+					r.Delete("/{id}/edit", a.deleteUser())
 				})
 
-				//r.Get("/{id}", a.renderGroupDetails())
 			})
 		})
 

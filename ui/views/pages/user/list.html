@@ -22,7 +22,7 @@
             </div>
             <div><small>{{.CreatedAt}}</small></div>
             {{if eq .IsAdmin true}} <strong> Admin User </strong>{{end}}
-
+            <a href="/user/{{.Id}}/edit">Edit</a>
         </div>
         {{end}}
     </section>

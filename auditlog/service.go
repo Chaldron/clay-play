@@ -15,7 +15,7 @@ func NewService(db *db.DB) *service {
 	}
 }
 
-func (s *service) Create(userId string, description string) error {
+func (s *service) Create(userId int64, description string) error {
 	tx, err := s.db.Beginx()
 	if err != nil {
 		return err
@@ -48,7 +48,7 @@ func (s *service) List(f ListFilter) ([]AuditLog, int, error) {
 
 var al = []AuditLog{}
 
-func create(tx *sqlx.Tx, userId string, description string) error {
+func create(tx *sqlx.Tx, userId int64, description string) error {
 	stmt := `
         INSERT INTO audit_log (user_id, recorded_at, description)
         VALUES (?, ?, ?)

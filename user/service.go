@@ -68,6 +68,22 @@ func (s *service) HandleFromCreds(email string, password string) (User, error) {
 	return user, nil
 }
 
+func (s *service) Delete(id int64) error {
+	s.log.Printf("user Delete id %s", id)
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	err = delete(tx, id)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
 type CreateParams struct {
 	FullName string
 	Email    string
@@ -83,6 +99,34 @@ func (s *service) Create(p CreateParams) (User, error) {
 	defer tx.Rollback()
 
 	u, err := create(tx, p)
+	if err != nil {
+		return User{}, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return User{}, err
+	}
+
+	return u, err
+}
+
+type UpdateParams struct {
+	Id       int64
+	FullName string
+	Email    string
+	Password string
+	IsAdmin  bool
+}
+
+func (s *service) Update(p UpdateParams) (User, error) {
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return User{}, err
+	}
+	defer tx.Rollback()
+
+	u, err := update(tx, p)
 	if err != nil {
 		return User{}, err
 	}
@@ -174,4 +218,47 @@ func create(tx *sqlx.Tx, p CreateParams) (User, error) {
 	}
 
 	return newUser, nil
+}
+
+func update(tx *sqlx.Tx, p UpdateParams) (User, error) {
+	stmt := `
+		UPDATE users
+		SET 
+			full_name = ?, 
+			email = ?, 
+			password = CASE WHEN ? = '' THEN password ELSE ? END, 
+			isadmin = ?
+		WHERE id = ?
+		`
+	args := []any{
+		p.FullName,
+		p.Email,
+		p.Password,
+		p.Password,
+		p.IsAdmin,
+		p.Id,
+	}
+
+	_, err := tx.Exec(stmt, args...)
+	if err != nil {
+		return User{}, err
+	}
+
+	newUser, err := get(tx, p.Id)
+	if err != nil {
+		return User{}, err
+	}
+
+	return newUser, nil
+}
+
+func delete(tx *sqlx.Tx, id int64) error {
+	stmt := `
+        DELETE FROM users
+        WHERE id = ?
+    `
+	args := []any{id}
+
+	_, err := tx.Exec(stmt, args...)
+	return err
 }
