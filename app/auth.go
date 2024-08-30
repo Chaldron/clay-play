@@ -27,7 +27,7 @@ func (app *App) handleLoginCallback() http.HandlerFunc {
 		email := request.URL.Query().Get("email")
 		password := request.URL.Query().Get("password")
 
-		user, err := app.userService.HandleFromCreds(email, password) // "123@abc.com", "pass")
+		user, err := app.userService.HandleFromCreds(email, password)
 		if err != nil {
 			app.renderErrorPage(response, err, http.StatusInternalServerError)
 			return
@@ -51,12 +51,13 @@ func (app *App) handleLoginCallback() http.HandlerFunc {
 	}
 }
 
-func (a *App) handleLogout() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := a.session.Destroy(r.Context())
+func (app *App) handleLogout() http.HandlerFunc {
+	return func(response http.ResponseWriter, request *http.Request) {
+		err := app.session.Destroy(request.Context())
 		if err != nil {
-			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			app.renderErrorPage(response, err, http.StatusInternalServerError)
 			return
 		}
+		http.Redirect(response, request, "/", http.StatusSeeOther)
 	}
 }
