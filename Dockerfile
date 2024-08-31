@@ -1,4 +1,5 @@
-# syntax=docker/dockerfile:1 
+# syntax=docker/dockerfile:1
+
 FROM node:21-alpine as ui
 
 WORKDIR /ui
@@ -9,9 +10,8 @@ RUN npm install
 RUN npm run build 
 
 
-FROM golang:1.21-alpine as app
-# install gcc needed for cgo
-RUN apk add gcc musl-dev 
+
+FROM golang:1.23-bookworm as app
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ COPY . .
 RUN go build -o jvbe ./cmd/jvbe
 
 
-FROM alpine:3.19
+FROM debian:bookworm
 
 WORKDIR /app
 
