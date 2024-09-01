@@ -1,10 +1,12 @@
 package app
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/mattfan00/jvbe/user"
+	"errors"
 	"net/http"
 	"strconv"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/mattfan00/jvbe/user"
 )
 
 func (a *App) renderUserList() http.HandlerFunc {
@@ -92,6 +94,11 @@ func (a *App) renderEditUser() http.HandlerFunc {
 
 		if err != nil {
 			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		if u.Id == 0 {
+			a.renderErrorNotif(w, errors.New("default admin user is not editable"), http.StatusForbidden)
 			return
 		}
 
