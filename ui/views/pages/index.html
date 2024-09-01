@@ -5,20 +5,13 @@
         <p>Registration for Heather's studio sessions</p>
     </hgroup>
 
-    <!--<a
-        href="/auth/login"
-        hx-boost="false"
-    >
-        Login or Signup 
-    </a>-->
-
     <form hx-get="/auth/callback">
         <input type="text" placeholder="Email" name="email" required>
         <input type="password" placeholder="Password" name="password" required>
         <button type="submit">Login</button>
         
         <div id="login-options">
-            <input type="checkbox" checked="unchecked">
+            <input type="checkbox" checked name="rememberme">
             <label>Remember me</label> 
         </div>
         

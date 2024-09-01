@@ -114,13 +114,17 @@ func (a *App) renderErrorPage(
 	})
 }
 
-func (a *App) renewSessionUser(r *http.Request, u *user.SessionUser) error {
-	err := a.session.RenewToken(r.Context())
+func (app *App) renewSessionUser(request *http.Request, user *user.SessionUser) error {
+	err := app.session.RenewToken(request.Context())
 	if err != nil {
 		return err
 	}
 
-	a.session.Put(r.Context(), "user", u)
+	rememberMe := request.URL.Query().Get("rememberme") == "on"
+
+	app.session.Put(request.Context(), "user", user)
+	app.session.Cookie.Persist = false
+	app.session.RememberMe(request.Context(), rememberMe)
 
 	return nil
 }
