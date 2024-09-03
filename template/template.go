@@ -36,10 +36,11 @@ func Generate() (TemplateMap, error) {
 		t := template.New(name)
 
 		t.Funcs(template.FuncMap{
-			"jsTime": jsTime,
-			"l":      l,
-			"add":    add,
-            "unescape": unescape,
+			"jsTime":   jsTime,
+			"l":        l,
+			"add":      add,
+			"unescape": unescape,
+			"onlyDate": onlyDate,
 		})
 
 		t, err = t.ParseFiles(
@@ -67,6 +68,10 @@ func Generate() (TemplateMap, error) {
 
 func jsTime(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05Z")
+}
+
+func onlyDate(t time.Time) string {
+	return t.Format("Jan 02, 2006")
 }
 
 var FormTimeFormat = "2006-01-02T15:04"

@@ -21,7 +21,7 @@ func (a *App) requireAuth(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		} else {
-			http.Redirect(w, r, "/404", http.StatusSeeOther)
+			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
 	})

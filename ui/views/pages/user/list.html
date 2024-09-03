@@ -20,7 +20,7 @@
                 <div><strong>{{.FullName}}</strong></div>
                 <div><small>{{.Email}}</small></div>
             </div>
-            <div><small>{{.CreatedAt}}</small></div>
+            <div><small>{{onlyDate .CreatedAt}}</small></div>
             {{if eq .IsAdmin true}} <strong> Admin User </strong>{{end}}
             <a href="/user/{{.Id}}/edit">Edit</a>
         </div>
