@@ -22,3 +22,4 @@ primary_region = 'ord'
 [mounts]
   source = "clay_play_dev_data"
   destination = "/data"
+  snapshot_retention = 60
