@@ -18,3 +18,7 @@ primary_region = 'ord'
 
 [[vm]]
   size = 'shared-cpu-1x'
+
+[mounts]
+  source = "clay_play_dev_data"
+  destination = "/data"
