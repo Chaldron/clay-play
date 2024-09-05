@@ -52,13 +52,15 @@ func (a *App) createUser() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		su, _ := a.sessionUser(r)
+
 		req, err := schemaDecode[request](r)
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return
 		}
 
-		_, err = a.userService.Create(user.CreateParams{
+		new_u, err := a.userService.Create(user.CreateParams{
 			FullName: req.Name,
 			Email:    req.Email,
 			Password: req.Password,
@@ -66,6 +68,11 @@ func (a *App) createUser() http.HandlerFunc {
 		})
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		err = a.auditlogService.Create(su.Id, "Created "+new_u.FullName)
+		if err != nil {
 			return
 		}
 
@@ -120,6 +127,8 @@ func (a *App) updateUser() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
+		su, _ := a.sessionUser(r)
+
 		idStr := chi.URLParam(r, "id")
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
@@ -127,15 +136,13 @@ func (a *App) updateUser() http.HandlerFunc {
 			return
 		}
 
-		a.auditlogService.Create(id, "Edited")
-
 		req, err := schemaDecode[request](r)
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return
 		}
 
-		_, err = a.userService.Update(user.UpdateParams{
+		new_u, err := a.userService.Update(user.UpdateParams{
 			Id:       id,
 			FullName: req.Name,
 			Email:    req.Email,
@@ -147,12 +154,19 @@ func (a *App) updateUser() http.HandlerFunc {
 			return
 		}
 
+		err = a.auditlogService.Create(su.Id, "Edited "+new_u.FullName)
+		if err != nil {
+			return
+		}
+
 		http.Redirect(w, r, "/user/list", http.StatusSeeOther)
 	}
 }
 
 func (a *App) deleteUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		su, _ := a.sessionUser(r)
+
 		idStr := chi.URLParam(r, "id")
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil {
@@ -163,6 +177,11 @@ func (a *App) deleteUser() http.HandlerFunc {
 		err = a.userService.Delete(id)
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		err = a.auditlogService.Create(su.Id, "Deleted user "+strconv.FormatInt(id, 10))
+		if err != nil {
 			return
 		}
 
