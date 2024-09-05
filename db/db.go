@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chaldron/clay-play/db/migrations"
+	"github.com/Chaldron/clay-play/logger"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattfan00/jvbe/db/migrations"
-	"github.com/mattfan00/jvbe/logger"
 	"github.com/pressly/goose/v3"
 )
 

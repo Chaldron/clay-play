@@ -6,10 +6,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Chaldron/clay-play/auditlog"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
-	"github.com/mattfan00/jvbe/auditlog"
 )
 
 func (a *App) Routes() http.Handler {

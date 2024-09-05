@@ -3,8 +3,9 @@ package app
 import (
 	"errors"
 	"fmt"
-	user "github.com/mattfan00/jvbe/user"
 	"net/http"
+
+	user "github.com/Chaldron/clay-play/user"
 )
 
 func (a *App) sessionUser(r *http.Request) (user.SessionUser, bool) {

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Chaldron/clay-play/group"
 	"github.com/go-chi/chi/v5"
-	"github.com/mattfan00/jvbe/group"
 )
 
 func (a *App) renderNewGroup() http.HandlerFunc {

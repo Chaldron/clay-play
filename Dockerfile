@@ -19,7 +19,7 @@ COPY go.mod go.sum ./
 RUN go mod download && go mod verify
 
 COPY . .
-RUN go build -o jvbe ./cmd/jvbe
+RUN go build -o clay-play ./cmd/clay-play
 
 
 FROM debian:bookworm
@@ -28,6 +28,6 @@ WORKDIR /app
 
 COPY --from=ui /ui/public ./ui/public
 COPY --from=ui /ui/views ./ui/views
-COPY --from=app /app/jvbe ./
+COPY --from=app /app/clay-play ./
 
-ENTRYPOINT [ "./jvbe", "-e" ]
+ENTRYPOINT [ "./clay-play", "-e" ]

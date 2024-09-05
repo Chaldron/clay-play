@@ -3,10 +3,10 @@ package group_test
 import (
 	"testing"
 
-	"github.com/mattfan00/jvbe/db"
-	"github.com/mattfan00/jvbe/event"
-	"github.com/mattfan00/jvbe/group"
-	"github.com/mattfan00/jvbe/user"
+	"github.com/Chaldron/clay-play/db"
+	"github.com/Chaldron/clay-play/event"
+	"github.com/Chaldron/clay-play/group"
+	"github.com/Chaldron/clay-play/user"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 )

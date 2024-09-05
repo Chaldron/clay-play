@@ -5,9 +5,9 @@ import (
 	"flag"
 	"strconv"
 
-	"github.com/mattfan00/jvbe/config"
-	"github.com/mattfan00/jvbe/db"
-	"github.com/mattfan00/jvbe/logger"
+	"github.com/Chaldron/clay-play/config"
+	"github.com/Chaldron/clay-play/db"
+	"github.com/Chaldron/clay-play/logger"
 )
 
 type migrationProgram struct {

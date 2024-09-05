@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chaldron/clay-play/db"
+	"github.com/Chaldron/clay-play/logger"
 	"github.com/jmoiron/sqlx"
 	gonanoid "github.com/matoous/go-nanoid/v2"
-	"github.com/mattfan00/jvbe/db"
-	"github.com/mattfan00/jvbe/logger"
 )
 
 type service struct {

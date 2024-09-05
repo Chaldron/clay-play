@@ -4,8 +4,8 @@ tmp_dir = "tmp"
 
 [build]
   args_bin = []
-  bin = "./tmp/jvbe app"
-  cmd = "npm run build --prefix ./ui && go build -o ./tmp/jvbe ./cmd/jvbe"
+  bin = "./tmp/clay-play app"
+  cmd = "npm run build --prefix ./ui && go build -o ./tmp/clay-play ./cmd/clay-play"
   delay = 1000
   exclude_dir = ["ui/node_modules", "assets", "tmp", "vendor", "testdata"]
   exclude_file = []
@@ -44,4 +44,3 @@ tmp_dir = "tmp"
 [screen]
   clear_on_rebuild = false
   keep_scroll = true
-

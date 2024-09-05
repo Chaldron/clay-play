@@ -5,10 +5,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chaldron/clay-play/db"
+	"github.com/Chaldron/clay-play/event"
+	"github.com/Chaldron/clay-play/logger"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattfan00/jvbe/db"
-	"github.com/mattfan00/jvbe/event"
-	"github.com/mattfan00/jvbe/logger"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )

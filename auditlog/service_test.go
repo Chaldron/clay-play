@@ -3,9 +3,9 @@ package auditlog_test
 import (
 	"testing"
 
-	"github.com/mattfan00/jvbe/auditlog"
-	"github.com/mattfan00/jvbe/db"
-	"github.com/mattfan00/jvbe/user"
+	"github.com/Chaldron/clay-play/auditlog"
+	"github.com/Chaldron/clay-play/db"
+	"github.com/Chaldron/clay-play/user"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
 )
@@ -46,7 +46,7 @@ func TestList(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-    assert.Equal(t, 0, count)
+	assert.Equal(t, 0, count)
 
 	u1, err := userService.Create(user.CreateParams{FullName: "one"})
 	if err != nil {

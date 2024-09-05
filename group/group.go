@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/mattfan00/jvbe/event"
+	"github.com/Chaldron/clay-play/event"
 )
 
 type Service interface {

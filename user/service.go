@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chaldron/clay-play/db"
+	"github.com/Chaldron/clay-play/logger"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattfan00/jvbe/db"
-	"github.com/mattfan00/jvbe/logger"
 )
 
 type service struct {

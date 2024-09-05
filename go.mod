@@ -1,4 +1,4 @@
-module github.com/mattfan00/jvbe
+module github.com/Chaldron/clay-play
 
 go 1.21.5
 

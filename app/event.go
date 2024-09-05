@@ -6,11 +6,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Chaldron/clay-play/event"
+	"github.com/Chaldron/clay-play/group"
+	"github.com/Chaldron/clay-play/template"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
-	"github.com/mattfan00/jvbe/event"
-	"github.com/mattfan00/jvbe/group"
-	"github.com/mattfan00/jvbe/template"
 )
 
 func (a *App) renderHome() http.HandlerFunc {
@@ -176,8 +176,8 @@ func (a *App) updateEvent() http.HandlerFunc {
 		}
 
 		if err := a.eventService.Update(event.UpdateParams{
-			Id:   id,
-			Name: req.Name,
+			Id:       id,
+			Name:     req.Name,
 			Capacity: req.Capacity,
 			Start:    start,
 			Location: req.Location,

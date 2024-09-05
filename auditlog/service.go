@@ -1,8 +1,8 @@
 package auditlog
 
 import (
+	"github.com/Chaldron/clay-play/db"
 	"github.com/jmoiron/sqlx"
-	"github.com/mattfan00/jvbe/db"
 )
 
 type service struct {
