@@ -107,7 +107,6 @@ type CreateParams struct {
 	GroupId   string
 	Capacity  int
 	Start     time.Time
-	Location  string
 	CreatorId int64
 }
 
@@ -138,7 +137,6 @@ type UpdateParams struct {
 	Name     string
 	Capacity int
 	Start    time.Time
-	Location string
 }
 
 func (s *service) Update(p UpdateParams) error {
@@ -254,7 +252,7 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 func get(tx *sqlx.Tx, id string) (Event, error) {
 	stmt := `
         SELECT
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
+            e.id, e.name, e.capacity, e.start, e.created_at, e.creator_id
             , u.full_name AS creator_full_name
             , COALESCE((
                 SELECT SUM(attendee_count) FROM event_response
@@ -354,7 +352,7 @@ func list(tx *sqlx.Tx, f ListFilter) (EventList, error) {
 
 	stmt := `
         SELECT 
-            e.id, e.name, e.capacity, e.start, e.location, e.created_at, e.creator_id
+            e.id, e.name, e.capacity, e.start	, e.created_at, e.creator_id
 		    , COALESCE (ec.total_attendee_count, 0) AS total_attendee_count
             , e.group_id
         FROM event AS e
@@ -389,8 +387,8 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 	}
 
 	stmt := `
-        INSERT INTO event (id, name, group_id, capacity, start, location, created_at, creator_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO event (id, name, group_id, capacity, start, created_at, creator_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
@@ -401,7 +399,6 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 		},
 		p.Capacity,
 		p.Start,
-		p.Location,
 		time.Now().UTC(),
 		p.CreatorId,
 	}
@@ -417,14 +414,13 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 func update(tx *sqlx.Tx, p UpdateParams) error {
 	stmt := `
 		        UPDATE event
-		        SET name = ?, capacity = ?, start = ?, location = ?
+		        SET name = ?, capacity = ?, start = ?
 		        WHERE id = ?
 		    `
 	args := []any{
 		p.Name,
 		p.Capacity,
 		p.Start,
-		p.Location,
 		p.Id,
 	}
 

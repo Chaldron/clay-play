@@ -23,7 +23,6 @@ type Event struct {
 	GroupName          sql.NullString `db:"group_name"`
 	Capacity           int            `db:"capacity"`
 	Start              time.Time      `db:"start"`
-	Location           string         `db:"location"`
 	CreatedAt          time.Time      `db:"created_at"`
 	CreatorId          string         `db:"creator_id"`
 	CreatorFullName    string         `db:"creator_full_name"`

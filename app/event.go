@@ -84,7 +84,6 @@ func (a *App) createEvent() http.HandlerFunc {
 		Capacity       int    `schema:"capacity"`
 		Start          string `schema:"start"`
 		TimezoneOffset int    `schema:"timezoneOffset"`
-		Location       string `schema:"location"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +106,6 @@ func (a *App) createEvent() http.HandlerFunc {
 			GroupId:   req.GroupId,
 			Capacity:  req.Capacity,
 			Start:     start,
-			Location:  req.Location,
 			CreatorId: u.Id,
 		})
 		if err != nil {
@@ -150,7 +148,6 @@ func (a *App) updateEvent() http.HandlerFunc {
 		Capacity       int    `schema:"capacity"`
 		Start          string `schema:"start"`
 		TimezoneOffset int    `schema:"timezoneOffset"`
-		Location       string `schema:"location"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +177,6 @@ func (a *App) updateEvent() http.HandlerFunc {
 			Name:     req.Name,
 			Capacity: req.Capacity,
 			Start:    start,
-			Location: req.Location,
 		}); err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return

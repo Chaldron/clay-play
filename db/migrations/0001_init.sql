@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS event (
     name TEXT NOT NULL,
     capacity INTEGER NOT NULL,
     start DATETIME NOT NULL,
-    location TEXT NOT NULL,
     created_at DATETIME NOT NULL,
     creator_id INTEGER NOT NULL,
     is_deleted BOOLEAN NOT NULL DEFAULT 0,
