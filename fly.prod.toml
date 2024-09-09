@@ -1,0 +1,25 @@
+# fly.toml app configuration file generated for clay-play-production on 2024-09-08T20:05:13-05:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'clay-play-production'
+primary_region = 'ord'
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
+
+[[vm]]
+  size = 'shared-cpu-1x'
+
+[mounts]
+  source = "clay_play_production_data"
+  destination = "/data"
+  snapshot_retention = 60

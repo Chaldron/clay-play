@@ -5,17 +5,31 @@ on:
   push:
     branches:
       - main
+      - production
 
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Deploy app
+  deploy_dev:
+    name: Deploy app (development)
     runs-on: ubuntu-latest
-    concurrency: deploy-group    # optional: ensure only one action runs at a time
+    concurrency: deploy-group # ensure only one action runs at a time
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy --remote-only
+      - run: flyctl deploy -c fly.toml --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+  
+  deploy_prod:
+    name: Deploy app (production)
+    runs-on: ubuntu-latest
+    concurrency: deploy-group # ensure only one action runs at a time
+    if: github.ref == 'refs/heads/production'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - run: flyctl deploy -c fly.prod.toml --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
