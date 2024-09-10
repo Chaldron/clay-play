@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"os"
 
 	"github.com/caarlos0/env"
@@ -40,19 +39,10 @@ func ReadEnv() (*Config, error) {
 	return conf, nil
 }
 
-func LoadFromCommandLineArgs(argv []string) (*Config, error) {
-	flagSet := flag.NewFlagSet("app", flag.ExitOnError)
-	configFilePath := flagSet.String("c", "./config.yaml", "path to config file")
-	useConfigFromEnv := flagSet.Bool("e", false, "use config from environment")
-
-	err := flagSet.Parse(argv)
-	if err != nil {
-		return nil, err
-	}
-
-	if *useConfigFromEnv {
+func LoadFromCommandLineArgs(configFilePath string, useConfigFromEnv bool) (*Config, error) {
+	if useConfigFromEnv {
 		return ReadEnv()
 	} else {
-		return ReadFile(*configFilePath)
+		return ReadFile(configFilePath)
 	}
 }
