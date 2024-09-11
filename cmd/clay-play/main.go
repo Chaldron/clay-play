@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -24,7 +25,16 @@ import (
 func run() error {
 	log := logger.NewStdLogger()
 
-	conf, err := config.LoadFromCommandLineArgs(os.Args[1:])
+	flagSet := flag.NewFlagSet("clay-play", flag.ExitOnError)
+	configFilePath := flagSet.String("c", "./config.yaml", "path to config file")
+	useConfigFromEnv := flagSet.Bool("e", false, "use config from environment")
+
+	err := flagSet.Parse(os.Args[1:])
+	if err != nil {
+		return err
+	}
+
+	conf, err := config.LoadFromCommandLineArgs(*configFilePath, *useConfigFromEnv)
 	if err != nil {
 		return err
 	}
