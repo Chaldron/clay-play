@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS event (
     start DATETIME NOT NULL,
     created_at DATETIME NOT NULL,
     creator_id INTEGER NOT NULL,
+    studio_monitor_id INTEGER,
     is_deleted BOOLEAN NOT NULL DEFAULT 0,
     group_id TEXT
 );

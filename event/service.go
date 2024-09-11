@@ -103,11 +103,12 @@ func (s *service) List(f ListFilter) (EventList, error) {
 }
 
 type CreateParams struct {
-	Name      string
-	GroupId   string
-	Capacity  int
-	Start     time.Time
-	CreatorId int64
+	Name            string
+	GroupId         string
+	Capacity        int
+	Start           time.Time
+	CreatorId       int64
+	StudioMonitorId int64
 }
 
 func (s *service) Create(p CreateParams) (string, error) {
@@ -133,10 +134,11 @@ func (s *service) Create(p CreateParams) (string, error) {
 }
 
 type UpdateParams struct {
-	Id       string
-	Name     string
-	Capacity int
-	Start    time.Time
+	Id              string
+	Name            string
+	Capacity        int
+	Start           time.Time
+	StudioMonitorId int64
 }
 
 func (s *service) Update(p UpdateParams) error {
@@ -387,8 +389,8 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 	}
 
 	stmt := `
-        INSERT INTO event (id, name, group_id, capacity, start, created_at, creator_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO event (id, name, group_id, capacity, start, created_at, creator_id, studio_monitor_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
@@ -401,6 +403,7 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 		p.Start,
 		time.Now().UTC(),
 		p.CreatorId,
+		p.StudioMonitorId,
 	}
 
 	_, err = tx.Exec(stmt, args...)

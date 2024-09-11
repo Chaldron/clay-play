@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/Chaldron/clay-play/user"
 	"net/http"
 	"sync"
 	"time"
@@ -57,6 +58,7 @@ func (a *App) renderNewEvent() http.HandlerFunc {
 	type data struct {
 		BaseData
 		Groups []group.Group
+		Users  []user.User
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -68,22 +70,30 @@ func (a *App) renderNewEvent() http.HandlerFunc {
 			return
 		}
 
+		allU, err := a.userService.GetAll()
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
+		}
+
 		a.renderPage(w, "event/new.html", data{
 			BaseData: BaseData{
 				User: u,
 			},
 			Groups: g,
+			Users:  allU,
 		})
 	}
 }
 
 func (a *App) createEvent() http.HandlerFunc {
 	type request struct {
-		Name           string `schema:"name"`
-		GroupId        string `schema:"groupId"`
-		Capacity       int    `schema:"capacity"`
-		Start          string `schema:"start"`
-		TimezoneOffset int    `schema:"timezoneOffset"`
+		Name            string `schema:"name"`
+		GroupId         string `schema:"groupId"`
+		Capacity        int    `schema:"capacity"`
+		Start           string `schema:"start"`
+		TimezoneOffset  int    `schema:"timezoneOffset"`
+		StudioMonitorId int64  `schema:"studioMonitorId"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -102,11 +112,12 @@ func (a *App) createEvent() http.HandlerFunc {
 		}
 
 		_, err = a.eventService.Create(event.CreateParams{
-			Name:      req.Name,
-			GroupId:   req.GroupId,
-			Capacity:  req.Capacity,
-			Start:     start,
-			CreatorId: u.Id,
+			Name:            req.Name,
+			GroupId:         req.GroupId,
+			Capacity:        req.Capacity,
+			Start:           start,
+			CreatorId:       u.Id,
+			StudioMonitorId: req.StudioMonitorId,
 		})
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)

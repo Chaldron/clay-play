@@ -28,6 +28,17 @@
                 </select>
                 <small>Choose a group the event should only be available to. "None" will make it publicly available.</small>
             </label>
+            <label>
+                Studio Monitor
+                <select name="studioMonitorId">
+                    <option value="">None</option>
+                    {{range .Users}}
+                    <option value="{{.Id}}">{{.FullName}}</option>
+                    {{end}}
+                </select>
+                <small>Choose a Studio Monitor who will be able to edit the event.</small>
+            </label>
+
             {{end}}
             <label>
                 Capacity 
