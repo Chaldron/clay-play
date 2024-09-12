@@ -36,7 +36,7 @@ type Group struct {
 
 type GroupMember struct {
 	GroupId      string    `db:"group_id"`
-	UserId       string    `db:"user_id"`
+	UserId       int64     `db:"user_id"`
 	UserFullName string    `db:"user_full_name"`
 	CreatedAt    time.Time `db:"created_at"`
 }

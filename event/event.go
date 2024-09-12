@@ -17,18 +17,19 @@ type Service interface {
 }
 
 type Event struct {
-	Id                 string         `db:"id"`
-	Name               string         `db:"name"`
-	GroupId            sql.NullString `db:"group_id"`
-	GroupName          sql.NullString `db:"group_name"`
-	Capacity           int            `db:"capacity"`
-	Start              time.Time      `db:"start"`
-	CreatedAt          time.Time      `db:"created_at"`
-	CreatorId          string         `db:"creator_id"`
-	CreatorFullName    string         `db:"creator_full_name"`
-	TotalAttendeeCount int            `db:"total_attendee_count"`
-	IsPast             bool           `db:"is_past"`
-	StudioMonitorId    int64          `db:"studio_monitor_id"`
+	Id                    string         `db:"id"`
+	Name                  string         `db:"name"`
+	GroupId               sql.NullString `db:"group_id"`
+	GroupName             sql.NullString `db:"group_name"`
+	Capacity              int            `db:"capacity"`
+	Start                 time.Time      `db:"start"`
+	CreatedAt             time.Time      `db:"created_at"`
+	CreatorId             string         `db:"creator_id"`
+	CreatorFullName       string         `db:"creator_full_name"`
+	TotalAttendeeCount    int            `db:"total_attendee_count"`
+	IsPast                bool           `db:"is_past"`
+	StudioMonitorId       int64          `db:"studio_monitor_id"`
+	StudioMonitorFullName string         `db:"studio_monitor_full_name"`
 }
 
 func (e Event) SpotsLeft() int {

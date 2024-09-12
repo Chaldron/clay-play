@@ -254,8 +254,9 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 func get(tx *sqlx.Tx, id string) (Event, error) {
 	stmt := `
         SELECT
-            e.id, e.name, e.capacity, e.start, e.created_at, e.creator_id
+            e.id, e.name, e.capacity, e.start, e.created_at, e.creator_id, e.studio_monitor_id
             , u.full_name AS creator_full_name
+            , sm.full_name AS studio_monitor_full_name
             , COALESCE((
                 SELECT SUM(attendee_count) FROM event_response
                 WHERE event_id = ? AND on_waitlist = FALSE
@@ -268,6 +269,7 @@ func get(tx *sqlx.Tx, id string) (Event, error) {
         FROM event AS e
         LEFT JOIN user_group AS ug ON e.group_id = ug.id
         INNER JOIN users AS u ON e.creator_id = u.id
+        LEFT JOIN users AS sm ON e.studio_monitor_id = sm.id
         WHERE e.id = ? AND e.is_deleted = FALSE 
     `
 	args := []any{id, id}
