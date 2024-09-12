@@ -31,7 +31,7 @@
             <label>
                 Studio Monitor
                 <select name="studioMonitorId">
-                    <option value="">None</option>
+                    <option value="-1">None</option>
                     {{range .Users}}
                     <option value="{{.Id}}">{{.FullName}}</option>
                     {{end}}

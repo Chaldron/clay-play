@@ -403,7 +403,10 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 		p.Start,
 		time.Now().UTC(),
 		p.CreatorId,
-		p.StudioMonitorId,
+		sql.NullInt64{
+			Int64: p.StudioMonitorId,
+			Valid: p.StudioMonitorId != -1,
+		},
 	}
 
 	_, err = tx.Exec(stmt, args...)
