@@ -28,8 +28,8 @@ type Event struct {
 	CreatorFullName       string         `db:"creator_full_name"`
 	TotalAttendeeCount    int            `db:"total_attendee_count"`
 	IsPast                bool           `db:"is_past"`
-	StudioMonitorId       int64          `db:"studio_monitor_id"`
-	StudioMonitorFullName string         `db:"studio_monitor_full_name"`
+	StudioMonitorId       sql.NullInt64  `db:"studio_monitor_id"`
+	StudioMonitorFullName sql.NullString `db:"studio_monitor_full_name"`
 }
 
 func (e Event) SpotsLeft() int {

@@ -19,8 +19,8 @@
     >
         <p>
             <span>Hosted by <strong>{{.Event.CreatorFullName}}</strong><span>
-                {{if .Event.StudioMonitorFullName}}
-             and studio monitor <strong>{{.Event.StudioMonitorFullName}}</strong>
+                {{if .Event.StudioMonitorFullName.Value}}
+             and studio monitor <strong>{{.Event.StudioMonitorFullName.String}}</strong>
             {{end}}
             {{if .Event.GroupId.Valid}}
             <span> for <a href="/group/{{.Event.GroupId.String}}">{{.Event.GroupName.String}}</a></span>
