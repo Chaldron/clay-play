@@ -3,6 +3,7 @@ package app
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	gonanoid "github.com/matoous/go-nanoid/v2"
 )
@@ -24,7 +25,7 @@ func (app *App) handleLoginCallback() http.HandlerFunc {
 	return func(response http.ResponseWriter, request *http.Request) {
 		log.Printf("login callback: %s", request.URL.String())
 
-		email := request.URL.Query().Get("email")
+		email := strings.ToLower(request.URL.Query().Get("email"))
 		password := request.URL.Query().Get("password")
 
 		user, err := app.userService.HandleFromCreds(email, password)

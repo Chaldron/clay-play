@@ -3,6 +3,7 @@ package user
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/Chaldron/clay-play/db"
@@ -200,7 +201,7 @@ func create(tx *sqlx.Tx, p CreateParams) (User, error) {
     `
 	args := []any{
 		p.FullName,
-		p.Email,
+		strings.ToLower(p.Email),
 		p.Password,
 		time.Now().UTC(),
 		p.IsAdmin,
