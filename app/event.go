@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/Chaldron/clay-play/user"
 	"net/http"
 	"sync"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/Chaldron/clay-play/event"
 	"github.com/Chaldron/clay-play/group"
 	"github.com/Chaldron/clay-play/template"
+	"github.com/Chaldron/clay-play/user"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
 )
@@ -158,10 +158,10 @@ func (a *App) renderEditEvent() http.HandlerFunc {
 func (a *App) updateEvent() http.HandlerFunc {
 	type request struct {
 		Name           string `schema:"name"`
-		Description    string `schema:"description"`
 		Capacity       int    `schema:"capacity"`
 		Start          string `schema:"start"`
 		TimezoneOffset int    `schema:"timezoneOffset"`
+		Description    string `schema:"description"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {

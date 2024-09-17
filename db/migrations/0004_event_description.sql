@@ -1,7 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-ALTER TABLE event
-ADD COLUMN description TEXT NOT NULL DEFAULT '';
+ALTER TABLE event ADD COLUMN description TEXT DEFAULT '';
 -- +goose StatementEnd
 
 -- +goose Down

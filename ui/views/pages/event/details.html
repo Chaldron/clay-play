@@ -26,12 +26,6 @@
             <span> for <a href="/group/{{.Event.GroupId.String}}">{{.Event.GroupName.String}}</a></span>
             {{end}}
         </p>
-
-        {{if .Event.Description.Value}}
-        <p>
-            {{.Event.Description.String}}
-        </p>
-        {{end}}
         <div 
             class="field"
             x-data="{ start: formatTime('{{jsTime .Event.Start}}') }"
@@ -46,6 +40,12 @@
             <img class="feather" src="/public/icons/users.svg" />
             <span>{{.Event.Capacity}} spots · {{.Event.SpotsLeft}} left</span>
         </div>
+        {{if .Event.Description.Value}}
+        <div class="field">
+            <img class="feather" src="/public/icons/file-text.svg" />
+            <span>{{.Event.Description.String}}</span>
+        </div>
+        {{end}}
 
         {{if not .Event.IsPast}}
             {{template "event-details-register" .}}

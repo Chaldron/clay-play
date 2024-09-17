@@ -428,18 +428,22 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 func update(tx *sqlx.Tx, p UpdateParams) error {
 	stmt := `
 		        UPDATE event
-		        SET name = ?, capacity = ?, start = ?, description = ?
+		        SET name = ?, capacity = ?, start = ?, studio_monitor_id = ?, description = ?
 		        WHERE id = ?
 		    `
 	args := []any{
 		p.Name,
 		p.Capacity,
 		p.Start,
-		p.Id,
+		sql.NullInt64{
+			Int64: p.StudioMonitorId,
+			Valid: p.StudioMonitorId != -1,
+		},
 		sql.NullString{
 			String: p.Description,
 			Valid:  p.Description != "",
 		},
+		p.Id,
 	}
 
 	_, err := tx.Exec(stmt, args...)

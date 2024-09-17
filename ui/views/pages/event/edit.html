@@ -33,6 +33,14 @@
                     Start time
                     <input type="datetime-local" required name="start" :value="start" />
                 </label>
+                <label>
+                    Description
+                    {{$description := ""}}
+                    {{if .Event.Description.Value}}
+                        {{$description = .Event.Description.String}}
+                    {{end}}
+                    <textarea name="description">{{$description}}</textarea>
+                </label>
                 <button type="submit">Update</button>
             </form>
         </article>
