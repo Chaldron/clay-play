@@ -5,14 +5,35 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
-    name: Deploy app
+  promote:
+    name: Promote main branch to production
     runs-on: ubuntu-latest
     concurrency:
       group: clay-play
     steps:
       - uses: actions/checkout@v4
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl deploy -c fly.prod.toml --remote-only
+        with:
+          fetch-depth: 0
+      - run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
+          git fetch --all
+          git checkout production
+          git rebase main
+          git push origin production
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    deploy:
+      name: Deploy app
+      needs: promote
+      runs-on: ubuntu-latest
+      concurrency:
+        group: clay-play
+      steps:
+        - uses: actions/checkout@v4
+        - uses: superfly/flyctl-actions/setup-flyctl@master
+        - run: flyctl deploy -c fly.prod.toml --remote-only
+          env:
+            FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      
