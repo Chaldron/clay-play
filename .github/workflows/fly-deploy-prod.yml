@@ -2,10 +2,6 @@
 
 name: Deploy production branch to Fly
 on:
-  push:
-    branches:
-      - production
-
   workflow_dispatch:
 
 jobs:
