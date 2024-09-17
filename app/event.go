@@ -134,6 +134,7 @@ func (a *App) renderEditEvent() http.HandlerFunc {
 	type data struct {
 		BaseData
 		Event event.Event
+		Users []user.User
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -146,22 +147,30 @@ func (a *App) renderEditEvent() http.HandlerFunc {
 			return
 		}
 
+		allUsers, err := a.userService.GetAll()
+		if err != nil {
+			a.renderErrorPage(w, err, http.StatusInternalServerError)
+			return
+		}
+
 		a.renderPage(w, "event/edit.html", data{
 			BaseData: BaseData{
 				User: u,
 			},
 			Event: e,
+			Users: allUsers,
 		})
 	}
 }
 
 func (a *App) updateEvent() http.HandlerFunc {
 	type request struct {
-		Name           string `schema:"name"`
-		Capacity       int    `schema:"capacity"`
-		Start          string `schema:"start"`
-		TimezoneOffset int    `schema:"timezoneOffset"`
-		Description    string `schema:"description"`
+		Name            string `schema:"name"`
+		Capacity        int    `schema:"capacity"`
+		Start           string `schema:"start"`
+		TimezoneOffset  int    `schema:"timezoneOffset"`
+		StudioMonitorId int64  `schema:"studioMonitorId"`
+		Description     string `schema:"description"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -187,11 +196,12 @@ func (a *App) updateEvent() http.HandlerFunc {
 		}
 
 		if err := a.eventService.Update(event.UpdateParams{
-			Id:          id,
-			Name:        req.Name,
-			Capacity:    req.Capacity,
-			Start:       start,
-			Description: req.Description,
+			Id:              id,
+			Name:            req.Name,
+			Capacity:        req.Capacity,
+			Start:           start,
+			StudioMonitorId: req.StudioMonitorId,
+			Description:     req.Description,
 		}); err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return

@@ -20,6 +20,19 @@
                     Name
                     <input type="text" required name="name" value="{{.Event.Name}}" />
                 </label>
+                {{if .User.IsAdmin}}
+                <label>
+                    Studio Monitor
+                    <select name="studioMonitorId">
+                        <option value="-1" {{ if not .Event.StudioMonitorId.Valid }} selected {{end}}>None</option>
+                        {{range .Users}}
+                        <option value="{{.Id}}" {{ if and $.Event.StudioMonitorId.Valid (eq $.Event.StudioMonitorId.Int64 .Id) }} selected {{end}}>
+                            {{.FullName}}
+                        </option>
+                        {{end}}
+                    </select>
+                </label>
+                {{end}}
 
                 <label>
                     Capacity 
