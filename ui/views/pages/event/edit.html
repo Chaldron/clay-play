@@ -21,12 +21,17 @@
                     <input type="text" required name="name" value="{{.Event.Name}}" />
                 </label>
                 <label>
+                    Description
+                    <input type="text" name="description" value="{{.Event.Description.String}}" />
+                </label>
+
+                <label>
                     Capacity 
                     <input type="number" required name="capacity" min=0 max=100 value="{{.Event.Capacity}}" />
                 </label>
                 <label>
                     Start time
-                    <input type="datetime-local" required name="start" step="1800" :value="start" />
+                    <input type="datetime-local" required name="start" :value="start" />
                 </label>
                 <button type="submit">Update</button>
             </form>

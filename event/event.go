@@ -30,6 +30,7 @@ type Event struct {
 	IsPast                bool           `db:"is_past"`
 	StudioMonitorId       sql.NullInt64  `db:"studio_monitor_id"`
 	StudioMonitorFullName sql.NullString `db:"studio_monitor_full_name"`
+	Description           sql.NullString `db:"description"`
 }
 
 func (e Event) SpotsLeft() int {

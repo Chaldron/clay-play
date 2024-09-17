@@ -17,6 +17,11 @@
                 Name
                 <input type="text" required name="name" />
             </label>
+            <label>
+                Description
+                <input type="text" name="description" />
+                <small>Optional description of the event</small>
+            </label>
             {{if .User.IsAdmin}}
             <label>
                 Group

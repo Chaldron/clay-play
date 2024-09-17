@@ -26,6 +26,12 @@
             <span> for <a href="/group/{{.Event.GroupId.String}}">{{.Event.GroupName.String}}</a></span>
             {{end}}
         </p>
+
+        {{if .Event.Description.Value}}
+        <p>
+            {{.Event.Description.String}}
+        </p>
+        {{end}}
         <div 
             class="field"
             x-data="{ start: formatTime('{{jsTime .Event.Start}}') }"

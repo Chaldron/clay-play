@@ -94,6 +94,7 @@ func (a *App) createEvent() http.HandlerFunc {
 		Start           string `schema:"start"`
 		TimezoneOffset  int    `schema:"timezoneOffset"`
 		StudioMonitorId int64  `schema:"studioMonitorId"`
+		Description     string `schema:"description"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -118,6 +119,7 @@ func (a *App) createEvent() http.HandlerFunc {
 			Start:           start,
 			CreatorId:       u.Id,
 			StudioMonitorId: req.StudioMonitorId,
+			Description:     req.Description,
 		})
 		if err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
@@ -156,6 +158,7 @@ func (a *App) renderEditEvent() http.HandlerFunc {
 func (a *App) updateEvent() http.HandlerFunc {
 	type request struct {
 		Name           string `schema:"name"`
+		Description    string `schema:"description"`
 		Capacity       int    `schema:"capacity"`
 		Start          string `schema:"start"`
 		TimezoneOffset int    `schema:"timezoneOffset"`
@@ -184,10 +187,11 @@ func (a *App) updateEvent() http.HandlerFunc {
 		}
 
 		if err := a.eventService.Update(event.UpdateParams{
-			Id:       id,
-			Name:     req.Name,
-			Capacity: req.Capacity,
-			Start:    start,
+			Id:          id,
+			Name:        req.Name,
+			Capacity:    req.Capacity,
+			Start:       start,
+			Description: req.Description,
 		}); err != nil {
 			a.renderErrorNotif(w, err, http.StatusInternalServerError)
 			return

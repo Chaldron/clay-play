@@ -109,6 +109,7 @@ type CreateParams struct {
 	Start           time.Time
 	CreatorId       int64
 	StudioMonitorId int64
+	Description     string
 }
 
 func (s *service) Create(p CreateParams) (string, error) {
@@ -139,6 +140,7 @@ type UpdateParams struct {
 	Capacity        int
 	Start           time.Time
 	StudioMonitorId int64
+	Description     string
 }
 
 func (s *service) Update(p UpdateParams) error {
@@ -254,7 +256,7 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 func get(tx *sqlx.Tx, id string) (Event, error) {
 	stmt := `
         SELECT
-            e.id, e.name, e.capacity, e.start, e.created_at, e.creator_id, e.studio_monitor_id
+            e.id, e.name, e.capacity, e.start, e.created_at, e.creator_id, e.studio_monitor_id, e.description
             , u.full_name AS creator_full_name
             , sm.full_name AS studio_monitor_full_name
             , COALESCE((
@@ -391,8 +393,8 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 	}
 
 	stmt := `
-        INSERT INTO event (id, name, group_id, capacity, start, created_at, creator_id, studio_monitor_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO event (id, name, group_id, capacity, start, created_at, creator_id, studio_monitor_id, description)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
 	args := []any{
 		newId,
@@ -409,6 +411,10 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 			Int64: p.StudioMonitorId,
 			Valid: p.StudioMonitorId != -1,
 		},
+		sql.NullString{
+			String: p.Description,
+			Valid:  p.Description != "",
+		},
 	}
 
 	_, err = tx.Exec(stmt, args...)
@@ -422,7 +428,7 @@ func create(tx *sqlx.Tx, p CreateParams) (string, error) {
 func update(tx *sqlx.Tx, p UpdateParams) error {
 	stmt := `
 		        UPDATE event
-		        SET name = ?, capacity = ?, start = ?
+		        SET name = ?, capacity = ?, start = ?, description = ?
 		        WHERE id = ?
 		    `
 	args := []any{
@@ -430,6 +436,10 @@ func update(tx *sqlx.Tx, p UpdateParams) error {
 		p.Capacity,
 		p.Start,
 		p.Id,
+		sql.NullString{
+			String: p.Description,
+			Valid:  p.Description != "",
+		},
 	}
 
 	_, err := tx.Exec(stmt, args...)
