@@ -5,7 +5,7 @@
         <p>Registration for Heather's studio sessions</p>
     </hgroup>
 
-    <form hx-get="/auth/callback">
+    <form hx-get="/auth/callback" hx-target="body">
         <input type="email" placeholder="Email" name="email" required>
         <input type="password" placeholder="Password" name="password" required>
         <button type="submit">Login</button>
