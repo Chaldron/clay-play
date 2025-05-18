@@ -86,7 +86,7 @@
                             {{end}}
                         </div>
                         <div>
-                            {{if $.User.IsAdmin}}
+                            {{if and $.User.IsAdmin (not $.Event.IsPast)}}
                             <button
                                 hx-post="/event/removeAttendee"
                                 hx-vals='{{ toJson . }}' hx-encoding="json"
