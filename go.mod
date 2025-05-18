@@ -8,7 +8,7 @@ require (
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-chi/httprate v0.8.0
-	github.com/gorilla/schema v1.2.1
+	github.com/gorilla/schema v1.4.1
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/matoous/go-nanoid/v2 v2.0.0
 	github.com/mattn/go-sqlite3 v1.14.19
