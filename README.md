@@ -3,10 +3,12 @@
 ## Setup
 1. Install go ≥ 1.21.5
 2. Download go modules: `go mod download`
-3. Create "config.yaml" file as follows:
+3. Download npm modules: `cd ui && npm install`
+4. Create "config.yaml" file as follows:
     ```
     db_conn: ./test.db
     port: 8080
+    default_admin_password: password
     ```
 
 ### Run 

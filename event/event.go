@@ -14,6 +14,7 @@ type Service interface {
 	Update(UpdateParams) error
 	Delete(string) error
 	HandleResponse(HandleResponseParams) error
+	RemoveAttendee(string, int64) error
 }
 
 type Event struct {

@@ -310,6 +310,62 @@ func (a *App) respondEvent() http.HandlerFunc {
 	}
 }
 
+func (a *App) removeAttendee() http.HandlerFunc {
+	type request struct {
+		EventId string `schema:"eventId"`
+		UserId  int    `schema:"userId"`
+	}
+
+	var lock sync.Mutex
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		u, _ := a.sessionUser(r)
+
+		req, err := schemaDecode[request](r)
+		if err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		attendee, err := a.userService.Get(int64(req.UserId))
+		if err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		event, err := a.eventService.Get(req.EventId)
+		if err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		response, err := a.eventService.GetDetailed(event.Id, attendee.Id)
+		if err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		err = a.eventService.RemoveAttendee(req.EventId, int64(req.UserId))
+		if err != nil {
+			a.renderErrorNotif(w, err, http.StatusInternalServerError)
+			return
+		}
+
+		err = a.auditlogService.Create(
+			u.Id,
+			fmt.Sprintf("Removed %s (+%d) from <a href=\"/event/%s\">%s</a>", attendee.FullName, response.UserResponse.PlusOnes(), event.Id, event.Name),
+		)
+		if err != nil {
+			a.log.Errorf(err.Error())
+		}
+
+		http.Redirect(w, r, "/event/"+req.EventId, http.StatusSeeOther)
+	}
+}
+
 func timeFromForm(t string, offset int) (time.Time, error) {
 	r, err := time.Parse(template.FormTimeFormat, t)
 	if err != nil {

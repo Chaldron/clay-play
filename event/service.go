@@ -253,6 +253,34 @@ func (s *service) HandleResponse(p HandleResponseParams) error {
 	return nil
 }
 
+func (s *service) RemoveAttendee(eventId string, userId int64) error {
+	s.log.Printf("removing user %d from event id %s", userId, eventId)
+
+	tx, err := s.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt := `
+        DELETE FROM event_response
+        WHERE event_id = ? AND user_id = ?
+    `
+	args := []any{eventId, userId}
+
+	_, err = tx.Exec(stmt, args...)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func get(tx *sqlx.Tx, id string) (Event, error) {
 	stmt := `
         SELECT

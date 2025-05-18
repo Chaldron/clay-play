@@ -51,6 +51,7 @@ func (a *App) Routes() http.Handler {
 					r.Get("/{id}/edit", a.renderEditEvent())
 					r.Post("/{id}/edit", a.updateEvent())
 					r.Delete("/{id}/edit", a.deleteEvent())
+					r.Post("/removeAttendee", a.removeAttendee())
 				})
 
 				r.Get("/{id}", a.renderEventDetails())

@@ -85,6 +85,17 @@
                             Waitlist
                             {{end}}
                         </div>
+                        <div>
+                            {{if $.User.IsAdmin}}
+                            <button
+                                hx-post="/event/removeAttendee"
+                                hx-vals='{{ toJson . }}' hx-encoding="json"
+                                hx-target="body"
+                                hx-confirm="Are you sure you want to remove this attendee and any +1s?">
+                                Remove
+                            </button>
+                            {{end}}
+                        </div>
                     </td>
                 </tr>
             {{end}}

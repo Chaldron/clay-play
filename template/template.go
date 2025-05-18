@@ -1,6 +1,7 @@
 package template
 
 import (
+	"encoding/json"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -41,6 +42,7 @@ func Generate() (TemplateMap, error) {
 			"add":      add,
 			"unescape": unescape,
 			"onlyDate": onlyDate,
+			"toJson":   toJson,
 		})
 
 		t, err = t.ParseFiles(
@@ -91,4 +93,9 @@ func add(x int, y int) int {
 
 func unescape(s string) template.HTML {
 	return template.HTML(s)
+}
+
+func toJson(v any) template.JS {
+	b, _ := json.Marshal(v)
+	return template.JS(b)
 }
